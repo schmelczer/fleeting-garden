@@ -1,15 +1,29 @@
-html,
-body {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
-  border: 0;
-  font-size: 100%;
-  font: inherit;
-  vertical-align: baseline;
-  background: #000;
-  width: 100%;
+  box-sizing: border-box;
+
+  @media (prefers-reduced-motion) {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+html {
   height: 100%;
+  -webkit-font-smooth: antialiased;
+}
+
+body {
+  height: 100%;
+  background-color: hotpink;
   display: flex;
-  align-items: center;
-  justify-content: center;
+}
+
+canvas {
+  background: hotpink;
+  height: 100%;
+  width: 100%;
 }

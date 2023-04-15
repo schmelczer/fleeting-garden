@@ -42,7 +42,7 @@ module.exports = (env, argv) => ({
         use: 'svg-inline-loader',
       },
       {
-        test: /\.wgsl/,
+        test: /\.wgsl$/i,
         type: 'asset/source',
         generator: {
           filename: '[name][ext]',

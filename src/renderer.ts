@@ -1,227 +1,124 @@
-import fragShaderCode from './shaders/triangle.frag.wgsl';
-import vertShaderCode from './shaders/triangle.vert.wgsl';
+import { Agent } from './pipelines/agents/agent';
+import { AgentPipeline } from './pipelines/agents/agent-pipeline';
+import { DiffusionPipeline } from './pipelines/diffusion/diffusion-pipeline';
+import { RenderPipeline } from './pipelines/render/render-pipeline';
+import { settings } from './settings';
+import { randomBetween } from './utils/random-between';
 
-const positions = new Float32Array([1.0, -1.0, 0.0, -1.0, -1.0, 0.0, 0.0, 1.0, 0.0]);
-const colors = new Float32Array([1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0]);
-
-const indices = new Uint16Array([0, 1, 2]);
+import { vec2 } from 'gl-matrix';
 
 export default class Renderer {
-  canvas: HTMLCanvasElement;
+  private context: GPUCanvasContext;
+  private adapter: GPUAdapter;
+  private device: GPUDevice;
+  private queue: GPUQueue;
 
-  adapter: GPUAdapter;
-  device: GPUDevice;
-  queue: GPUQueue;
+  private agentPipeline: AgentPipeline;
+  private renderPipeline: RenderPipeline;
+  private diffusionPipeline: any;
 
-  context: GPUCanvasContext;
-  colorTexture: GPUTexture;
-  colorTextureView: GPUTextureView;
-  depthTexture: GPUTexture;
-  depthTextureView: GPUTextureView;
+  private preferredCanvasFormat: GPUTextureFormat;
+  private trailMapA?: GPUTexture;
+  private trailMapB?: GPUTexture;
 
-  positionBuffer: GPUBuffer;
-  colorBuffer: GPUBuffer;
-  indexBuffer: GPUBuffer;
-  vertModule: GPUShaderModule;
-  fragModule: GPUShaderModule;
-  pipeline: GPURenderPipeline;
-
-  commandEncoder: GPUCommandEncoder;
-  passEncoder: GPURenderPassEncoder;
-
-  constructor(canvas: HTMLCanvasElement) {
-    this.canvas = canvas;
-  }
+  public constructor(private canvas: HTMLCanvasElement) {}
 
   async start() {
-    if (await this.initializeAPI()) {
-      this.resizeBackings();
-      await this.initializeResources();
-      this.render();
-    }
+    await this.initialize();
+    requestAnimationFrame(this.render.bind(this));
   }
 
-  async initializeAPI(): Promise<boolean> {
-    try {
-      const entry: GPU = navigator.gpu;
-      if (!entry) {
-        return false;
-      }
+  private async initialize(): Promise<void> {
+    await this.initializeDevice();
 
-      this.adapter = await entry.requestAdapter();
-      this.device = await this.adapter.requestDevice();
-      this.queue = this.device.queue;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
+    this.resize();
+    window.addEventListener('resize', this.resize.bind(this));
 
-    return true;
+    const agents: Array<Agent> = new Array(settings.numAgents).fill(0).map(() => ({
+      position: vec2.fromValues(randomBetween(0, 500), randomBetween(0, 500)),
+      angle: randomBetween(0, Math.PI * 2),
+    }));
+
+    this.agentPipeline = new AgentPipeline(this.device, agents);
+    this.renderPipeline = new RenderPipeline(
+      this.context,
+      this.device,
+      this.preferredCanvasFormat
+    );
+    this.diffusionPipeline = new DiffusionPipeline(this.device);
   }
 
-  async initializeResources() {
-    const createBuffer = (arr: Float32Array | Uint16Array, usage: number) => {
-      // 📏 Align to 4 bytes (thanks @chrimsonite)
-      const desc = {
-        size: (arr.byteLength + 3) & ~3,
-        usage,
-        mappedAtCreation: true,
-      };
-      const buffer = this.device.createBuffer(desc);
-      const writeArray =
-        arr instanceof Uint16Array
-          ? new Uint16Array(buffer.getMappedRange())
-          : new Float32Array(buffer.getMappedRange());
-      writeArray.set(arr);
-      buffer.unmap();
-      return buffer;
-    };
+  private resize() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
+    this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
 
-    this.positionBuffer = createBuffer(positions, GPUBufferUsage.VERTEX);
-    this.colorBuffer = createBuffer(colors, GPUBufferUsage.VERTEX);
-    this.indexBuffer = createBuffer(indices, GPUBufferUsage.INDEX);
+    this.trailMapA?.destroy();
+    this.trailMapA = this.device.createTexture({
+      size: {
+        width: this.canvas.width,
+        height: this.canvas.height,
+        depthOrArrayLayers: 1,
+      },
+      format: 'rgba16float',
+      usage:
+        GPUTextureUsage.STORAGE_BINDING |
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.RENDER_ATTACHMENT,
+    });
 
-    const vsmDesc = {
-      code: vertShaderCode,
-    };
-    this.vertModule = this.device.createShaderModule(vsmDesc);
-
-    const fsmDesc = {
-      code: fragShaderCode,
-    };
-    this.fragModule = this.device.createShaderModule(fsmDesc);
-
-    const positionAttribDesc: GPUVertexAttribute = {
-      shaderLocation: 0, // [[location(0)]]
-      offset: 0,
-      format: 'float32x3',
-    };
-    const colorAttribDesc: GPUVertexAttribute = {
-      shaderLocation: 1, // [[location(1)]]
-      offset: 0,
-      format: 'float32x3',
-    };
-    const positionBufferDesc: GPUVertexBufferLayout = {
-      attributes: [positionAttribDesc],
-      arrayStride: 4 * 3, // sizeof(float) * 3
-      stepMode: 'vertex',
-    };
-    const colorBufferDesc: GPUVertexBufferLayout = {
-      attributes: [colorAttribDesc],
-      arrayStride: 4 * 3, // sizeof(float) * 3
-      stepMode: 'vertex',
-    };
-
-    const depthStencil: GPUDepthStencilState = {
-      depthWriteEnabled: true,
-      depthCompare: 'less',
-      format: 'depth24plus-stencil8',
-    };
-
-    const pipelineLayoutDesc = { bindGroupLayouts: [] };
-    const layout = this.device.createPipelineLayout(pipelineLayoutDesc);
-
-    const vertex: GPUVertexState = {
-      module: this.vertModule,
-      entryPoint: 'main',
-      buffers: [positionBufferDesc, colorBufferDesc],
-    };
-
-    const colorState: GPUColorTargetState = {
-      format: 'bgra8unorm',
-    };
-
-    const fragment: GPUFragmentState = {
-      module: this.fragModule,
-      entryPoint: 'main',
-      targets: [colorState],
-    };
-
-    const primitive: GPUPrimitiveState = {
-      frontFace: 'cw',
-      cullMode: 'none',
-      topology: 'triangle-list',
-    };
-
-    const pipelineDesc: GPURenderPipelineDescriptor = {
-      layout,
-
-      vertex,
-      fragment,
-
-      primitive,
-      depthStencil,
-    };
-    this.pipeline = this.device.createRenderPipeline(pipelineDesc);
+    this.trailMapB?.destroy();
+    this.trailMapB = this.device.createTexture({
+      size: {
+        width: this.canvas.width,
+        height: this.canvas.height,
+        depthOrArrayLayers: 1,
+      },
+      format: 'rgba16float',
+      usage:
+        GPUTextureUsage.STORAGE_BINDING |
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.RENDER_ATTACHMENT,
+    });
   }
 
-  resizeBackings() {
-    if (!this.context) {
-      this.context = this.canvas.getContext('webgpu') as any;
-      const canvasConfig: GPUCanvasConfiguration = {
-        device: this.device,
-        format: 'bgra8unorm',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-        alphaMode: 'opaque',
-      };
-      this.context.configure(canvasConfig);
+  private async initializeDevice(): Promise<void> {
+    const gpu = navigator.gpu;
+    if (!gpu) {
+      throw new Error('WebGPU is not supported');
     }
 
-    const depthTextureDesc: GPUTextureDescriptor = {
-      size: [this.canvas.width, this.canvas.height, 1],
-      dimension: '2d',
-      format: 'depth24plus-stencil8',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-    };
+    this.adapter = await gpu.requestAdapter();
+    this.device = await this.adapter.requestDevice(); // could request more resources
+    this.queue = this.device.queue;
 
-    this.depthTexture = this.device.createTexture(depthTextureDesc);
-    this.depthTextureView = this.depthTexture.createView();
+    this.context = this.canvas.getContext('webgpu') as any;
+    this.preferredCanvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.context.configure({
+      device: this.device,
+      format: this.preferredCanvasFormat,
+      alphaMode: 'premultiplied',
+    });
   }
 
-  encodeCommands() {
-    const colorAttachment: GPURenderPassColorAttachment = {
-      view: this.colorTextureView,
-      clearValue: { r: 0, g: 0, b: 0, a: 1 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    };
+  private render(time: DOMHighResTimeStamp) {
+    this.agentPipeline.setParameters({
+      width: this.canvas.width,
+      height: this.canvas.height,
+      time,
+      deltaTime: 0.016,
+      sensorAngleDegrees: 45,
+      ...settings,
+    });
+    const commandEncoder = this.device.createCommandEncoder();
 
-    const depthAttachment: GPURenderPassDepthStencilAttachment = {
-      view: this.depthTextureView,
-      depthClearValue: 1,
-      depthLoadOp: 'clear',
-      depthStoreOp: 'store',
-      stencilClearValue: 0,
-      stencilLoadOp: 'clear',
-      stencilStoreOp: 'store',
-    };
+    this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
+    this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
+    this.renderPipeline.execute(commandEncoder, this.trailMapB);
+    [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
 
-    const renderPassDesc: GPURenderPassDescriptor = {
-      colorAttachments: [colorAttachment],
-      depthStencilAttachment: depthAttachment,
-    };
+    this.queue.submit([commandEncoder.finish()]);
 
-    this.commandEncoder = this.device.createCommandEncoder();
-
-    this.passEncoder = this.commandEncoder.beginRenderPass(renderPassDesc);
-    this.passEncoder.setPipeline(this.pipeline);
-    this.passEncoder.setViewport(0, 0, this.canvas.width, this.canvas.height, 0, 1);
-    this.passEncoder.setScissorRect(0, 0, this.canvas.width, this.canvas.height);
-    this.passEncoder.setVertexBuffer(0, this.positionBuffer);
-    this.passEncoder.setVertexBuffer(1, this.colorBuffer);
-    this.passEncoder.setIndexBuffer(this.indexBuffer, 'uint16');
-    this.passEncoder.drawIndexed(3, 1);
-    this.passEncoder.end();
-
-    this.queue.submit([this.commandEncoder.finish()]);
+    requestAnimationFrame(this.render.bind(this));
   }
-
-  render = () => {
-    this.colorTexture = this.context.getCurrentTexture();
-    this.colorTextureView = this.colorTexture.createView();
-
-    this.encodeCommands();
-
-    requestAnimationFrame(this.render);
-  };
 }

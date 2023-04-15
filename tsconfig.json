@@ -21,17 +21,13 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "noEmitHelpers": false,
-    "sourceMap": false,
+    "sourceMap": true,
     "strictNullChecks": false,
     "jsx": "react",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "definitions.d.ts",
-    "src/**/*",
-    "node_modules/@webgpu/types/**/*"
-  ],
+  "include": ["definitions.d.ts", "src/**/*", "node_modules/@webgpu/types/**/*"],
   "compileOnSave": false,
   "buildOnSave": false
 }

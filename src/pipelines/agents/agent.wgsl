@@ -18,7 +18,7 @@ struct Settings {
 };
 
 @group(0) @binding(0) var<uniform> settings : Settings;
-@group(0) @binding(1) var<storage, read_write> agents: array<Agent>;
+@group(0) @binding(1) var<storage, read_write> agents : array<Agent>;
 @group(0) @binding(2) var TrailMapIn : texture_2d<f32>;
 @group(0) @binding(3) var TrailMapOut : texture_storage_2d<rgba16float, write>;
 
@@ -45,8 +45,6 @@ fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
   }
 
   var agent = agents[id];
-
-
 
   var random = f32(hash(
     u32(

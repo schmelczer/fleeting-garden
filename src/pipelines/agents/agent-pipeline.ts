@@ -1,4 +1,4 @@
-import { AGENT_SIZE, Agent } from './agent';
+import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
 import shader from './agent.wgsl';
 
 export class AgentPipeline {
@@ -8,11 +8,16 @@ export class AgentPipeline {
   private readonly pipeline: GPUComputePipeline;
   private readonly uniforms: GPUBuffer;
   private readonly agentsBuffer: GPUBuffer;
+
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTexture;
   private previousTrailMapOut?: GPUTexture;
 
   public constructor(private readonly device: GPUDevice, agents: Array<Agent>) {
+    if (agents.length === 0) {
+      throw new Error('No agents provided');
+    }
+
     this.pipeline = device.createComputePipeline({
       layout: 'auto',
       compute: {
@@ -29,16 +34,16 @@ export class AgentPipeline {
     });
 
     const serializedAgents = new Float32Array(
-      new ArrayBuffer(agents.length * AGENT_SIZE)
+      new ArrayBuffer(agents.length * AGENT_SIZE_IN_BYTES)
     );
-    agents.forEach((agent, index) => {
-      serializedAgents[index * 4 + 0] = agent.position[0];
-      serializedAgents[index * 4 + 1] = agent.position[1];
-      serializedAgents[index * 4 + 2] = agent.angle;
+    agents.forEach((agent, i) => {
+      serializedAgents[i * 4 + 0] = agent.position[0];
+      serializedAgents[i * 4 + 1] = agent.position[1];
+      serializedAgents[i * 4 + 2] = agent.angle;
     });
 
     this.agentsBuffer = device.createBuffer({
-      size: agents.length * AGENT_SIZE,
+      size: agents.length * AGENT_SIZE_IN_BYTES,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
 
@@ -97,7 +102,9 @@ export class AgentPipeline {
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.bindGroup);
     passEncoder.dispatchWorkgroups(
-      Math.ceil(this.agentsBuffer.size / AGENT_SIZE / AgentPipeline.WORKGROUP_SIZE)
+      Math.ceil(
+        this.agentsBuffer.size / AGENT_SIZE_IN_BYTES / AgentPipeline.WORKGROUP_SIZE
+      )
     );
     passEncoder.end();
   }

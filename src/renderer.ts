@@ -15,7 +15,7 @@ export default class Renderer {
 
   private agentPipeline: AgentPipeline;
   private renderPipeline: RenderPipeline;
-  private diffusionPipeline: any;
+  private diffusionPipeline: DiffusionPipeline;
 
   private preferredCanvasFormat: GPUTextureFormat;
   private trailMapA?: GPUTexture;
@@ -34,8 +34,8 @@ export default class Renderer {
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
 
-    const agents: Array<Agent> = new Array(settings.numAgents).fill(0).map(() => ({
-      position: vec2.fromValues(randomBetween(0, 500), randomBetween(0, 500)),
+    const agents: Array<Agent> = new Array(settings.agentCount).fill(0).map(() => ({
+      position: vec2.fromValues(randomBetween(0, 1000), randomBetween(0, 1000)),
       angle: randomBetween(0, Math.PI * 2),
     }));
 
@@ -54,21 +54,14 @@ export default class Renderer {
     this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
 
     this.trailMapA?.destroy();
-    this.trailMapA = this.device.createTexture({
-      size: {
-        width: this.canvas.width,
-        height: this.canvas.height,
-        depthOrArrayLayers: 1,
-      },
-      format: 'rgba16float',
-      usage:
-        GPUTextureUsage.STORAGE_BINDING |
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
+    this.trailMapA = this.createTrailMap();
 
     this.trailMapB?.destroy();
-    this.trailMapB = this.device.createTexture({
+    this.trailMapB = this.createTrailMap();
+  }
+
+  private createTrailMap(): GPUTexture {
+    return this.device.createTexture({
       size: {
         width: this.canvas.width,
         height: this.canvas.height,
@@ -110,11 +103,17 @@ export default class Renderer {
       sensorAngleDegrees: 45,
       ...settings,
     });
+    this.diffusionPipeline.setParameters({
+      width: this.canvas.width,
+      height: this.canvas.height,
+      deltaTime: 0.016,
+      ...settings,
+    });
     const commandEncoder = this.device.createCommandEncoder();
 
     this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
     this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
-    this.renderPipeline.execute(commandEncoder, this.trailMapB);
+    this.renderPipeline.execute(commandEncoder, this.trailMapA);
     [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
 
     this.queue.submit([commandEncoder.finish()]);

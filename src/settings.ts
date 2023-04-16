@@ -2,11 +2,11 @@ const SpawnMode = { Random: 0, Point: 1, InwardCircle: 2, RandomCircle: 3 };
 
 interface Settings {
   stepsPerFrame: number;
-  numAgents: number;
+  agentCount: number;
   spawnMode: number;
   trailWeight: number;
   decayRate: number;
-  diffuseRate: number;
+  diffusionRate: number;
   moveSpeed: number;
   turnSpeed: number;
   sensorAngleSpacing: number;
@@ -16,11 +16,12 @@ interface Settings {
 
 export const settings: Settings = {
   stepsPerFrame: 2,
-  numAgents: 250000,
+  agentCount: 500000,
   spawnMode: SpawnMode.InwardCircle,
   trailWeight: 5,
-  decayRate: 0.2,
-  diffuseRate: 3,
+
+  decayRate: 0.05,
+  diffusionRate: 0.1,
 
   moveSpeed: 20,
   turnSpeed: 2,

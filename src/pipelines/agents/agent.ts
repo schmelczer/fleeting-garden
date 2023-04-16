@@ -5,4 +5,4 @@ export interface Agent {
   angle: number;
 }
 
-export const AGENT_SIZE = 4;
+export const AGENT_SIZE_IN_BYTES = 4 * 4;

@@ -1,7 +1,10 @@
+import { setUpFullScreenQuad } from '../../utils/full-screen-quad';
 import shader from './render.wgsl';
 
 export class RenderPipeline {
   private readonly pipeline: GPURenderPipeline;
+  private readonly quadVertexBuffer: GPUBuffer;
+
   private bindGroup?: GPUBindGroup;
   private previousColorTexture?: GPUTexture;
 
@@ -10,14 +13,12 @@ export class RenderPipeline {
     private readonly device: GPUDevice,
     preferredCanvasFormat: GPUTextureFormat
   ) {
+    const { buffer, vertex } = setUpFullScreenQuad(device);
+    this.quadVertexBuffer = buffer;
+
     this.pipeline = device.createRenderPipeline({
       layout: 'auto',
-      vertex: {
-        module: device.createShaderModule({
-          code: shader,
-        }),
-        entryPoint: 'vertex',
-      },
+      vertex,
       fragment: {
         module: device.createShaderModule({
           code: shader,
@@ -42,17 +43,18 @@ export class RenderPipeline {
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
           loadOp: 'clear',
           storeOp: 'store',
         },
       ],
     };
-    const renderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    renderPassEncoder.setBindGroup(0, this.bindGroup);
-    renderPassEncoder.setPipeline(this.pipeline);
-    renderPassEncoder.draw(4, 1);
-    renderPassEncoder.end();
+    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    passEncoder.setPipeline(this.pipeline);
+    passEncoder.setVertexBuffer(0, this.quadVertexBuffer);
+    passEncoder.setBindGroup(0, this.bindGroup);
+    passEncoder.draw(4, 1);
+    passEncoder.end();
   }
 
   private ensureBindGroupExists(colorTexture: GPUTexture) {

@@ -21,6 +21,8 @@ export default class Renderer {
   private trailMapA?: GPUTexture;
   private trailMapB?: GPUTexture;
 
+  private previousTime?: DOMHighResTimeStamp = null;
+
   public constructor(private canvas: HTMLCanvasElement) {}
 
   async start() {
@@ -35,7 +37,7 @@ export default class Renderer {
     window.addEventListener('resize', this.resize.bind(this));
 
     const agents: Array<Agent> = new Array(settings.agentCount).fill(0).map(() => ({
-      position: vec2.fromValues(randomBetween(0, 1000), randomBetween(0, 1000)),
+      position: vec2.fromValues(randomBetween(1 / 3, 2 / 3), randomBetween(1 / 3, 2 / 3)),
       angle: randomBetween(0, Math.PI * 2),
     }));
 
@@ -95,18 +97,19 @@ export default class Renderer {
   }
 
   private render(time: DOMHighResTimeStamp) {
+    const deltaTime = this.calculateDeltaTime(time);
+
     this.agentPipeline.setParameters({
       width: this.canvas.width,
       height: this.canvas.height,
       time,
-      deltaTime: 0.016,
-      sensorAngleDegrees: 45,
+      deltaTime,
       ...settings,
     });
     this.diffusionPipeline.setParameters({
       width: this.canvas.width,
       height: this.canvas.height,
-      deltaTime: 0.016,
+      deltaTime,
       ...settings,
     });
     const commandEncoder = this.device.createCommandEncoder();
@@ -119,5 +122,14 @@ export default class Renderer {
     this.queue.submit([commandEncoder.finish()]);
 
     requestAnimationFrame(this.render.bind(this));
+  }
+
+  private calculateDeltaTime(time: DOMHighResTimeStamp): number {
+    if (this.previousTime === null) {
+      this.previousTime = time;
+    }
+    const deltaTime = time - this.previousTime;
+    this.previousTime = time;
+    return deltaTime / 1000;
   }
 }

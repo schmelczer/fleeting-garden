@@ -37,9 +37,12 @@ export class AgentPipeline {
       new ArrayBuffer(agents.length * AGENT_SIZE_IN_BYTES)
     );
     agents.forEach((agent, i) => {
-      serializedAgents[i * 4 + 0] = agent.position[0];
-      serializedAgents[i * 4 + 1] = agent.position[1];
-      serializedAgents[i * 4 + 2] = agent.angle;
+      serializedAgents[(i * AGENT_SIZE_IN_BYTES) / Float32Array.BYTES_PER_ELEMENT + 0] =
+        agent.position[0];
+      serializedAgents[(i * AGENT_SIZE_IN_BYTES) / Float32Array.BYTES_PER_ELEMENT + 1] =
+        agent.position[1];
+      serializedAgents[(i * AGENT_SIZE_IN_BYTES) / Float32Array.BYTES_PER_ELEMENT + 2] =
+        agent.angle;
     });
 
     this.agentsBuffer = device.createBuffer({
@@ -80,11 +83,10 @@ export class AgentPipeline {
         width,
         height,
         trailWeight,
-        deltaTime,
         time,
-        moveSpeed,
-        turnSpeed,
-        sensorAngleDegrees,
+        moveSpeed * deltaTime,
+        turnSpeed * deltaTime,
+        (sensorAngleDegrees * Math.PI) / 180,
         sensorOffsetDst,
         sensorSize,
       ])

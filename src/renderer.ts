@@ -2,6 +2,7 @@ import { Agent } from './pipelines/agents/agent';
 import { AgentPipeline } from './pipelines/agents/agent-pipeline';
 import { DiffusionPipeline } from './pipelines/diffusion/diffusion-pipeline';
 import { RenderPipeline } from './pipelines/render/render-pipeline';
+import { SwipePipeline } from './pipelines/swipe/swipe-pipeline';
 import { settings } from './settings';
 import { randomBetween } from './utils/random-between';
 
@@ -16,26 +17,49 @@ export default class Renderer {
   private agentPipeline: AgentPipeline;
   private renderPipeline: RenderPipeline;
   private diffusionPipeline: DiffusionPipeline;
+  private swipePipeline: SwipePipeline;
 
   private preferredCanvasFormat: GPUTextureFormat;
   private trailMapA?: GPUTexture;
   private trailMapB?: GPUTexture;
 
   private previousTime?: DOMHighResTimeStamp = null;
+  private swipeLocation?: vec2;
+  private isSwipeActive = false;
 
   public constructor(private canvas: HTMLCanvasElement) {}
 
   async start() {
-    await this.initialize();
-    requestAnimationFrame(this.render.bind(this));
-  }
-
-  private async initialize(): Promise<void> {
     await this.initializeDevice();
 
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
+    window.addEventListener('mousemove', this.onSwipe.bind(this));
+    window.addEventListener('mousedown', (_) => (this.isSwipeActive = true));
+    window.addEventListener('mouseup', (_) => (this.isSwipeActive = false));
 
+    requestAnimationFrame(this.render.bind(this));
+
+    this.agentPipeline = new AgentPipeline(this.device, this.spawnAgents());
+    this.renderPipeline = new RenderPipeline(
+      this.context,
+      this.device,
+      this.preferredCanvasFormat
+    );
+    this.swipePipeline = new SwipePipeline(this.device);
+    this.diffusionPipeline = new DiffusionPipeline(this.device);
+  }
+
+  private onSwipe(event: MouseEvent) {
+    const position = vec2.fromValues(event.clientX, event.clientY);
+    this.swipeLocation = vec2.divide(
+      position,
+      position,
+      vec2.fromValues(this.canvas.width, this.canvas.height)
+    );
+  }
+
+  private spawnAgents(): Array<Agent> {
     const minSize = Math.min(this.canvas.width, this.canvas.height);
     const ratio = Math.max(this.canvas.width, this.canvas.height) / minSize;
     const size = vec2.fromValues(
@@ -43,8 +67,7 @@ export default class Renderer {
       this.canvas.height / minSize
     );
     vec2.normalize(size, size);
-    console.log(size);
-    const agents: Array<Agent> = new Array(settings.agentCount).fill(0).map(() => {
+    return new Array(settings.agentCount).fill(0).map(() => {
       const radius = randomBetween(0, settings.startingRadius / ratio);
       const angle = randomBetween(0, Math.PI * 2);
       const center = vec2.fromValues(0.5, 0.5);
@@ -59,14 +82,6 @@ export default class Renderer {
         angle: angle + Math.PI,
       };
     });
-
-    this.agentPipeline = new AgentPipeline(this.device, agents);
-    this.renderPipeline = new RenderPipeline(
-      this.context,
-      this.device,
-      this.preferredCanvasFormat
-    );
-    this.diffusionPipeline = new DiffusionPipeline(this.device);
   }
 
   private resize() {
@@ -125,6 +140,13 @@ export default class Renderer {
       deltaTime,
       ...settings,
     });
+    this.swipePipeline.setParameters({
+      width: this.canvas.width,
+      height: this.canvas.height,
+      isSwipeActive: this.isSwipeActive,
+      swipe: this.swipeLocation,
+      ...settings,
+    });
     this.diffusionPipeline.setParameters({
       width: this.canvas.width,
       height: this.canvas.height,
@@ -136,8 +158,13 @@ export default class Renderer {
     for (let i = 0; i < settings.renderSpeed; i++) {
       this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
       this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
-      this.renderPipeline.execute(commandEncoder, this.trailMapA);
-      [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
+      if (this.isSwipeActive) {
+        this.swipePipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
+        this.renderPipeline.execute(commandEncoder, this.trailMapB);
+      } else {
+        this.renderPipeline.execute(commandEncoder, this.trailMapA);
+        [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
+      }
     }
 
     this.queue.submit([commandEncoder.finish()]);

@@ -9,19 +9,21 @@ interface Settings {
   turnSpeed: number;
   sensorAngleDegrees: number;
   sensorOffsetDst: number;
+  swipeRadius: number;
 }
 
 export const settings: Settings = {
   agentCount: 1_000_000,
-  renderSpeed: 2,
+  renderSpeed: 1,
   startingRadius: 0.15,
   trailWeight: 5,
 
-  decayRate: 0.05,
-  diffusionRate: 0.3,
+  decayRate: 0.02,
+  diffusionRate: 0.8,
 
   moveSpeed: 0.025,
   turnSpeed: 6,
   sensorAngleDegrees: 30,
   sensorOffsetDst: 0.025,
+  swipeRadius: 0.005,
 };

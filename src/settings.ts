@@ -1,5 +1,7 @@
 interface Settings {
   agentCount: number;
+  renderSpeed: number;
+  startingRadius: number;
   trailWeight: number;
   decayRate: number;
   diffusionRate: number;
@@ -7,19 +9,19 @@ interface Settings {
   turnSpeed: number;
   sensorAngleDegrees: number;
   sensorOffsetDst: number;
-  sensorSize: number;
 }
 
 export const settings: Settings = {
-  agentCount: 50000,
+  agentCount: 1_000_000,
+  renderSpeed: 2,
+  startingRadius: 0.15,
   trailWeight: 5,
 
   decayRate: 0.05,
-  diffusionRate: 0.2,
+  diffusionRate: 0.3,
 
-  moveSpeed: 0.03,
-  turnSpeed: 2,
-  sensorAngleDegrees: 45,
-  sensorOffsetDst: 35 / 1000,
-  sensorSize: 1,
+  moveSpeed: 0.025,
+  turnSpeed: 6,
+  sensorAngleDegrees: 30,
+  sensorOffsetDst: 0.025,
 };

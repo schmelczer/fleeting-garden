@@ -13,7 +13,6 @@ struct Settings {
 
   sensorAngle : f32,
   sensorOffsetDst : f32,
-  sensorSize : f32,
 };
 
 @group(0) @binding(0) var<uniform> settings : Settings;
@@ -21,20 +20,7 @@ struct Settings {
 @group(0) @binding(2) var TrailMapIn : texture_2d<f32>;
 @group(0) @binding(3) var TrailMapOut : texture_storage_2d<rgba16float, write>;
 
-
-// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
-fn hash(state0 : u32) -> u32 {
-  var state : u32 = state0;
-  state = state ^ 2747636419u;
-  state = state * 2654435769u;
-  state = state ^ (state >> 16u);
-  state = state * 2654435769u;
-  state = state ^ (state >> 16u);
-  state = state * 2654435769u;
-  return state;
-}
-
-@compute @workgroup_size(64)
+@compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
   let id = global_id.x;
 
@@ -60,10 +46,9 @@ fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
 
   let direction = vec2(cos(agent.angle), sin(agent.angle));
   var newPos = agent.position + direction / normalize(settings.size) * settings.moveRate;
-
   newPos = clamp(newPos, vec2<f32>(0, 0), vec2<f32>(1, 1));
   if (newPos.x == 0. || newPos.x == 1. || newPos.y == 0. || newPos.y == 1.) {
-    agent.angle = random * 2. * 3.1415;
+    agent.angle += 3.14159265359 + random - 0.5;
   }
 
   textureStore(
@@ -74,6 +59,18 @@ fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
 
   agent.position = newPos;
   agents[id] = agent;
+}
+
+fn hash(state0 : u32) -> u32 {
+  // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
+  var state : u32 = state0;
+  state = state ^ 2747636419u;
+  state = state * 2654435769u;
+  state = state ^ (state >> 16u);
+  state = state * 2654435769u;
+  state = state ^ (state >> 16u);
+  state = state * 2654435769u;
+  return state;
 }
 
 fn sense(agent : Agent, sensorAngleOffset : f32) -> f32 {

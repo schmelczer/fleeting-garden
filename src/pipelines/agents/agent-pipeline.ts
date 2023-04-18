@@ -63,7 +63,6 @@ export class AgentPipeline {
     turnSpeed,
     sensorAngleDegrees,
     sensorOffsetDst,
-    sensorSize,
   }: {
     width: number;
     height: number;
@@ -74,7 +73,6 @@ export class AgentPipeline {
     turnSpeed: number;
     sensorAngleDegrees: number;
     sensorOffsetDst: number;
-    sensorSize: number;
   }) {
     this.device.queue.writeBuffer(
       this.uniforms,
@@ -88,7 +86,6 @@ export class AgentPipeline {
         turnSpeed * deltaTime,
         (sensorAngleDegrees * Math.PI) / 180,
         sensorOffsetDst,
-        sensorSize,
       ])
     );
   }

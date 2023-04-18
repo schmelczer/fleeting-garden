@@ -36,10 +36,29 @@ export default class Renderer {
     this.resize();
     window.addEventListener('resize', this.resize.bind(this));
 
-    const agents: Array<Agent> = new Array(settings.agentCount).fill(0).map(() => ({
-      position: vec2.fromValues(randomBetween(1 / 3, 2 / 3), randomBetween(1 / 3, 2 / 3)),
-      angle: randomBetween(0, Math.PI * 2),
-    }));
+    const minSize = Math.min(this.canvas.width, this.canvas.height);
+    const ratio = Math.max(this.canvas.width, this.canvas.height) / minSize;
+    const size = vec2.fromValues(
+      this.canvas.width / minSize,
+      this.canvas.height / minSize
+    );
+    vec2.normalize(size, size);
+    console.log(size);
+    const agents: Array<Agent> = new Array(settings.agentCount).fill(0).map(() => {
+      const radius = randomBetween(0, settings.startingRadius / ratio);
+      const angle = randomBetween(0, Math.PI * 2);
+      const center = vec2.fromValues(0.5, 0.5);
+
+      const delta = vec2.fromValues(Math.cos(angle) * radius, Math.sin(angle) * radius);
+      vec2.divide(delta, delta, size);
+
+      const position = vec2.add(vec2.create(), center, delta);
+
+      return {
+        position,
+        angle: angle + Math.PI,
+      };
+    });
 
     this.agentPipeline = new AgentPipeline(this.device, agents);
     this.renderPipeline = new RenderPipeline(
@@ -114,10 +133,12 @@ export default class Renderer {
     });
     const commandEncoder = this.device.createCommandEncoder();
 
-    this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
-    this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
-    this.renderPipeline.execute(commandEncoder, this.trailMapA);
-    [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
+    for (let i = 0; i < settings.renderSpeed; i++) {
+      this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
+      this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
+      this.renderPipeline.execute(commandEncoder, this.trailMapA);
+      [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
+    }
 
     this.queue.submit([commandEncoder.finish()]);
 

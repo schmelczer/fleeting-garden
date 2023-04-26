@@ -2,9 +2,9 @@ import { Agent } from './pipelines/agents/agent';
 import { AgentPipeline } from './pipelines/agents/agent-pipeline';
 import { DiffusionPipeline } from './pipelines/diffusion/diffusion-pipeline';
 import { RenderPipeline } from './pipelines/render/render-pipeline';
-import { SwipePipeline } from './pipelines/swipe/swipe-pipeline';
 import { settings } from './settings';
 import { randomBetween } from './utils/random-between';
+import { sleep } from './utils/sleep';
 
 import { vec2 } from 'gl-matrix';
 
@@ -17,7 +17,6 @@ export default class Renderer {
   private agentPipeline: AgentPipeline;
   private renderPipeline: RenderPipeline;
   private diffusionPipeline: DiffusionPipeline;
-  private swipePipeline: SwipePipeline;
 
   private preferredCanvasFormat: GPUTextureFormat;
   private trailMapA?: GPUTexture;
@@ -38,16 +37,15 @@ export default class Renderer {
     window.addEventListener('mousedown', (_) => (this.isSwipeActive = true));
     window.addEventListener('mouseup', (_) => (this.isSwipeActive = false));
 
-    requestAnimationFrame(this.render.bind(this));
-
     this.agentPipeline = new AgentPipeline(this.device, this.spawnAgents());
     this.renderPipeline = new RenderPipeline(
       this.context,
       this.device,
       this.preferredCanvasFormat
     );
-    this.swipePipeline = new SwipePipeline(this.device);
     this.diffusionPipeline = new DiffusionPipeline(this.device);
+
+    requestAnimationFrame(this.render.bind(this));
   }
 
   private onSwipe(event: MouseEvent) {
@@ -130,45 +128,37 @@ export default class Renderer {
     });
   }
 
-  private render(time: DOMHighResTimeStamp) {
+  private async render(time: DOMHighResTimeStamp) {
     const deltaTime = this.calculateDeltaTime(time);
 
     this.agentPipeline.setParameters({
+      ...settings,
       width: this.canvas.width,
       height: this.canvas.height,
       time,
       deltaTime,
-      ...settings,
-    });
-    this.swipePipeline.setParameters({
-      width: this.canvas.width,
-      height: this.canvas.height,
-      isSwipeActive: this.isSwipeActive,
-      swipe: this.swipeLocation,
-      ...settings,
     });
     this.diffusionPipeline.setParameters({
+      ...settings,
       width: this.canvas.width,
       height: this.canvas.height,
       deltaTime,
-      ...settings,
+      time,
+      isSwipeActive: this.isSwipeActive,
+      swipe: this.swipeLocation,
     });
     const commandEncoder = this.device.createCommandEncoder();
 
     for (let i = 0; i < settings.renderSpeed; i++) {
       this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
       this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
-      if (this.isSwipeActive) {
-        this.swipePipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
-        this.renderPipeline.execute(commandEncoder, this.trailMapB);
-      } else {
-        this.renderPipeline.execute(commandEncoder, this.trailMapA);
-        [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
-      }
+      this.renderPipeline.execute(commandEncoder, this.trailMapA);
+      [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
     }
 
     this.queue.submit([commandEncoder.finish()]);
 
+    // await sleep(1000);
     requestAnimationFrame(this.render.bind(this));
   }
 

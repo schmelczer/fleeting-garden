@@ -10,20 +10,23 @@ interface Settings {
   sensorAngleDegrees: number;
   sensorOffsetDst: number;
   swipeRadius: number;
+  swipeBlur: number;
 }
 
 export const settings: Settings = {
-  agentCount: 1_000_000,
+  agentCount: 1_000,
   renderSpeed: 1,
   startingRadius: 0.15,
-  trailWeight: 5,
 
   decayRate: 0.02,
   diffusionRate: 0.8,
 
+  trailWeight: 5,
   moveSpeed: 0.025,
   turnSpeed: 6,
   sensorAngleDegrees: 30,
   sensorOffsetDst: 0.025,
-  swipeRadius: 0.005,
+
+  swipeRadius: 0.003,
+  swipeBlur: 0.002,
 };

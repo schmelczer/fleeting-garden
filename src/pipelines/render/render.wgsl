@@ -4,5 +4,5 @@
 
 @fragment
 fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-  return textureSample(TargetTexture, mySampler, uv) * 10.0;
+  return vec4(textureSample(TargetTexture, mySampler, uv).rgb * 1.0, 1);
 }

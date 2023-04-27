@@ -1,19 +1,13 @@
 import { setUpFullScreenQuad } from '../../utils/full-screen-quad';
 import shader from './diffuse.wgsl';
 
-import { vec2 } from 'gl-matrix';
-
 export class DiffusionPipeline {
-  private static readonly UNIFORM_COUNT = 14;
+  private static readonly UNIFORM_COUNT = 16;
 
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
 
-  private swipes: Array<vec2> = [
-    vec2.fromValues(Number.NaN, Number.NaN),
-    vec2.fromValues(Number.NaN, Number.NaN),
-  ];
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTexture;
 
@@ -53,40 +47,30 @@ export class DiffusionPipeline {
     decayRate,
     deltaTime,
     time,
-    swipe,
     swipeRadius,
     swipeBlur,
-    isSwipeActive,
   }: {
     width: number;
     height: number;
-    swipe: vec2;
     diffusionRate: number;
     decayRate: number;
     deltaTime: number;
     time: number;
     swipeRadius: number;
     swipeBlur: number;
-    isSwipeActive: boolean;
   }) {
-    if (swipe) {
-      this.swipes = [...this.swipes.slice(-1), swipe];
-    }
-
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
       new Float32Array([
         width,
         height,
-        ...this.swipes.flatMap((s) => [s[0], s[1]]),
         diffusionRate,
         decayRate,
         deltaTime,
         time,
         swipeRadius,
         swipeBlur,
-        isSwipeActive ? 1.0 : 0.0,
       ])
     );
   }

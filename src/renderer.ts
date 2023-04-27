@@ -1,8 +1,10 @@
 import { Agent } from './pipelines/agents/agent';
 import { AgentPipeline } from './pipelines/agents/agent-pipeline';
+import { BrushPipeline } from './pipelines/brush/brush-pipeline';
 import { DiffusionPipeline } from './pipelines/diffusion/diffusion-pipeline';
 import { RenderPipeline } from './pipelines/render/render-pipeline';
 import { settings } from './settings';
+import { DeltaTimeCalculator } from './utils/delta-time-calculator';
 import { randomBetween } from './utils/random-between';
 import { sleep } from './utils/sleep';
 
@@ -16,15 +18,15 @@ export default class Renderer {
 
   private agentPipeline: AgentPipeline;
   private renderPipeline: RenderPipeline;
+  private brushPipeline: BrushPipeline;
   private diffusionPipeline: DiffusionPipeline;
 
   private preferredCanvasFormat: GPUTextureFormat;
   private trailMapA?: GPUTexture;
   private trailMapB?: GPUTexture;
 
-  private previousTime?: DOMHighResTimeStamp = null;
-  private swipeLocation?: vec2;
   private isSwipeActive = false;
+  private readonly deltaTimeCalculator = new DeltaTimeCalculator();
 
   public constructor(private canvas: HTMLCanvasElement) {}
 
@@ -32,10 +34,6 @@ export default class Renderer {
     await this.initializeDevice();
 
     this.resize();
-    window.addEventListener('resize', this.resize.bind(this));
-    window.addEventListener('mousemove', this.onSwipe.bind(this));
-    window.addEventListener('mousedown', (_) => (this.isSwipeActive = true));
-    window.addEventListener('mouseup', (_) => (this.isSwipeActive = false));
 
     this.agentPipeline = new AgentPipeline(this.device, this.spawnAgents());
     this.renderPipeline = new RenderPipeline(
@@ -43,18 +41,31 @@ export default class Renderer {
       this.device,
       this.preferredCanvasFormat
     );
+    this.brushPipeline = new BrushPipeline(this.device);
     this.diffusionPipeline = new DiffusionPipeline(this.device);
+
+    window.addEventListener('resize', this.resize.bind(this));
+    window.addEventListener('mousemove', this.onSwipe.bind(this));
+    window.addEventListener('mousedown', (_) => (this.isSwipeActive = true));
+    window.addEventListener('mouseup', (_) => {
+      this.isSwipeActive = false;
+      this.brushPipeline.clearSwipes();
+    });
 
     requestAnimationFrame(this.render.bind(this));
   }
 
   private onSwipe(event: MouseEvent) {
-    const position = vec2.fromValues(event.clientX, event.clientY);
-    this.swipeLocation = vec2.divide(
-      position,
-      position,
-      vec2.fromValues(this.canvas.width, this.canvas.height)
+    if (!this.isSwipeActive) {
+      return;
+    }
+
+    const uv = vec2.fromValues(
+      event.clientX / this.canvas.width,
+      1 - event.clientY / this.canvas.height
     );
+
+    this.brushPipeline.addSwipe(uv);
   }
 
   private spawnAgents(): Array<Agent> {
@@ -129,7 +140,7 @@ export default class Renderer {
   }
 
   private async render(time: DOMHighResTimeStamp) {
-    const deltaTime = this.calculateDeltaTime(time);
+    const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);
 
     this.agentPipeline.setParameters({
       ...settings,
@@ -138,19 +149,22 @@ export default class Renderer {
       time,
       deltaTime,
     });
+    this.brushPipeline.setParameters({
+      width: this.canvas.width,
+      height: this.canvas.height,
+    });
     this.diffusionPipeline.setParameters({
       ...settings,
       width: this.canvas.width,
       height: this.canvas.height,
       deltaTime,
       time,
-      isSwipeActive: this.isSwipeActive,
-      swipe: this.swipeLocation,
     });
     const commandEncoder = this.device.createCommandEncoder();
 
     for (let i = 0; i < settings.renderSpeed; i++) {
       this.agentPipeline.execute(commandEncoder, this.trailMapA, this.trailMapB);
+      this.brushPipeline.execute(commandEncoder, this.trailMapB);
       this.diffusionPipeline.execute(commandEncoder, this.trailMapB, this.trailMapA);
       this.renderPipeline.execute(commandEncoder, this.trailMapA);
       [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
@@ -158,16 +172,7 @@ export default class Renderer {
 
     this.queue.submit([commandEncoder.finish()]);
 
-    // await sleep(1000);
+    await sleep(200);
     requestAnimationFrame(this.render.bind(this));
-  }
-
-  private calculateDeltaTime(time: DOMHighResTimeStamp): number {
-    if (this.previousTime === null) {
-      this.previousTime = time;
-    }
-    const deltaTime = time - this.previousTime;
-    this.previousTime = time;
-    return deltaTime / 1000;
   }
 }

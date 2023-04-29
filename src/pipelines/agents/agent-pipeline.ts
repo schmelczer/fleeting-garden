@@ -34,24 +34,23 @@ export class AgentPipeline {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    const serializedAgents = new Float32Array(
-      new ArrayBuffer(agents.length * AGENT_SIZE_IN_BYTES)
-    );
-    agents.forEach((agent, i) => {
-      serializedAgents[(i * AGENT_SIZE_IN_BYTES) / Float32Array.BYTES_PER_ELEMENT + 0] =
-        agent.position[0];
-      serializedAgents[(i * AGENT_SIZE_IN_BYTES) / Float32Array.BYTES_PER_ELEMENT + 1] =
-        agent.position[1];
-      serializedAgents[(i * AGENT_SIZE_IN_BYTES) / Float32Array.BYTES_PER_ELEMENT + 2] =
-        agent.angle;
-    });
-
     this.agentsBuffer = device.createBuffer({
       size: agents.length * AGENT_SIZE_IN_BYTES,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+      usage: GPUBufferUsage.STORAGE,
+      mappedAtCreation: true,
     });
 
-    device.queue.writeBuffer(this.agentsBuffer, 0, serializedAgents.buffer);
+    new Float32Array(this.agentsBuffer.getMappedRange()).set(
+      agents.flatMap((agent) => [
+        agent.position[0],
+        agent.position[1],
+        agent.angle,
+        agent.species,
+        agent.timeToLive,
+        0, // padding
+      ])
+    );
+    this.agentsBuffer.unmap();
   }
 
   public setParameters({

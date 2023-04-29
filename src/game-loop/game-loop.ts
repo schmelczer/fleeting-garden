@@ -80,6 +80,8 @@ export default class GameLoop {
       return {
         position,
         angle: angle + Math.PI,
+        species: 0,
+        timeToLive: Random.randomBetween(2, 10),
       };
     });
   }

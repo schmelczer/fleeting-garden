@@ -20,11 +20,11 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     + textureSample(trailMap, Sampler, uv + vec2<f32>(0, -1) / settings.size)
     + textureSample(trailMap, Sampler, uv + vec2<f32>(-1, 0) / settings.size)
     + textureSample(trailMap, Sampler, uv + vec2<f32>(1, 0) / settings.size)
-  );
+  ) / 4;
 
   let mixed = mix(
     current,
-    neighbours / 4.0,
+    neighbours,
     settings.diffusionRate
   ) * (1.0 - settings.decayRate);
 

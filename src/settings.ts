@@ -3,18 +3,19 @@ import { AgentSettings } from './pipelines/agents/agent-settings';
 import { BrushSettings } from './pipelines/brush/brush-settings';
 import { DiffusionSettings } from './pipelines/diffusion/diffusion-settings';
 import { RenderSettings } from './pipelines/render/render-settings';
+import { rgb255 } from './utils/colors/rgb255';
 
 export const settings: GameLoopSettings &
   AgentSettings &
   BrushSettings &
   DiffusionSettings &
   RenderSettings = {
-  agentCount: 1_000,
+  agentCount: 1_000_000,
   renderSpeed: 1,
   startingRadius: 0.15,
 
-  brushWidth: 20,
-  brushBlurWidth: 5,
+  brushWidth: 30,
+  brushBlurWidth: 8,
 
   trailWeight: 5,
   moveSpeed: 0.025,
@@ -22,6 +23,15 @@ export const settings: GameLoopSettings &
   sensorAngleDegrees: 30,
   sensorOffsetDst: 0.025,
 
-  decayRate: 0.005,
+  decayRate: 0.01,
   diffusionRate: 0.8,
+};
+
+const paletteMap = {
+  blue: rgb255(0, 110, 202),
+  red: rgb255(232, 141, 122),
+  green: rgb255(90, 188, 94),
+  purple: rgb255(161, 90, 188),
+  yellow: rgb255(255, 204, 0),
+  beige: rgb255(229, 204, 175),
 };

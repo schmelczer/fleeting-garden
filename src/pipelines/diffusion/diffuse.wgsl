@@ -3,8 +3,10 @@ struct Settings {
   deltaTime: f32,
   time: f32,
   
-  diffusionRate: f32,
-  decayRate: f32,
+  diffusionRateTrails: f32,
+  decayRateTrails: f32,
+  diffusionRateBrush: f32,
+  decayRateBrush: f32,
 };
 
 @group(0) @binding(0) var<uniform> settings: Settings;
@@ -22,11 +24,17 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     + textureSample(trailMap, Sampler, uv + vec2<f32>(1, 0) / settings.size)
   ) / 4;
 
-  let mixed = mix(
-    current,
-    neighbours,
-    settings.diffusionRate
-  ) * (1.0 - settings.decayRate);
+  let mixedTrails = mix(
+    current.rgb,
+    neighbours.rgb,
+    settings.diffusionRateTrails
+  ) * (1.0 - settings.decayRateTrails);
 
-  return clamp(mixed, vec4(0), vec4(1));
+  let mixedBrush = mix(
+    current.a,
+    neighbours.a,
+    settings.diffusionRateBrush
+  ) * (1.0 - settings.decayRateBrush);
+
+  return clamp(vec4(mixedTrails, mixedBrush), vec4(0), vec4(1));
 }

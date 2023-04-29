@@ -5,7 +5,7 @@ import shader from './diffuse.wgsl';
 import { DiffusionSettings } from './diffusion-settings';
 
 export class DiffusionPipeline {
-  private static readonly UNIFORM_COUNT = 16;
+  private static readonly UNIFORM_COUNT = 18;
 
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
@@ -45,8 +45,10 @@ export class DiffusionPipeline {
     canvasSize,
     deltaTime,
     time,
-    diffusionRate,
-    decayRate,
+    diffusionRateTrails,
+    decayRateTrails,
+    diffusionRateBrush,
+    decayRateBrush,
   }: CommonParameters & DiffusionSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
@@ -56,8 +58,10 @@ export class DiffusionPipeline {
         canvasSize[1],
         deltaTime,
         time,
-        diffusionRate,
-        decayRate,
+        diffusionRateTrails,
+        decayRateTrails,
+        diffusionRateBrush,
+        decayRateBrush,
       ])
     );
   }

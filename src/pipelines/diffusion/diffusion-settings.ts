@@ -1,4 +1,6 @@
 export interface DiffusionSettings {
-  diffusionRate: number;
-  decayRate: number;
+  diffusionRateTrails: number;
+  decayRateTrails: number;
+  diffusionRateBrush: number;
+  decayRateBrush: number;
 }

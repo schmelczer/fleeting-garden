@@ -12,7 +12,6 @@ import { vec2 } from 'gl-matrix';
 
 export default class GameLoop {
   private context: GPUCanvasContext;
-  private adapter: GPUAdapter;
   private device: GPUDevice;
 
   private agentPipeline: AgentPipeline;
@@ -81,7 +80,7 @@ export default class GameLoop {
         position,
         angle: angle + Math.PI,
         species: 0,
-        timeToLive: Random.randomBetween(2, 10),
+        timeToLive: Random.randomBetween(10, 15000),
       };
     });
   }
@@ -119,8 +118,8 @@ export default class GameLoop {
       throw new Error('WebGPU is not supported');
     }
 
-    this.adapter = await gpu.requestAdapter();
-    this.device = await this.adapter.requestDevice(); // could request more resources
+    const adapter = await gpu.requestAdapter();
+    this.device = await adapter.requestDevice(); // could request more resources
 
     this.context = this.canvas.getContext('webgpu') as any;
     this.context.configure({

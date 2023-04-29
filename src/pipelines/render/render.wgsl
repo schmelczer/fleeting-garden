@@ -10,5 +10,6 @@ struct Settings {
 
 @fragment
 fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-  return vec4(textureSample(TargetTexture, mySampler, uv).r * 1.0, settings.deltaTime * 0.0, 0.0, 1.0);
+  return vec4(textureSample(TargetTexture, mySampler, uv).rgb, 1.0);
+  return vec4(0, settings.deltaTime * 0.0, 0.0, 1.0);
 }

@@ -1,4 +1,5 @@
-import { setUpFullScreenQuad } from '../../utils/full-screen-quad';
+import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
+import { smartCompile } from '../../utils/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
@@ -15,8 +16,7 @@ export class RenderPipeline {
 
   public constructor(
     private readonly context: GPUCanvasContext,
-    private readonly device: GPUDevice,
-    preferredCanvasFormat: GPUTextureFormat
+    private readonly device: GPUDevice
   ) {
     const { buffer, vertex } = setUpFullScreenQuad(device);
     this.quadVertexBuffer = buffer;
@@ -25,13 +25,11 @@ export class RenderPipeline {
       layout: 'auto',
       vertex,
       fragment: {
-        module: device.createShaderModule({
-          code: shader,
-        }),
+        module: smartCompile(device, shader),
         entryPoint: 'fragment',
         targets: [
           {
-            format: preferredCanvasFormat,
+            format: navigator.gpu.getPreferredCanvasFormat(),
           },
         ],
       },
@@ -54,7 +52,7 @@ export class RenderPipeline {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([canvasSize[0], canvasSize[1], deltaTime, time])
+      new Float32Array([...canvasSize, deltaTime, time])
     );
   }
 

@@ -1,3 +1,4 @@
+import { smartCompile } from '../../utils/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
 import { AgentSettings } from './agent-settings';
@@ -23,9 +24,7 @@ export class AgentPipeline {
     this.pipeline = device.createComputePipeline({
       layout: 'auto',
       compute: {
-        module: device.createShaderModule({
-          code: shader,
-        }),
+        module: smartCompile(device, shader),
         entryPoint: 'main',
       },
     });

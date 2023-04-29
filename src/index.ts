@@ -1,10 +1,10 @@
-import Renderer from './game-loop/game-loop';
+import GameLoop from './game-loop/game-loop';
 import './styles/index.scss';
 
 const main = () => {
   const canvas = document.querySelector('canvas');
-  const renderer = new Renderer(canvas);
-  renderer.start();
+  const game = new GameLoop(canvas);
+  game.start();
 };
 
 main();

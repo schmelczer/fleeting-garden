@@ -6,21 +6,20 @@ import { RenderPipeline } from '../pipelines/render/render-pipeline';
 import { settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
 import { Random } from '../utils/random';
+import { sleep } from '../utils/sleep';
 
 import { vec2 } from 'gl-matrix';
 
-export default class Renderer {
+export default class GameLoop {
   private context: GPUCanvasContext;
   private adapter: GPUAdapter;
   private device: GPUDevice;
-  private queue: GPUQueue;
 
   private agentPipeline: AgentPipeline;
   private renderPipeline: RenderPipeline;
   private brushPipeline: BrushPipeline;
   private diffusionPipeline: DiffusionPipeline;
 
-  private preferredCanvasFormat: GPUTextureFormat;
   private trailMapA?: GPUTexture;
   private trailMapB?: GPUTexture;
 
@@ -35,13 +34,9 @@ export default class Renderer {
     this.resize();
 
     this.agentPipeline = new AgentPipeline(this.device, this.spawnAgents());
-    this.renderPipeline = new RenderPipeline(
-      this.context,
-      this.device,
-      this.preferredCanvasFormat
-    );
     this.brushPipeline = new BrushPipeline(this.device);
     this.diffusionPipeline = new DiffusionPipeline(this.device);
+    this.renderPipeline = new RenderPipeline(this.context, this.device);
 
     window.addEventListener('resize', this.resize.bind(this));
     window.addEventListener('mousemove', this.onSwipe.bind(this));
@@ -59,12 +54,9 @@ export default class Renderer {
       return;
     }
 
-    const uv = vec2.fromValues(
-      event.clientX / this.canvas.width,
-      1 - event.clientY / this.canvas.height
+    this.brushPipeline.addSwipe(
+      vec2.fromValues(event.clientX, this.canvas.height - event.clientY)
     );
-
-    this.brushPipeline.addSwipe(uv);
   }
 
   private spawnAgents(): Array<Agent> {
@@ -127,13 +119,11 @@ export default class Renderer {
 
     this.adapter = await gpu.requestAdapter();
     this.device = await this.adapter.requestDevice(); // could request more resources
-    this.queue = this.device.queue;
 
     this.context = this.canvas.getContext('webgpu') as any;
-    this.preferredCanvasFormat = navigator.gpu.getPreferredCanvasFormat();
     this.context.configure({
       device: this.device,
-      format: this.preferredCanvasFormat,
+      format: gpu.getPreferredCanvasFormat(),
       alphaMode: 'premultiplied',
     });
   }
@@ -165,7 +155,7 @@ export default class Renderer {
       [this.trailMapA, this.trailMapB] = [this.trailMapB, this.trailMapA];
     }
 
-    this.queue.submit([commandEncoder.finish()]);
+    this.device.queue.submit([commandEncoder.finish()]);
 
     // await sleep(200);
     requestAnimationFrame(this.render.bind(this));

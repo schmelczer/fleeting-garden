@@ -7,11 +7,15 @@ export abstract class Random {
     Random._seed = value;
   }
 
-  public static getRandom(): number {
+  public static getRandomInt(): number {
     let t = (Random._seed += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    return (t ^ (t >>> 14)) >>> 0;
+  }
+
+  public static getRandom(): number {
+    return Random.getRandomInt() / 4294967296;
   }
 
   public static randomBetween(from: number, to: number): number {

@@ -1,3 +1,4 @@
+import { smartCompile } from '../../smart-compile';
 import shader from './full-screen-quad.wgsl';
 
 export const setUpFullScreenQuad = (
@@ -25,9 +26,7 @@ export const setUpFullScreenQuad = (
   return {
     buffer,
     vertex: {
-      module: device.createShaderModule({
-        code: shader,
-      }),
+      module: smartCompile(device, shader),
       entryPoint: 'vertex',
       buffers: [
         {

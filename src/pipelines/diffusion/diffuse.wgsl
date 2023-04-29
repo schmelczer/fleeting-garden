@@ -5,8 +5,6 @@ struct Settings {
   
   diffusionRate : f32,
   decayRate : f32,
-  swipeRadius : f32,
-  swipeBlur : f32,
 };
 
 @group(0) @binding(0) var<uniform> settings : Settings;
@@ -24,9 +22,11 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     + textureSample(trailMap, Sampler, uv + vec2<f32>(1, 0) / settings.size)
   );
 
-  return mix(
+  let mixed = mix(
     current,
     neighbours / 4.0,
     settings.diffusionRate
   ) * (1.0 - settings.decayRate);
+
+  return clamp(mixed, vec4(0), vec4(1));
 }

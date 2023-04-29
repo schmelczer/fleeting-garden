@@ -1,4 +1,5 @@
-import { setUpFullScreenQuad } from '../../utils/full-screen-quad';
+import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
+import { smartCompile } from '../../utils/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import shader from './diffuse.wgsl';
 import { DiffusionSettings } from './diffusion-settings';
@@ -21,9 +22,7 @@ export class DiffusionPipeline {
       layout: 'auto',
       vertex,
       fragment: {
-        module: device.createShaderModule({
-          code: shader,
-        }),
+        module: smartCompile(device, shader),
         entryPoint: 'fragment',
         targets: [
           {
@@ -48,8 +47,6 @@ export class DiffusionPipeline {
     time,
     diffusionRate,
     decayRate,
-    swipeRadius,
-    swipeBlur,
   }: CommonParameters & DiffusionSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
@@ -61,8 +58,6 @@ export class DiffusionPipeline {
         time,
         diffusionRate,
         decayRate,
-        swipeRadius,
-        swipeBlur,
       ])
     );
   }

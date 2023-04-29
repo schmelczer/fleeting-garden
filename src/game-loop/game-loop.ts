@@ -1,12 +1,11 @@
-import { Agent } from './pipelines/agents/agent';
-import { AgentPipeline } from './pipelines/agents/agent-pipeline';
-import { BrushPipeline } from './pipelines/brush/brush-pipeline';
-import { DiffusionPipeline } from './pipelines/diffusion/diffusion-pipeline';
-import { RenderPipeline } from './pipelines/render/render-pipeline';
-import { settings } from './settings';
-import { DeltaTimeCalculator } from './utils/delta-time-calculator';
-import { randomBetween } from './utils/random-between';
-import { sleep } from './utils/sleep';
+import { Agent } from '../pipelines/agents/agent';
+import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
+import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
+import { DiffusionPipeline } from '../pipelines/diffusion/diffusion-pipeline';
+import { RenderPipeline } from '../pipelines/render/render-pipeline';
+import { settings } from '../settings';
+import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
+import { Random } from '../utils/random';
 
 import { vec2 } from 'gl-matrix';
 
@@ -77,8 +76,8 @@ export default class Renderer {
     );
     vec2.normalize(size, size);
     return new Array(settings.agentCount).fill(0).map(() => {
-      const radius = randomBetween(0, settings.startingRadius / ratio);
-      const angle = randomBetween(0, Math.PI * 2);
+      const radius = Random.randomBetween(0, settings.startingRadius / ratio);
+      const angle = Random.randomBetween(0, Math.PI * 2);
       const center = vec2.fromValues(0.5, 0.5);
 
       const delta = vec2.fromValues(Math.cos(angle) * radius, Math.sin(angle) * radius);
@@ -142,24 +141,20 @@ export default class Renderer {
   private async render(time: DOMHighResTimeStamp) {
     const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);
 
-    this.agentPipeline.setParameters({
-      ...settings,
-      width: this.canvas.width,
-      height: this.canvas.height,
+    const params = {
+      canvasSize: vec2.fromValues(this.canvas.width, this.canvas.height),
       time,
       deltaTime,
-    });
-    this.brushPipeline.setParameters({
-      width: this.canvas.width,
-      height: this.canvas.height,
-    });
-    this.diffusionPipeline.setParameters({
       ...settings,
-      width: this.canvas.width,
-      height: this.canvas.height,
-      deltaTime,
-      time,
-    });
+    };
+
+    [
+      this.agentPipeline,
+      this.brushPipeline,
+      this.diffusionPipeline,
+      this.renderPipeline,
+    ].forEach((pipeline) => pipeline.setParameters(params));
+
     const commandEncoder = this.device.createCommandEncoder();
 
     for (let i = 0; i < settings.renderSpeed; i++) {
@@ -172,7 +167,7 @@ export default class Renderer {
 
     this.queue.submit([commandEncoder.finish()]);
 
-    await sleep(200);
+    // await sleep(200);
     requestAnimationFrame(this.render.bind(this));
   }
 }

@@ -1,5 +1,7 @@
 import { setUpFullScreenQuad } from '../../utils/full-screen-quad';
+import { CommonParameters } from '../common-parameters';
 import shader from './diffuse.wgsl';
+import { DiffusionSettings } from './diffusion-settings';
 
 export class DiffusionPipeline {
   private static readonly UNIFORM_COUNT = 16;
@@ -41,34 +43,24 @@ export class DiffusionPipeline {
   }
 
   public setParameters({
-    width,
-    height,
-    diffusionRate,
-    decayRate,
+    canvasSize,
     deltaTime,
     time,
+    diffusionRate,
+    decayRate,
     swipeRadius,
     swipeBlur,
-  }: {
-    width: number;
-    height: number;
-    diffusionRate: number;
-    decayRate: number;
-    deltaTime: number;
-    time: number;
-    swipeRadius: number;
-    swipeBlur: number;
-  }) {
+  }: CommonParameters & DiffusionSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
       new Float32Array([
-        width,
-        height,
-        diffusionRate,
-        decayRate,
+        canvasSize[0],
+        canvasSize[1],
         deltaTime,
         time,
+        diffusionRate,
+        decayRate,
         swipeRadius,
         swipeBlur,
       ])

@@ -5,12 +5,12 @@ struct Agent {
 
 struct Settings {
   size: vec2<f32>,
-  trailWeight : f32,
+  deltaTime : f32,
   time : f32,
 
+  trailWeight : f32,
   moveRate : f32,
   turnRate : f32,
-
   sensorAngle : f32,
   sensorOffsetDst : f32,
 };

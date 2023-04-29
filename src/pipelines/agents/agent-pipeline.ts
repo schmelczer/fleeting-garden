@@ -1,4 +1,6 @@
+import { CommonParameters } from '../common-parameters';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
+import { AgentSettings } from './agent-settings';
 import shader from './agent.wgsl';
 
 export class AgentPipeline {
@@ -54,34 +56,24 @@ export class AgentPipeline {
   }
 
   public setParameters({
-    width,
-    height,
-    trailWeight,
+    canvasSize,
     deltaTime,
     time,
+    trailWeight,
     moveSpeed,
     turnSpeed,
     sensorAngleDegrees,
     sensorOffsetDst,
-  }: {
-    width: number;
-    height: number;
-    trailWeight: number;
-    deltaTime: number;
-    time: number;
-    moveSpeed: number;
-    turnSpeed: number;
-    sensorAngleDegrees: number;
-    sensorOffsetDst: number;
-  }) {
+  }: CommonParameters & AgentSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
       new Float32Array([
-        width,
-        height,
-        trailWeight,
+        canvasSize[0],
+        canvasSize[1],
+        deltaTime,
         time,
+        trailWeight,
         moveSpeed * deltaTime,
         turnSpeed * deltaTime,
         (sensorAngleDegrees * Math.PI) / 180,

@@ -1,6 +1,5 @@
-import './index.scss';
-import Renderer from './renderer';
-import './utils/mulberry32';
+import Renderer from './game-loop/game-loop';
+import './styles/index.scss';
 
 const main = () => {
   const canvas = document.querySelector('canvas');

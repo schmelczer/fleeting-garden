@@ -1,8 +1,13 @@
 import { setUpFullScreenQuad } from '../../utils/full-screen-quad';
+import { CommonParameters } from '../common-parameters';
+import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
 
 export class RenderPipeline {
+  private static readonly UNIFORM_COUNT = 4;
+
   private readonly pipeline: GPURenderPipeline;
+  private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
 
   private bindGroup?: GPUBindGroup;
@@ -34,6 +39,23 @@ export class RenderPipeline {
         topology: 'triangle-strip',
       },
     });
+
+    this.uniforms = this.device.createBuffer({
+      size: RenderPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+  }
+
+  public setParameters({
+    canvasSize,
+    deltaTime,
+    time,
+  }: CommonParameters & RenderSettings) {
+    this.device.queue.writeBuffer(
+      this.uniforms,
+      0,
+      new Float32Array([canvasSize[0], canvasSize[1], deltaTime, time])
+    );
   }
 
   public execute(commandEncoder: GPUCommandEncoder, colorTexture: GPUTexture) {
@@ -64,13 +86,19 @@ export class RenderPipeline {
         entries: [
           {
             binding: 0,
+            resource: {
+              buffer: this.uniforms,
+            },
+          },
+          {
+            binding: 1,
             resource: this.device.createSampler({
               magFilter: 'linear',
               minFilter: 'linear',
             }),
           },
           {
-            binding: 1,
+            binding: 2,
             resource: colorTexture.createView(),
           },
         ],

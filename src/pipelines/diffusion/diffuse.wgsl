@@ -1,9 +1,10 @@
 struct Settings {
   size : vec2<f32>,
-  diffusionRate : f32,
-  decayRate : f32,
   deltaTime : f32,
   time : f32,
+  
+  diffusionRate : f32,
+  decayRate : f32,
   swipeRadius : f32,
   swipeBlur : f32,
 };

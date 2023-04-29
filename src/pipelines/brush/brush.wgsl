@@ -12,7 +12,9 @@ fn vertex(
 }
 
 struct Settings {
-  size : vec2<f32>
+  size : vec2<f32>,
+  deltaTime : f32,
+  time : f32
 };
 
 @group(0) @binding(0) var<uniform> settings : Settings;

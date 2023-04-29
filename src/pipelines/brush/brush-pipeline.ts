@@ -1,9 +1,11 @@
+import { CommonParameters } from '../common-parameters';
+import { BrushSettings } from './brush-settings';
 import shader from './brush.wgsl';
 
 import { vec2 } from 'gl-matrix';
 
 export class BrushPipeline {
-  private static readonly UNIFORM_COUNT = 2;
+  private static readonly UNIFORM_COUNT = 4;
   private static readonly MAX_LINE_COUNT = 100;
   private static readonly VERTICES_PER_LINE_SEGMENT = 6;
 
@@ -85,8 +87,16 @@ export class BrushPipeline {
     this.linePoints.length = 0;
   }
 
-  public setParameters({ width, height }: { width: number; height: number }) {
-    this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([width, height]));
+  public setParameters({
+    canvasSize,
+    deltaTime,
+    time,
+  }: CommonParameters & BrushSettings) {
+    this.device.queue.writeBuffer(
+      this.uniforms,
+      0,
+      new Float32Array([canvasSize[0], canvasSize[1], deltaTime, time])
+    );
 
     this.device.queue.writeBuffer(
       this.vertexBuffer,

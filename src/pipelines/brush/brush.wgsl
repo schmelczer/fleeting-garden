@@ -45,5 +45,6 @@ fn fragment(
       discard;
     }
 
-    return vec4(clamp((settings.brushWidth - distance) / settings.brushBlurWidth, 0, 1));
+    let strength = clamp((settings.brushWidth - distance) / settings.brushBlurWidth, 0, 1);
+    return vec4(0, 0, 0, strength);
 }

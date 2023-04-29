@@ -5,7 +5,7 @@ import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
 
 export class RenderPipeline {
-  private static readonly UNIFORM_COUNT = 4;
+  private static readonly UNIFORM_COUNT = 16;
 
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
@@ -48,11 +48,24 @@ export class RenderPipeline {
     canvasSize,
     deltaTime,
     time,
+    brushColor,
+    speciesColorA,
+    speciesColorB,
   }: CommonParameters & RenderSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([...canvasSize, deltaTime, time])
+      new Float32Array([
+        ...canvasSize,
+        deltaTime,
+        time,
+        ...brushColor,
+        0, //padding
+        ...speciesColorA,
+        0, //padding
+        ...speciesColorB,
+        0, //padding
+      ])
     );
   }
 

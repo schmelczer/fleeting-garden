@@ -53,11 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     agent.angle += 3.14159265359 + random - 0.5;
   }
 
-  textureStore(
-    TrailMapOut, 
-    vec2<i32>(newPos * settings.size),
-    vec4(1)
-  );
+  textureStore(TrailMapOut, vec2<i32>(newPos * settings.size), vec4(1, 0, 0, 0));
 
   agent.position = newPos;
   agents[id] = agent;
@@ -67,7 +63,7 @@ fn sense(agent: Agent, sensorAngleOffset: f32) -> f32 {
   let sensorAngle: f32 = agent.angle + sensorAngleOffset;
   let sensorDir: vec2<f32> = vec2(cos(sensorAngle), sin(sensorAngle)) / normalize(settings.size);
   let sensorPos: vec2<f32> = agent.position + sensorDir * settings.sensorOffsetDst;
-  return textureLoad(TrailMapIn, vec2<i32>(sensorPos * settings.size), 0).x;  
+  return length(textureLoad(TrailMapIn, vec2<i32>(sensorPos * settings.size), 0)); 
 }
 
 fn random(state0: u32) -> f32 {

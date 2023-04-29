@@ -5,6 +5,15 @@ import { DiffusionSettings } from './pipelines/diffusion/diffusion-settings';
 import { RenderSettings } from './pipelines/render/render-settings';
 import { rgb255 } from './utils/colors/rgb255';
 
+const palette = {
+  blue: rgb255(0, 110, 202),
+  red: rgb255(232, 141, 122),
+  green: rgb255(90, 188, 94),
+  purple: rgb255(161, 90, 188),
+  yellow: rgb255(255, 204, 0),
+  beige: rgb255(229, 204, 175),
+};
+
 export const settings: GameLoopSettings &
   AgentSettings &
   BrushSettings &
@@ -23,15 +32,10 @@ export const settings: GameLoopSettings &
   sensorAngleDegrees: 30,
   sensorOffsetDst: 0.025,
 
-  decayRate: 0.01,
-  diffusionRate: 0.8,
-};
+  decayRate: 0.005,
+  diffusionRate: 0.9,
 
-const paletteMap = {
-  blue: rgb255(0, 110, 202),
-  red: rgb255(232, 141, 122),
-  green: rgb255(90, 188, 94),
-  purple: rgb255(161, 90, 188),
-  yellow: rgb255(255, 204, 0),
-  beige: rgb255(229, 204, 175),
+  brushColor: palette.beige,
+  speciesColorA: palette.yellow,
+  speciesColorB: palette.green,
 };

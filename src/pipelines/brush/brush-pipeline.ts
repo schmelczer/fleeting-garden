@@ -75,11 +75,15 @@ export class BrushPipeline {
             format: 'rgba16float',
             blend: {
               color: {
+                operation: 'add',
+                srcFactor: 'zero',
+                dstFactor: 'one',
+              },
+              alpha: {
                 operation: 'max',
                 srcFactor: 'one',
                 dstFactor: 'one',
               },
-              alpha: {},
             },
           },
         ],

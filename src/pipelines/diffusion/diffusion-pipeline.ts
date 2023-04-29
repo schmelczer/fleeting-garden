@@ -1,4 +1,5 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
+import { generateNoise } from '../../utils/graphics/noise/noise';
 import { smartCompile } from '../../utils/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import shader from './diffuse.wgsl';
@@ -10,11 +11,22 @@ export class DiffusionPipeline {
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
+  private readonly noise: GPUTexture;
 
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTexture;
 
   public constructor(private readonly device: GPUDevice) {
+    this.noise = generateNoise({
+      device,
+      width: 256,
+      height: 256,
+      octaves: 8,
+      amplitude: 0.12,
+      gain: 0.7,
+      lacunarity: 80,
+    });
+
     const { buffer, vertex } = setUpFullScreenQuad(device);
     this.quadVertexBuffer = buffer;
 
@@ -113,6 +125,10 @@ export class DiffusionPipeline {
           {
             binding: 2,
             resource: trailMapIn.createView(),
+          },
+          {
+            binding: 3,
+            resource: this.noise.createView(),
           },
         ],
       });

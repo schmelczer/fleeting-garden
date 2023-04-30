@@ -40,7 +40,7 @@ html {
         position: absolute;
         top: 0;
         left: 0;
-        display: none;
+        margin: var(--normal-margin);
 
         pre {
           font-size: 20px;

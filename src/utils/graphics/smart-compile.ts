@@ -1,3 +1,5 @@
+import { ErrorHandler, Severity } from '../error-handler';
+
 export const smartCompile = (device: GPUDevice, ...code: Array<string>) => {
   const concatenated = code.join('\n\n');
 
@@ -5,17 +7,18 @@ export const smartCompile = (device: GPUDevice, ...code: Array<string>) => {
     code: concatenated,
   });
 
-  module
-    .getCompilationInfo()
-    .then((info) =>
-      info.messages.forEach((message) =>
-        console.warn(
-          message.type,
-          message.message,
-          concatenated.split('\n')[message.lineNum - 1]
-        )
+  module.getCompilationInfo().then((info) =>
+    info.messages.forEach((message) =>
+      ErrorHandler.addError(
+        {
+          info: Severity.INFO,
+          warning: Severity.WARNING,
+          error: Severity.ERROR,
+        }[message.type],
+        `${message.message}\n${concatenated.split('\n')[message.lineNum - 1]}`
       )
-    );
+    )
+  );
 
   return module;
 };

@@ -2,6 +2,7 @@ import '../assets/icons/info.svg';
 import GameLoop from './game-loop/game-loop';
 import './index.scss';
 import { applyArrayPlugins } from './utils/array';
+import { ErrorHandler, Severity } from './utils/error-handler';
 import { FullScreenHandler } from './utils/full-screen-handler';
 import { initializeGPU } from './utils/graphics/initialize-gpu';
 
@@ -34,43 +35,49 @@ const getElements = () => ({
   restartButton: document.querySelector('button.restart') as HTMLButtonElement,
   canvas: document.querySelector('canvas') as HTMLCanvasElement,
   canvasContainer: document.querySelector('main.canvas-container') as HTMLCanvasElement,
-  errorContainer: document.querySelector('.errors') as HTMLDivElement,
+  errorContainer: document.querySelector('.errors-container') as HTMLDivElement,
 });
 
 const main = async () => {
-  applyArrayPlugins();
   const elements = getElements();
 
-  const defaultTimeToLive = 3500;
-  const interval = 50;
-  let timeToLive = defaultTimeToLive;
-  setInterval(() => {
-    timeToLive = Math.max(0, timeToLive - interval);
-    elements.aside.style.opacity =
-      timeToLive == 0 && FullScreenHandler.isInFullScreenMode() ? '0' : '1';
-  }, interval);
+  ErrorHandler.addOnErrorListener((error, metadata) => {
+    elements.errorContainer.innerHTML += `
+      <pre class="${error.severity}">${error.message}</div>
+      <p>${JSON.stringify(metadata, null, 2)}</p>
+    `;
+  });
 
-  elements.aside.addEventListener('mouseover', () => (timeToLive = defaultTimeToLive));
+  try {
+    applyArrayPlugins();
 
-  new FullScreenHandler(
-    elements.minimizeFullScreenButton,
-    elements.maximizeFullScreenButton,
-    document.body
-  );
+    const defaultTimeToLive = 3500;
+    const interval = 50;
+    let timeToLive = defaultTimeToLive;
+    setInterval(() => {
+      timeToLive = Math.max(0, timeToLive - interval);
+      elements.aside.style.opacity =
+        timeToLive == 0 && FullScreenHandler.isInFullScreenMode() ? '0' : '1';
+    }, interval);
+    elements.aside.addEventListener('mouseover', () => (timeToLive = defaultTimeToLive));
 
-  const gpu = await initializeGPU();
+    new FullScreenHandler(
+      elements.minimizeFullScreenButton,
+      elements.maximizeFullScreenButton,
+      document.body
+    );
 
-  let game: GameLoop | null = null;
+    const gpu = await initializeGPU();
+    let game: GameLoop | null = null;
 
-  elements.restartButton.addEventListener('click', () => game?.destroy());
+    elements.restartButton.addEventListener('click', () => game?.destroy());
 
-  while (true) {
-    try {
+    while (true) {
       game = new GameLoop(elements.canvas, gpu);
       await game.start();
-    } catch (e) {
-      elements.errorContainer.innerHTML = e.message;
     }
+  } catch (e) {
+    ErrorHandler.addError(Severity.ERROR, e.message);
   }
 };
 

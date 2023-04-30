@@ -2,8 +2,8 @@ import '../assets/icons/info.svg';
 import GameLoop from './game-loop/game-loop';
 import './index.scss';
 import { applyArrayPlugins } from './utils/array';
+import { FullScreenHandler } from './utils/full-screen-handler';
 import { initializeGPU } from './utils/graphics/initialize-gpu';
-import { handleFullScreen } from './utils/handle-full-screen';
 
 declare global {
   interface Array<T> {
@@ -23,6 +23,7 @@ declare global {
 }
 
 const getElements = () => ({
+  aside: document.querySelector('aside') as HTMLDivElement,
   infoButton: document.querySelector('button.info') as HTMLButtonElement,
   minimizeFullScreenButton: document.querySelector(
     'button.minimize-full-screen'
@@ -40,11 +41,22 @@ const main = async () => {
   applyArrayPlugins();
   const elements = getElements();
 
-  handleFullScreen({
-    minimizeButton: elements.minimizeFullScreenButton,
-    maximizeButton: elements.maximizeFullScreenButton,
-    target: elements.canvasContainer,
-  });
+  const defaultTimeToLive = 3500;
+  const interval = 50;
+  let timeToLive = defaultTimeToLive;
+  setInterval(() => {
+    timeToLive = Math.max(0, timeToLive - interval);
+    elements.aside.style.opacity =
+      timeToLive == 0 && FullScreenHandler.isInFullScreenMode() ? '0' : '1';
+  }, interval);
+
+  elements.aside.addEventListener('mouseover', () => (timeToLive = defaultTimeToLive));
+
+  new FullScreenHandler(
+    elements.minimizeFullScreenButton,
+    elements.maximizeFullScreenButton,
+    document.body
+  );
 
   const gpu = await initializeGPU();
 

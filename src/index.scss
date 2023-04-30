@@ -27,19 +27,12 @@ html {
 
     > .canvas-container {
       height: 100%;
-      display: flex;
       width: 100%;
+      display: flex;
 
       > canvas {
         height: 100%;
         width: 100%;
-      }
-
-      > button.minimize-full-screen {
-        @include image-button(url('../assets/icons/minimize.svg'));
-        position: absolute;
-        bottom: var(--small-margin);
-        right: var(--small-margin);
       }
 
       > .errors-container {
@@ -56,12 +49,13 @@ html {
     }
 
     > aside {
+      @include blurred-background;
+
       position: absolute;
       top: 50%;
       left: 0;
       transform: translateY(-50%);
-
-      @include blurred-background;
+      transition: opacity var(--transition-time-long);
       border-radius: var(--border-radius);
       margin: var(--small-margin);
 
@@ -77,6 +71,10 @@ html {
 
         > button.maximize-full-screen {
           @include image-button(url('../assets/icons/maximize.svg'));
+        }
+
+        > button.minimize-full-screen {
+          @include image-button(url('../assets/icons/minimize.svg'));
         }
 
         > button.restart {

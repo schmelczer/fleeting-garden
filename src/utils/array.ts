@@ -1,4 +1,3 @@
-/** @internal */
 const setIndexAlias = (name: string, index: number, type: any) => {
   if (!Object.prototype.hasOwnProperty.call(type.prototype, name)) {
     Object.defineProperty(type.prototype, name, {

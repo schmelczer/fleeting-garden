@@ -1,5 +1,7 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
-import { smartCompile } from '../../utils/webgpu/smart-compile';
+import { generateNoise } from '../../utils/graphics/noise/noise';
+import random from '../../utils/graphics/random.wgsl';
+import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
@@ -10,6 +12,7 @@ export class RenderPipeline {
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
+  private readonly noise: GPUTextureView;
 
   private bindGroup?: GPUBindGroup;
   private previousColorTexture?: GPUTexture;
@@ -18,6 +21,16 @@ export class RenderPipeline {
     private readonly context: GPUCanvasContext,
     private readonly device: GPUDevice
   ) {
+    this.noise = generateNoise({
+      device,
+      width: 512,
+      height: 512,
+      octaves: 16,
+      amplitude: 0.3,
+      gain: 0.8,
+      lacunarity: 80,
+    });
+
     const { buffer, vertex } = setUpFullScreenQuad(device);
     this.quadVertexBuffer = buffer;
 
@@ -25,7 +38,7 @@ export class RenderPipeline {
       layout: 'auto',
       vertex,
       fragment: {
-        module: smartCompile(device, shader),
+        module: smartCompile(device, random, shader),
         entryPoint: 'fragment',
         targets: [
           {
@@ -111,6 +124,10 @@ export class RenderPipeline {
           {
             binding: 2,
             resource: colorTexture.createView(),
+          },
+          {
+            binding: 3,
+            resource: this.noise,
           },
         ],
       });

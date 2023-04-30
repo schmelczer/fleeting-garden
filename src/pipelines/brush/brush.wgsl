@@ -3,7 +3,7 @@ struct Settings {
   deltaTime: f32,
   time: f32,
   brushWidth: f32,
-  brushBlurWidth: f32
+  brushWidthRandomness: f32
 };
 
 @group(0) @binding(0) var<uniform> settings: Settings;
@@ -34,17 +34,20 @@ fn fragment(
   @location(1) start: vec2<f32>,
   @location(2) end: vec2<f32>
 ) -> @location(0) vec4<f32> {
-    let pa = (screenPosition - start);
-    let direction = (end - start);
-    let q = clamp(dot(pa, direction) / dot(direction, direction), 0, 1);
+    var distance = distanceFromLine(screenPosition, start, end);
     let noise = textureSample(noise, Sampler, screenPosition / settings.size);
-
-    let distance = length(pa - direction * q) + noise.r * 5;
+    distance += noise.r * settings.brushWidthRandomness;
 
     if(distance > settings.brushWidth) {
       discard;
     }
 
-    let strength = clamp((settings.brushWidth - distance) / settings.brushBlurWidth, 0, 1);
-    return vec4(0, 0, 0, strength);
+    return vec4(0, 0, 0, 1);
+}
+
+fn distanceFromLine(position: vec2<f32>, start: vec2<f32>, end: vec2<f32>) -> f32 {
+  let pa = position - start;
+  let direction = end - start;
+  let q = clamp(dot(pa, direction) / dot(direction, direction), 0, 1);
+  return length(pa - direction * q);
 }

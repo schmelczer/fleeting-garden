@@ -1,5 +1,5 @@
 export interface AgentSettings {
-  trailWeight: number;
+  brushTrailWeight: number;
   moveSpeed: number;
   turnSpeed: number;
   sensorAngleDegrees: number;

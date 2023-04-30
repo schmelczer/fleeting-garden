@@ -1,6 +1,7 @@
 import { Random } from '../../random';
-import { smartCompile } from '../../webgpu/smart-compile';
 import { setUpFullScreenQuad } from '../full-screen-quad/full-screen-quad';
+import random from '../random.wgsl';
+import { smartCompile } from '../smart-compile';
 import noise from './noise.wgsl';
 
 const textureCache = new Map<string, GPUTexture>();
@@ -31,7 +32,7 @@ export const generateNoise = ({
       layout: 'auto',
       vertex,
       fragment: {
-        module: smartCompile(device, noise),
+        module: smartCompile(device, random, noise),
         entryPoint: 'fragment',
         constants: {
           octaves,

@@ -19,25 +19,25 @@ export const settings: GameLoopSettings &
   BrushSettings &
   DiffusionSettings &
   RenderSettings = {
-  agentCount: 1_000_000,
+  agentCount: 500_000,
   renderSpeed: 1,
   startingRadius: 0.15,
 
-  brushWidth: 30,
-  brushBlurWidth: 8,
+  brushWidth: 20,
+  brushWidthRandomness: 8,
 
-  trailWeight: 5,
+  brushTrailWeight: 5,
   moveSpeed: 0.025,
   turnSpeed: 6,
   sensorAngleDegrees: 30,
   sensorOffsetDst: 0.025,
 
-  diffusionRateTrails: 0.8,
-  decayRateTrails: 0.03,
-  diffusionRateBrush: 0.9,
-  decayRateBrush: 0.003,
+  diffusionRateTrails: 6,
+  decayRateTrails: 1,
+  diffusionRateBrush: 4,
+  decayRateBrush: 0.15,
 
-  brushColor: palette.yellow,
+  brushColor: palette.blue,
   speciesColorA: palette.yellow,
   speciesColorB: palette.green,
 };

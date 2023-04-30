@@ -10,7 +10,7 @@ struct Settings {
   deltaTime: f32,
   time: f32,
 
-  trailWeight: f32,
+  brushTrailWeight: f32,
   moveRate: f32,
   turnRate: f32,
   sensorAngle: f32,
@@ -33,16 +33,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var agent = agents[id];
 
   if (agent.timeToLive <= 0.) {
-    agent.position = vec2(random(id + u32(settings.time * 10 + agent.position.x * 10000)),
-      random(id + u32(settings.time * 10 + agent.position.y * 10000)));
-    agent.angle = random(id + u32(settings.time)) * 3.14159265359 * 2.;
+    agent.position = vec2(
+      random_with_seed(agent.position, f32(id) + settings.time),
+      random_with_seed(agent.position, f32(id) + settings.time + 12),
+    );
+    agent.angle = random_with_seed(vec2(agent.angle), f32(id) + settings.time);
     agent.species = 1;
     agent.timeToLive = 1000;
     agents[id] = agent;
     return;
   }
 
-  let random = random(id + u32(settings.time * 10000 + agent.position.y * 10 + agent.position.x));
+  let random = random_with_seed(agent.position, f32(id) + settings.time);
 
   let trailCurrent = sense(agent, 0, 0);
   var weight: f32;
@@ -60,9 +62,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let trailLeft = sense(agent, settings.sensorOffset, settings.sensorAngle);
   let trailRight = sense(agent, settings.sensorOffset, -settings.sensorAngle);
 
-  var weightForward: f32 = trailForward.a;
-  var weightLeft: f32 = trailLeft.a;
-  var weightRight: f32 = trailRight.a;
+  var weightForward: f32 = trailForward.a * settings.brushTrailWeight;
+  var weightLeft: f32 = trailLeft.a * settings.brushTrailWeight;
+  var weightRight: f32 = trailRight.a * settings.brushTrailWeight;
   if (agent.species == 0) {
     weightForward += trailForward.r - trailForward.g;
     weightLeft += trailLeft.r - trailLeft.g;
@@ -107,13 +109,4 @@ fn sense(agent: Agent, sensorOffset: f32, sensorOffsetAngle: f32) -> vec4<f32> {
   return textureLoad(TrailMapIn, vec2<i32>(sensorPos * settings.size), 0); 
 }
 
-fn random(state0: u32) -> f32 {
-  var state: u32 = state0;
-  state = state ^ 2747636419u;
-  state = state * 2654435769u;
-  state = state ^ (state >> 16u);
-  state = state * 2654435769u;
-  state = state ^ (state >> 16u);
-  state = state * 2654435769u;
-  return f32(state) / 4294967295.0;
-}
+

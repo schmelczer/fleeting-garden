@@ -1,4 +1,4 @@
 export interface BrushSettings {
   brushWidth: number;
-  brushBlurWidth: number;
+  brushWidthRandomness: number;
 }

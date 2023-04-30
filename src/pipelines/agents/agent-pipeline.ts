@@ -1,4 +1,5 @@
-import { smartCompile } from '../../utils/webgpu/smart-compile';
+import random from '../../utils/graphics/random.wgsl';
+import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
 import { AgentSettings } from './agent-settings';
@@ -24,7 +25,7 @@ export class AgentPipeline {
     this.pipeline = device.createComputePipeline({
       layout: 'auto',
       compute: {
-        module: smartCompile(device, shader),
+        module: smartCompile(device, random, shader),
         entryPoint: 'main',
       },
     });
@@ -57,7 +58,7 @@ export class AgentPipeline {
     canvasSize,
     deltaTime,
     time,
-    trailWeight,
+    brushTrailWeight,
     moveSpeed,
     turnSpeed,
     sensorAngleDegrees,
@@ -71,7 +72,7 @@ export class AgentPipeline {
         canvasSize[1],
         deltaTime,
         time,
-        trailWeight,
+        brushTrailWeight,
         moveSpeed * deltaTime,
         turnSpeed * deltaTime,
         (sensorAngleDegrees * Math.PI) / 180,

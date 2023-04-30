@@ -1,6 +1,7 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
 import { generateNoise } from '../../utils/graphics/noise/noise';
-import { smartCompile } from '../../utils/webgpu/smart-compile';
+import random from '../../utils/graphics/random.wgsl';
+import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import shader from './diffuse.wgsl';
 import { DiffusionSettings } from './diffusion-settings';
@@ -34,7 +35,7 @@ export class DiffusionPipeline {
       layout: 'auto',
       vertex,
       fragment: {
-        module: smartCompile(device, shader),
+        module: smartCompile(device, random, shader),
         entryPoint: 'fragment',
         targets: [
           {

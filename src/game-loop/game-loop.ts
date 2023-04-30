@@ -48,7 +48,10 @@ export default class GameLoop {
 
     window.addEventListener('resize', this.resize.bind(this));
     window.addEventListener('mousemove', this.onSwipe.bind(this));
-    window.addEventListener('mousedown', (_) => (this.isSwipeActive = true));
+    window.addEventListener('mousedown', (e) => {
+      this.isSwipeActive = true;
+      this.onSwipe(e);
+    });
     window.addEventListener('mouseup', (_) => {
       this.isSwipeActive = false;
       this.brushPipeline.clearSwipes();

@@ -1,4 +1,4 @@
-import { smartCompile } from '../../webgpu/smart-compile';
+import { smartCompile } from '../smart-compile';
 import shader from './full-screen-quad.wgsl';
 
 export const setUpFullScreenQuad = (

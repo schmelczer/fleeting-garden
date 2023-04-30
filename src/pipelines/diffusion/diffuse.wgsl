@@ -12,12 +12,12 @@ struct Settings {
 @group(0) @binding(0) var<uniform> settings: Settings;
 @group(0) @binding(1) var Sampler: sampler;
 @group(0) @binding(2) var trailMap: texture_2d<f32>;
-@group(0) @binding(3) var noise: texture_2d<f32>;
+@group(0) @binding(3) var noiseMap: texture_2d<f32>;
 
 @fragment
 fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var current = textureSample(trailMap, Sampler, uv);
-  let noise = textureSample(noise, Sampler, uv);
+  let noise = textureSample(noiseMap, Sampler, uv);
 
   let neighbours: vec4<f32> = (
       textureSample(trailMap, Sampler, uv + vec2<f32>(0, 1) / settings.size)
@@ -26,17 +26,33 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     + textureSample(trailMap, Sampler, uv + vec2<f32>(1, 0) / settings.size)
   ) / 4;
 
-  let mixedTrails = mix(
+
+    var q = vec4<f32>(0);
+    for (var x: i32 = -1; x <= 1; x++) {
+      for (var y: i32 = -1; y <= 1; y++) {
+        if (x != 0 || y != 0) {
+          let offset = vec2(f32(x), f32(y));
+          let neighbour = textureSample(trailMap, Sampler, uv + offset / settings.size);
+          // let noise = textureSample(noiseMap, Sampler, uv + offset / settings.size * 0.5).r;
+          let noise = random(uv + offset / settings.size * 0.5);
+          let difference = neighbour - current;
+
+          q += vec4(
+            min(1.0, length(neighbour.rgb)) * pow(noise, settings.diffusionRateTrails) * difference.rgb,
+            min(1.0, length(neighbour.a)) * pow(noise, settings.diffusionRateBrush) * difference.a
+          );
+        }
+      }
+    }
+    current += q / 4;
+
+  let noise1 = random(uv);
+
+
+  let decayed = vec4(
     current.rgb,
-    neighbours.rgb,
-    settings.diffusionRateTrails
-  ) * (1.0 - settings.decayRateTrails);
-
-  let mixedBrush = mix(
-    current.a  + (noise.a - 0.5) * 0.1,
-    neighbours.a ,
-    settings.diffusionRateBrush
-  ) * (1.0 - settings.decayRateBrush);
-
-  return clamp(vec4(mixedTrails, mixedBrush), vec4(0), vec4(1));
+    current.a
+  ) - vec4(vec3(settings.decayRateTrails), settings.decayRateBrush) * settings.deltaTime * ((noise1 - 0.5) * 0.25 + 1);
+ 
+  return clamp(decayed, vec4(0), vec4(1));
 }

@@ -1,5 +1,5 @@
 import { generateNoise } from '../../utils/graphics/noise/noise';
-import { smartCompile } from '../../utils/webgpu/smart-compile';
+import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { BrushSettings } from './brush-settings';
 import shader from './brush.wgsl';
@@ -24,10 +24,12 @@ export class BrushPipeline {
   public constructor(private readonly device: GPUDevice) {
     this.noise = generateNoise({
       device,
-      octaves: 4,
-      amplitude: 0.7,
-      gain: 0.6,
-      lacunarity: 4,
+      width: 512,
+      height: 512,
+      octaves: 16,
+      amplitude: 0.5,
+      gain: 0.8,
+      lacunarity: 80,
     });
 
     this.vertexBuffer = device.createBuffer({
@@ -138,12 +140,18 @@ export class BrushPipeline {
     deltaTime,
     time,
     brushWidth,
-    brushBlurWidth,
+    brushWidthRandomness,
   }: CommonParameters & BrushSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([...canvasSize, deltaTime, time, brushWidth / 2, brushBlurWidth])
+      new Float32Array([
+        ...canvasSize,
+        deltaTime,
+        time,
+        brushWidth / 2,
+        brushWidthRandomness,
+      ])
     );
 
     // this.linePoints = [

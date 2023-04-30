@@ -2,8 +2,8 @@ import '../assets/icons/info.svg';
 import GameLoop from './game-loop/game-loop';
 import './index.scss';
 import { applyArrayPlugins } from './utils/array';
+import { initializeGPU } from './utils/graphics/initialize-gpu';
 import { handleFullScreen } from './utils/handle-full-screen';
-import { initializeGPU } from './utils/webgpu/initialize-gpu';
 
 declare global {
   interface Array<T> {

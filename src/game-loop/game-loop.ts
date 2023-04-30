@@ -6,36 +6,45 @@ import { RenderPipeline } from '../pipelines/render/render-pipeline';
 import { settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
 import { Random } from '../utils/random';
-import { sleep } from '../utils/sleep';
 
 import { vec2 } from 'gl-matrix';
 
 export default class GameLoop {
-  private context: GPUCanvasContext;
-  private device: GPUDevice;
+  private readonly deltaTimeCalculator = new DeltaTimeCalculator();
 
-  private agentPipeline: AgentPipeline;
-  private renderPipeline: RenderPipeline;
-  private brushPipeline: BrushPipeline;
-  private diffusionPipeline: DiffusionPipeline;
+  private readonly agentPipeline: AgentPipeline;
+  private readonly renderPipeline: RenderPipeline;
+  private readonly brushPipeline: BrushPipeline;
+  private readonly diffusionPipeline: DiffusionPipeline;
 
   private trailMapA?: GPUTexture;
   private trailMapB?: GPUTexture;
 
+  private hasFinished = false;
+  private readonly hasFinishedPromise: Promise<void> = new Promise(
+    (resolve) => (this.resolveHasFinished = resolve)
+  );
+  private resolveHasFinished: () => void;
+
   private isSwipeActive = false;
-  private readonly deltaTimeCalculator = new DeltaTimeCalculator();
 
-  public constructor(private canvas: HTMLCanvasElement) {}
-
-  async start() {
-    await this.initializeDevice();
+  public constructor(
+    private readonly canvas: HTMLCanvasElement,
+    private readonly device: GPUDevice
+  ) {
+    const context = this.canvas.getContext('webgpu') as any;
+    context.configure({
+      device: this.device,
+      format: navigator.gpu.getPreferredCanvasFormat(),
+      alphaMode: 'premultiplied',
+    });
 
     this.resize();
 
     this.agentPipeline = new AgentPipeline(this.device, this.spawnAgents());
     this.brushPipeline = new BrushPipeline(this.device);
     this.diffusionPipeline = new DiffusionPipeline(this.device);
-    this.renderPipeline = new RenderPipeline(this.context, this.device);
+    this.renderPipeline = new RenderPipeline(context, this.device);
 
     window.addEventListener('resize', this.resize.bind(this));
     window.addEventListener('mousemove', this.onSwipe.bind(this));
@@ -44,8 +53,11 @@ export default class GameLoop {
       this.isSwipeActive = false;
       this.brushPipeline.clearSwipes();
     });
+  }
 
+  public async start(): Promise<void> {
     requestAnimationFrame(this.render.bind(this));
+    return this.hasFinishedPromise;
   }
 
   private onSwipe(event: MouseEvent) {
@@ -112,24 +124,11 @@ export default class GameLoop {
     });
   }
 
-  private async initializeDevice(): Promise<void> {
-    const gpu = navigator.gpu;
-    if (!gpu) {
-      throw new Error('WebGPU is not supported');
+  private render(time: DOMHighResTimeStamp) {
+    if (this.hasFinished) {
+      return;
     }
 
-    const adapter = await gpu.requestAdapter();
-    this.device = await adapter.requestDevice(); // could request more resources
-
-    this.context = this.canvas.getContext('webgpu') as any;
-    this.context.configure({
-      device: this.device,
-      format: gpu.getPreferredCanvasFormat(),
-      alphaMode: 'premultiplied',
-    });
-  }
-
-  private async render(time: DOMHighResTimeStamp) {
     const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);
 
     const params = {
@@ -160,5 +159,19 @@ export default class GameLoop {
 
     // await sleep(200);
     requestAnimationFrame(this.render.bind(this));
+  }
+
+  public destroy() {
+    this.hasFinished = true;
+
+    this.agentPipeline?.destroy();
+    this.brushPipeline?.destroy();
+    this.diffusionPipeline?.destroy();
+    this.renderPipeline?.destroy();
+
+    this.trailMapA?.destroy();
+    this.trailMapB?.destroy();
+
+    this.resolveHasFinished();
   }
 }

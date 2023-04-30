@@ -39,18 +39,25 @@ module.exports = (env, argv) => ({
     rules: [
       {
         test: /\.svg$/i,
-        use: 'svg-inline-loader',
+        type: 'asset/inline',
       },
       {
-        test: /\.wgsl$/i,
-        type: 'asset/source',
+        test: /\.woff2?$/i,
+        type: 'asset/resource',
         generator: {
-          filename: '[name][ext]',
+          filename: '[hash:8][ext]',
         },
       },
       {
         test: /\/no-change\//i,
         type: 'asset/resource',
+        generator: {
+          filename: '[name][ext]',
+        },
+      },
+      {
+        test: /\.wgsl$/i,
+        type: 'asset/source',
         generator: {
           filename: '[name][ext]',
         },
@@ -70,16 +77,13 @@ module.exports = (env, argv) => ({
         ],
       },
       {
-        test: /\.ts$/,
+        test: /\.ts$/i,
         use: 'ts-loader',
       },
     ],
   },
   resolve: {
-    extensions: [
-      '.ts',
-      '.js', // required for development
-    ],
+    extensions: ['.ts', '.js'],
   },
   output: {
     clean: true,

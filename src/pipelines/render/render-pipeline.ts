@@ -1,5 +1,5 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
-import { smartCompile } from '../../utils/smart-compile';
+import { smartCompile } from '../../utils/webgpu/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
@@ -117,5 +117,10 @@ export class RenderPipeline {
 
       this.previousColorTexture = colorTexture;
     }
+  }
+
+  public destroy() {
+    this.quadVertexBuffer.destroy();
+    this.uniforms.destroy();
   }
 }

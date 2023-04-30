@@ -1,4 +1,4 @@
-import { smartCompile } from '../../utils/smart-compile';
+import { smartCompile } from '../../utils/webgpu/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
 import { AgentSettings } from './agent-settings';
@@ -132,5 +132,10 @@ export class AgentPipeline {
       this.previousTrailMapIn = trailMapIn;
       this.previousTrailMapOut = trailMapOut;
     }
+  }
+
+  public destroy() {
+    this.uniforms.destroy();
+    this.agentsBuffer.destroy();
   }
 }

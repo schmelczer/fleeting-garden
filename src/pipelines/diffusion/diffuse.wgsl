@@ -29,15 +29,14 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   let mixedTrails = mix(
     current.rgb,
     neighbours.rgb,
-    settings.diffusionRateTrails + (noise.rgb - vec3(0.5)) * 0.1
+    settings.diffusionRateTrails
   ) * (1.0 - settings.decayRateTrails);
 
   let mixedBrush = mix(
-    current.a,
-    neighbours.a,
-    settings.diffusionRateBrush + (noise.a - 0.5) * 0.5
-  ) * (1.0 - settings.decayRateBrush  - (noise.a - 0.5) * 0.1);
-
+    current.a  + (noise.a - 0.5) * 0.1,
+    neighbours.a ,
+    settings.diffusionRateBrush
+  ) * (1.0 - settings.decayRateBrush);
 
   return clamp(vec4(mixedTrails, mixedBrush), vec4(0), vec4(1));
 }

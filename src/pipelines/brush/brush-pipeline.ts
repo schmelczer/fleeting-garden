@@ -1,5 +1,5 @@
 import { generateNoise } from '../../utils/graphics/noise/noise';
-import { smartCompile } from '../../utils/smart-compile';
+import { smartCompile } from '../../utils/webgpu/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import { BrushSettings } from './brush-settings';
 import shader from './brush.wgsl';
@@ -15,7 +15,7 @@ export class BrushPipeline {
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly vertexBuffer: GPUBuffer;
-  private readonly noise: GPUTexture;
+  private readonly noise: GPUTextureView;
   private linePoints: Array<vec2> = [];
   private previousPoints: Array<vec2> = [];
   private nextPoint: vec2 | null = null;
@@ -116,7 +116,7 @@ export class BrushPipeline {
         },
         {
           binding: 2,
-          resource: this.noise.createView(),
+          resource: this.noise,
         },
       ],
     });
@@ -233,6 +233,11 @@ export class BrushPipeline {
     passEncoder.end();
 
     this.linePoints.splice(0, this.linePoints.length - 1);
+  }
+
+  public destroy() {
+    this.vertexBuffer.destroy();
+    this.uniforms.destroy();
   }
 }
 

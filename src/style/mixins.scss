@@ -1,0 +1,160 @@
+@use 'sass:math';
+
+$breakpoint-width: 700px !default;
+
+@mixin on-small-screen() {
+  @media (max-width: ($breakpoint-width - 1px)) {
+    @content;
+  }
+}
+
+@mixin on-large-screen() {
+  @media (min-width: $breakpoint-width) {
+    @content;
+  }
+}
+
+@mixin in-dark-mode() {
+  html[theme='dark'] {
+    @content;
+  }
+}
+
+@mixin title-fragment-link() {
+  position: relative;
+
+  &:before {
+    content: '#';
+    position: absolute;
+    left: -0.5ch;
+    top: 50%;
+    opacity: 0;
+    transform: translateX(-100%) translateY(-50%);
+    transition: opacity var(--transition-time);
+  }
+
+  &:hover:before {
+    opacity: 0.5;
+  }
+}
+
+@mixin image-button($background-image) {
+  @include square(var(--icon-size));
+  border: none;
+  cursor: pointer;
+
+  background-color: transparent;
+  background-image: $background-image;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  transition: transform var(--transition-time);
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+@mixin center-children() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin absolute-center() {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+@mixin blurred-background() {
+  backdrop-filter: blur(var(--blur-radius));
+  -webkit-backdrop-filter: blur(var(--blur-radius));
+
+  @supports not (
+    (backdrop-filter: blur(var(--blur-radius))) or
+      (-webkit-backdrop-filter: blur(var(--blur-radius)))
+  ) {
+    background-color: var(--card-color);
+  }
+}
+
+@mixin square($size) {
+  width: $size;
+  height: $size;
+}
+
+@mixin title-font() {
+  font: 400 3rem 'Comfortaa', sans-serif;
+  color: var(--normal-text-color);
+  line-height: 1;
+
+  @include on-small-screen {
+    font-size: 3rem;
+    line-height: 1.1;
+  }
+}
+
+@mixin sub-title-font() {
+  font: 400 1.75rem 'Comfortaa', sans-serif;
+  color: var(--normal-text-color);
+  hyphens: auto;
+}
+
+@mixin main-font() {
+  font: 400 1.1rem 'Open Sans', sans-serif;
+  color: var(--normal-text-color);
+  line-height: 1.8;
+  hyphens: auto;
+}
+
+@mixin special-text-font() {
+  font: 400 1rem 'Open Sans', sans-serif;
+  color: var(--special-text-color);
+  hyphens: auto;
+  font-style: italic;
+}
+
+@mixin link {
+  $border-shift: 10px;
+  $line-width: 2px;
+
+  @include special-text-font();
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+
+  padding: 0 3px $line-width 0;
+
+  &:before,
+  &:after {
+    content: '';
+    display: block;
+    position: absolute;
+    bottom: 0;
+  }
+
+  &:before {
+    width: calc(100% + #{$border-shift});
+    border-bottom: $line-width dashed var(--accent-color);
+    transition: transform var(--transition-time);
+  }
+
+  &:after {
+    width: 100%;
+    height: $line-width;
+    background: linear-gradient(
+      90deg,
+      var(--card-color) 0,
+      transparent 4px,
+      transparent calc(100% - 4px),
+      var(--card-color) 100%
+    );
+  }
+
+  &:hover:before {
+    transform: translateX(-$border-shift);
+  }
+}

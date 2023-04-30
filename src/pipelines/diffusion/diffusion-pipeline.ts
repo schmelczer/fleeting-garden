@@ -1,6 +1,6 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
 import { generateNoise } from '../../utils/graphics/noise/noise';
-import { smartCompile } from '../../utils/smart-compile';
+import { smartCompile } from '../../utils/webgpu/smart-compile';
 import { CommonParameters } from '../common-parameters';
 import shader from './diffuse.wgsl';
 import { DiffusionSettings } from './diffusion-settings';
@@ -11,7 +11,7 @@ export class DiffusionPipeline {
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
-  private readonly noise: GPUTexture;
+  private readonly noise: GPUTextureView;
 
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTexture;
@@ -128,12 +128,17 @@ export class DiffusionPipeline {
           },
           {
             binding: 3,
-            resource: this.noise.createView(),
+            resource: this.noise,
           },
         ],
       });
 
       this.previousTrailMapIn = trailMapIn;
     }
+  }
+
+  public destroy() {
+    this.quadVertexBuffer.destroy();
+    this.uniforms.destroy();
   }
 }

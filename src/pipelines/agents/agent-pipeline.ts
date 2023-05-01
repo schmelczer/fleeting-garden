@@ -1,31 +1,39 @@
-import random from '../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../utils/graphics/smart-compile';
-import { CommonParameters } from '../common-parameters';
+import { CommonState } from '../common-state/common-state';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
 import { AgentSettings } from './agent-settings';
 import shader from './agent.wgsl';
 
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 10;
+  private static readonly UNIFORM_COUNT = 5;
 
+  private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
   private readonly uniforms: GPUBuffer;
   private readonly agentsBuffer: GPUBuffer;
 
   private bindGroup?: GPUBindGroup;
-  private previousTrailMapIn?: GPUTexture;
-  private previousTrailMapOut?: GPUTexture;
+  private previousTrailMapIn?: GPUTextureView;
+  private previousTrailMapOut?: GPUTextureView;
 
-  public constructor(private readonly device: GPUDevice, agents: Array<Agent>) {
+  public constructor(
+    private readonly device: GPUDevice,
+    agents: Array<Agent>,
+    private readonly commonState: CommonState
+  ) {
     if (agents.length === 0) {
       throw new Error('No agents provided');
     }
 
+    this.bindGroupLayout = device.createBindGroupLayout(AgentPipeline.bindGroupLayout);
+
     this.pipeline = device.createComputePipeline({
-      layout: 'auto',
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+      }),
       compute: {
-        module: smartCompile(device, random, shader),
+        module: smartCompile(device, CommonState.shaderCode, shader),
         entryPoint: 'main',
       },
     });
@@ -55,42 +63,36 @@ export class AgentPipeline {
   }
 
   public setParameters({
-    canvasSize,
-    deltaTime,
-    time,
     brushTrailWeight,
     moveSpeed,
     turnSpeed,
     sensorAngleDegrees,
     sensorOffsetDst,
-  }: CommonParameters & AgentSettings) {
+  }: AgentSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
       new Float32Array([
-        canvasSize[0],
-        canvasSize[1],
-        deltaTime,
-        time,
         brushTrailWeight,
-        moveSpeed * deltaTime,
-        turnSpeed * deltaTime,
+        moveSpeed,
+        turnSpeed,
         (sensorAngleDegrees * Math.PI) / 180,
         sensorOffsetDst,
       ])
     );
   }
 
-  public execute(
+  public executeRenderPass(
     commandEncoder: GPUCommandEncoder,
-    trailMapIn: GPUTexture,
-    trailMapOut: GPUTexture
+    trailMapIn: GPUTextureView,
+    trailMapOut: GPUTextureView
   ) {
     this.ensureBindGroupExists(trailMapIn, trailMapOut);
 
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.bindGroup);
+    this.commonState.execute(passEncoder);
+    passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.dispatchWorkgroups(
       Math.ceil(
         this.agentsBuffer.size / AGENT_SIZE_IN_BYTES / AgentPipeline.WORKGROUP_SIZE
@@ -99,13 +101,32 @@ export class AgentPipeline {
     passEncoder.end();
   }
 
-  private ensureBindGroupExists(trailMapIn: GPUTexture, trailMapOut: GPUTexture) {
+  public execute(
+    commandEncoder: GPUCommandEncoder,
+    trailMapIn: GPUTextureView,
+    trailMapOut: GPUTextureView
+  ) {
+    this.ensureBindGroupExists(trailMapIn, trailMapOut);
+
+    const passEncoder = commandEncoder.beginComputePass();
+    passEncoder.setPipeline(this.pipeline);
+    this.commonState.execute(passEncoder);
+    passEncoder.setBindGroup(1, this.bindGroup);
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(
+        this.agentsBuffer.size / AGENT_SIZE_IN_BYTES / AgentPipeline.WORKGROUP_SIZE
+      )
+    );
+    passEncoder.end();
+  }
+
+  private ensureBindGroupExists(trailMapIn: GPUTextureView, trailMapOut: GPUTextureView) {
     if (
       this.previousTrailMapIn !== trailMapIn ||
       this.previousTrailMapOut !== trailMapOut
     ) {
       this.bindGroup = this.device.createBindGroup({
-        layout: this.pipeline.getBindGroupLayout(0),
+        layout: this.bindGroupLayout,
         entries: [
           {
             binding: 0,
@@ -121,11 +142,11 @@ export class AgentPipeline {
           },
           {
             binding: 2,
-            resource: trailMapIn.createView(),
+            resource: trailMapIn,
           },
           {
             binding: 3,
-            resource: trailMapOut.createView(),
+            resource: trailMapOut,
           },
         ],
       });
@@ -138,5 +159,40 @@ export class AgentPipeline {
   public destroy() {
     this.uniforms.destroy();
     this.agentsBuffer.destroy();
+  }
+
+  private static get bindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: 'storage',
+          },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.COMPUTE,
+          texture: {
+            sampleType: 'float',
+          },
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          storageTexture: {
+            format: 'rgba16float',
+          },
+        },
+      ],
+    };
   }
 }

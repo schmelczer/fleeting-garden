@@ -1,7 +1,7 @@
 export class DeltaTimeCalculator {
   private previousTime: DOMHighResTimeStamp | null = null;
 
-  constructor() {
+  constructor(private readonly maxDeltaTimeInSeconds: number = 1 / 30) {
     document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
   }
 
@@ -14,7 +14,7 @@ export class DeltaTimeCalculator {
 
     const delta = currentTime - this.previousTime;
     this.previousTime = currentTime;
-    return delta / 1000;
+    return Math.min(delta / 1000, this.maxDeltaTimeInSeconds);
   }
 
   private handleVisibilityChange() {

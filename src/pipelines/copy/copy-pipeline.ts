@@ -1,39 +1,37 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
 import { smartCompile } from '../../utils/graphics/smart-compile';
-import { CommonState } from '../common-state/common-state';
-import shader from './diffuse.wgsl';
-import { DiffusionSettings } from './diffusion-settings';
 
-export class DiffusionPipeline {
-  private static readonly UNIFORM_COUNT = 4;
-
+export class CopyPipeline {
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPURenderPipeline;
-  private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
-  private readonly noise: GPUTextureView;
 
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTextureView;
 
-  public constructor(
-    private readonly device: GPUDevice,
-    private readonly commonState: CommonState
-  ) {
-    this.bindGroupLayout = device.createBindGroupLayout(
-      DiffusionPipeline.bindGroupLayout
-    );
+  public constructor(private readonly device: GPUDevice) {
+    this.bindGroupLayout = device.createBindGroupLayout(CopyPipeline.bindGroupLayout);
 
     const { buffer, vertex } = setUpFullScreenQuad(device);
     this.quadVertexBuffer = buffer;
 
     this.pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({
-        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       vertex,
       fragment: {
-        module: smartCompile(device, CommonState.shaderCode, shader),
+        module: smartCompile(
+          device,
+          /* wgsl */ `
+          @group(0) @binding(0) var Sampler: sampler;
+          @group(0) @binding(1) var original: texture_2d<f32>;
+
+          @fragment
+          fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+              return textureSample(original, Sampler, uv);
+          }`
+        ),
         entryPoint: 'fragment',
         targets: [
           {
@@ -45,29 +43,6 @@ export class DiffusionPipeline {
         topology: 'triangle-strip',
       },
     });
-
-    this.uniforms = this.device.createBuffer({
-      size: DiffusionPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-  }
-
-  public setParameters({
-    diffusionRateTrails,
-    decayRateTrails,
-    diffusionRateBrush,
-    decayRateBrush,
-  }: DiffusionSettings) {
-    this.device.queue.writeBuffer(
-      this.uniforms,
-      0,
-      new Float32Array([
-        diffusionRateTrails,
-        decayRateTrails,
-        diffusionRateBrush,
-        decayRateBrush,
-      ])
-    );
   }
 
   public execute(
@@ -75,26 +50,27 @@ export class DiffusionPipeline {
     trailMapIn: GPUTextureView,
     trailMapOut: GPUTextureView
   ) {
-    this.ensureBindGroupExists(trailMapIn);
-
     const renderPassDescriptor: GPURenderPassDescriptor = {
       colorAttachments: [
         {
           view: trailMapOut,
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: 'clear',
           storeOp: 'store',
         },
       ],
     };
 
+    this.ensureBindGroupExists(trailMapIn);
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
+    passEncoder.setBindGroup(0, this.bindGroup);
     passEncoder.setVertexBuffer(0, this.quadVertexBuffer);
-    this.commonState.execute(passEncoder);
-    passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.draw(4, 1);
     passEncoder.end();
+  }
+
+  public destroy() {
+    this.quadVertexBuffer.destroy();
   }
 
   private ensureBindGroupExists(trailMapIn: GPUTextureView) {
@@ -104,19 +80,13 @@ export class DiffusionPipeline {
         entries: [
           {
             binding: 0,
-            resource: {
-              buffer: this.uniforms,
-            },
-          },
-          {
-            binding: 1,
             resource: this.device.createSampler({
               magFilter: 'linear',
               minFilter: 'linear',
             }),
           },
           {
-            binding: 2,
+            binding: 1,
             resource: trailMapIn,
           },
         ],
@@ -126,30 +96,18 @@ export class DiffusionPipeline {
     }
   }
 
-  public destroy() {
-    this.quadVertexBuffer.destroy();
-    this.uniforms.destroy();
-  }
-
   private static get bindGroupLayout(): GPUBindGroupLayoutDescriptor {
     return {
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
-          buffer: {
-            type: 'uniform',
-          },
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
           sampler: {
             type: 'filtering',
           },
         },
         {
-          binding: 2,
+          binding: 1,
           visibility: GPUShaderStage.FRAGMENT,
           texture: {
             sampleType: 'float',

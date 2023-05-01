@@ -1,36 +1,33 @@
-import { generateNoise } from '../../utils/graphics/noise/noise';
+import { catmullRomInterpolation } from '../../utils/catmull-rom-interpolation';
+import { generateFbmNoise } from '../../utils/graphics/fbm-noise/fbm-noise';
 import { smartCompile } from '../../utils/graphics/smart-compile';
-import { CommonParameters } from '../common-parameters';
+import { CommonState } from '../common-state/common-state';
 import { BrushSettings } from './brush-settings';
 import shader from './brush.wgsl';
 
 import { vec2 } from 'gl-matrix';
 
 export class BrushPipeline {
-  private static readonly UNIFORM_COUNT = 9;
+  private static readonly UNIFORM_COUNT = 2;
   private static readonly MAX_LINE_COUNT = 100;
   private static readonly VERTICES_PER_LINE_SEGMENT = 6;
   private static readonly ATTRIBUTES_PER_LINE_SEGMENT = 6;
 
+  private readonly bindGroupLayout: GPUBindGroupLayout;
+  private readonly bindGroup: GPUBindGroup;
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly vertexBuffer: GPUBuffer;
-  private readonly noise: GPUTextureView;
+
   private linePoints: Array<vec2> = [];
   private previousPoints: Array<vec2> = [];
   private nextPoint: vec2 | null = null;
-  private bindGroup: GPUBindGroup;
 
-  public constructor(private readonly device: GPUDevice) {
-    this.noise = generateNoise({
-      device,
-      width: 512,
-      height: 512,
-      octaves: 16,
-      amplitude: 0.5,
-      gain: 0.8,
-      lacunarity: 80,
-    });
+  public constructor(
+    private readonly device: GPUDevice,
+    private readonly commonState: CommonState
+  ) {
+    this.bindGroupLayout = device.createBindGroupLayout(BrushPipeline.bindGroupLayout);
 
     this.vertexBuffer = device.createBuffer({
       size:
@@ -42,9 +39,11 @@ export class BrushPipeline {
     });
 
     this.pipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+      }),
       vertex: {
-        module: smartCompile(device, shader),
+        module: smartCompile(device, CommonState.shaderCode, shader),
         entryPoint: 'vertex',
         buffers: [
           {
@@ -70,7 +69,7 @@ export class BrushPipeline {
         ],
       },
       fragment: {
-        module: smartCompile(device, shader),
+        module: smartCompile(device, CommonState.shaderCode, shader),
         entryPoint: 'fragment',
         targets: [
           {
@@ -100,25 +99,14 @@ export class BrushPipeline {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(0),
+    this.bindGroup = this.bindGroup = this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
           resource: {
             buffer: this.uniforms,
           },
-        },
-        {
-          binding: 1,
-          resource: this.device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear',
-          }),
-        },
-        {
-          binding: 2,
-          resource: this.noise,
         },
       ],
     });
@@ -135,31 +123,12 @@ export class BrushPipeline {
     this.nextPoint = null;
   }
 
-  public setParameters({
-    canvasSize,
-    deltaTime,
-    time,
-    brushWidth,
-    brushWidthRandomness,
-  }: CommonParameters & BrushSettings) {
+  public setParameters({ brushWidth, brushWidthRandomness }: BrushSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([
-        ...canvasSize,
-        deltaTime,
-        time,
-        brushWidth / 2,
-        brushWidthRandomness,
-      ])
+      new Float32Array([brushWidth / 2, brushWidthRandomness])
     );
-
-    // this.linePoints = [
-    //   vec2.fromValues(0.1, 0.1),
-    //   vec2.fromValues(0.8, 0.2),
-    //   vec2.fromValues(0.75, 0.8),
-    //   vec2.fromValues(0.1, 0.4),
-    // ].map((v) => vec2.multiply(v, v, canvasSize));
 
     if (this.nextPoint == null) {
       return;
@@ -222,11 +191,11 @@ export class BrushPipeline {
     ];
   }
 
-  public execute(commandEncoder: GPUCommandEncoder, trailMapOut: GPUTexture) {
+  public execute(commandEncoder: GPUCommandEncoder, trailMapOut: GPUTextureView) {
     const renderPassDescriptor: GPURenderPassDescriptor = {
       colorAttachments: [
         {
-          view: trailMapOut.createView(),
+          view: trailMapOut,
           loadOp: 'load',
           storeOp: 'store',
         },
@@ -235,7 +204,8 @@ export class BrushPipeline {
 
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.bindGroup);
+    this.commonState.execute(passEncoder);
+    passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.draw(BrushPipeline.VERTICES_PER_LINE_SEGMENT * this.lineCount, 1);
     passEncoder.end();
@@ -247,31 +217,18 @@ export class BrushPipeline {
     this.vertexBuffer.destroy();
     this.uniforms.destroy();
   }
+
+  private static get bindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+      ],
+    };
+  }
 }
-
-const catmullRomInterpolation = (
-  p0: vec2,
-  p1: vec2,
-  p2: vec2,
-  p3: vec2,
-  t: number
-): vec2 => {
-  const t2 = t * t;
-  const t3 = t2 * t;
-
-  const x =
-    0.5 *
-    (2 * p1[0] +
-      (-p0[0] + p2[0]) * t +
-      (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
-      (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
-
-  const y =
-    0.5 *
-    (2 * p1[1] +
-      (-p0[1] + p2[1]) * t +
-      (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
-      (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
-
-  return [x, y];
-};

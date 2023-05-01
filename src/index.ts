@@ -4,7 +4,7 @@ import './index.scss';
 import { applyArrayPlugins } from './utils/array';
 import { ErrorHandler, Severity } from './utils/error-handler';
 import { FullScreenHandler } from './utils/full-screen-handler';
-import { initializeGPU } from './utils/graphics/initialize-gpu';
+import { initializeGpu } from './utils/graphics/initialize-gpu';
 
 declare global {
   interface Array<T> {
@@ -41,11 +41,15 @@ const getElements = () => ({
 const main = async () => {
   const elements = getElements();
 
+  let shouldStop = false;
+  let game: GameLoop | null = null;
+
   ErrorHandler.addOnErrorListener((error, metadata) => {
     elements.errorContainer.innerHTML += `
       <pre class="${error.severity}">${error.message}</div>
-      <p>${JSON.stringify(metadata, null, 2)}</p>
     `;
+    game?.destroy();
+    shouldStop = true;
   });
 
   try {
@@ -67,12 +71,11 @@ const main = async () => {
       document.body
     );
 
-    const gpu = await initializeGPU();
-    let game: GameLoop | null = null;
+    const gpu = await initializeGpu();
 
     elements.restartButton.addEventListener('click', () => game?.destroy());
 
-    while (true) {
+    while (!shouldStop) {
       game = new GameLoop(elements.canvas, gpu);
       await game.start();
     }

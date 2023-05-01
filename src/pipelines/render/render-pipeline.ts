@@ -1,44 +1,38 @@
+import { generateFbmNoise } from '../../utils/graphics/fbm-noise/fbm-noise';
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
-import { generateNoise } from '../../utils/graphics/noise/noise';
-import random from '../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../utils/graphics/smart-compile';
-import { CommonParameters } from '../common-parameters';
+import { CommonState } from '../common-state/common-state';
 import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
 
 export class RenderPipeline {
-  private static readonly UNIFORM_COUNT = 16;
+  private static readonly UNIFORM_COUNT = 12;
 
+  private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly quadVertexBuffer: GPUBuffer;
-  private readonly noise: GPUTextureView;
 
   private bindGroup?: GPUBindGroup;
-  private previousColorTexture?: GPUTexture;
+  private previousColorTexture?: GPUTextureView;
 
   public constructor(
     private readonly context: GPUCanvasContext,
-    private readonly device: GPUDevice
+    private readonly device: GPUDevice,
+    private readonly commonState: CommonState
   ) {
-    this.noise = generateNoise({
-      device,
-      width: 512,
-      height: 512,
-      octaves: 16,
-      amplitude: 0.3,
-      gain: 0.8,
-      lacunarity: 80,
-    });
+    this.bindGroupLayout = device.createBindGroupLayout(RenderPipeline.bindGroupLayout);
 
     const { buffer, vertex } = setUpFullScreenQuad(device);
     this.quadVertexBuffer = buffer;
 
     this.pipeline = device.createRenderPipeline({
-      layout: 'auto',
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+      }),
       vertex,
       fragment: {
-        module: smartCompile(device, random, shader),
+        module: smartCompile(device, CommonState.shaderCode, shader),
         entryPoint: 'fragment',
         targets: [
           {
@@ -57,21 +51,11 @@ export class RenderPipeline {
     });
   }
 
-  public setParameters({
-    canvasSize,
-    deltaTime,
-    time,
-    brushColor,
-    speciesColorA,
-    speciesColorB,
-  }: CommonParameters & RenderSettings) {
+  public setParameters({ brushColor, speciesColorA, speciesColorB }: RenderSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
       new Float32Array([
-        ...canvasSize,
-        deltaTime,
-        time,
         ...brushColor,
         0, //padding
         ...speciesColorA,
@@ -82,14 +66,14 @@ export class RenderPipeline {
     );
   }
 
-  public execute(commandEncoder: GPUCommandEncoder, colorTexture: GPUTexture) {
+  public execute(commandEncoder: GPUCommandEncoder, colorTexture: GPUTextureView) {
     this.ensureBindGroupExists(colorTexture);
 
     const renderPassDescriptor: GPURenderPassDescriptor = {
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),
-          clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+          clearValue: { r: 0, g: 1, b: 1, a: 1 },
           loadOp: 'clear',
           storeOp: 'store',
         },
@@ -97,16 +81,17 @@ export class RenderPipeline {
     };
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
+    this.commonState.execute(passEncoder);
     passEncoder.setVertexBuffer(0, this.quadVertexBuffer);
-    passEncoder.setBindGroup(0, this.bindGroup);
+    passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.draw(4, 1);
     passEncoder.end();
   }
 
-  private ensureBindGroupExists(colorTexture: GPUTexture) {
+  private ensureBindGroupExists(colorTexture: GPUTextureView) {
     if (this.previousColorTexture !== colorTexture) {
       this.bindGroup = this.device.createBindGroup({
-        layout: this.pipeline.getBindGroupLayout(0),
+        layout: this.bindGroupLayout,
         entries: [
           {
             binding: 0,
@@ -123,11 +108,7 @@ export class RenderPipeline {
           },
           {
             binding: 2,
-            resource: colorTexture.createView(),
-          },
-          {
-            binding: 3,
-            resource: this.noise,
+            resource: colorTexture,
           },
         ],
       });
@@ -139,5 +120,33 @@ export class RenderPipeline {
   public destroy() {
     this.quadVertexBuffer.destroy();
     this.uniforms.destroy();
+  }
+
+  private static get bindGroupLayout(): GPUBindGroupLayoutDescriptor {
+    return {
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'filtering',
+          },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'float',
+          },
+        },
+      ],
+    };
   }
 }

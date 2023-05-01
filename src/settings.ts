@@ -32,12 +32,12 @@ export const settings: GameLoopSettings &
   sensorAngleDegrees: 30,
   sensorOffsetDst: 0.025,
 
-  diffusionRateTrails: 6,
-  decayRateTrails: 1,
+  diffusionRateTrails: 4,
+  decayRateTrails: 1.5,
   diffusionRateBrush: 4,
   decayRateBrush: 0.15,
 
   brushColor: palette.blue,
   speciesColorA: palette.yellow,
-  speciesColorB: palette.green,
+  speciesColorB: palette.purple,
 };

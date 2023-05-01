@@ -1,19 +1,39 @@
+import { Random } from '../../random';
 import { setUpFullScreenQuad } from '../full-screen-quad/full-screen-quad';
 import random from '../random.wgsl';
 import { smartCompile } from '../smart-compile';
+import noise from './fbm-noise.wgsl';
 
 const textureCache = new Map<string, GPUTexture>();
 
-export const generateNoise = ({
+export const generateFbmNoise = ({
   device,
   width = 1024,
   height = 1024,
+  octaves = 8,
+  lacunarity = 2,
+  amplitude = 0.5,
+  gain = 0.5,
 }: {
   device: GPUDevice;
   width?: number;
   height?: number;
+  octaves?: number;
+  lacunarity?: number;
+  amplitude?: number;
+  gain?: number;
 }): GPUTextureView => {
-  const cacheKey = `${width}x${height}`;
+  const constants = {
+    octaves,
+    lacunarity,
+    amplitude,
+    gain,
+    seedR: Random.getRandom(),
+    seedG: Random.getRandom(),
+    seedB: Random.getRandom(),
+    seedA: Random.getRandom(),
+  };
+  const cacheKey = `${width}x${height}x${JSON.stringify(constants)}`;
   if (!textureCache.has(cacheKey)) {
     const { buffer, vertex } = setUpFullScreenQuad(device);
     const quadVertexBuffer = buffer;
@@ -22,21 +42,9 @@ export const generateNoise = ({
       layout: 'auto',
       vertex,
       fragment: {
-        module: smartCompile(
-          device,
-          random,
-          /* wgsl */ `
-          @fragment
-          fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-            return vec4(
-              random_with_seed(uv, 1),
-              random_with_seed(uv, 2),
-              random_with_seed(uv, 3),
-              random_with_seed(uv, 4),
-            );
-          }`
-        ),
+        module: smartCompile(device, random, noise),
         entryPoint: 'fragment',
+        constants,
         targets: [
           {
             format: 'rgba16float',

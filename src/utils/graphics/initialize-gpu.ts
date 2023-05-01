@@ -1,6 +1,6 @@
 import { ErrorHandler, Severity } from '../error-handler';
 
-export const initializeGPU = async (): Promise<GPUDevice> => {
+export const initializeGpu = async (): Promise<GPUDevice> => {
   const gpu = navigator.gpu;
   if (!gpu) {
     throw new Error('WebGPU is not supported in your browser');

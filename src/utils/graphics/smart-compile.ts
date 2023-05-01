@@ -1,6 +1,9 @@
 import { ErrorHandler, Severity } from '../error-handler';
 
-export const smartCompile = (device: GPUDevice, ...code: Array<string>) => {
+export const smartCompile = (
+  device: GPUDevice,
+  ...code: Array<string>
+): GPUShaderModule => {
   const concatenated = code.join('\n\n');
 
   const module = device.createShaderModule({
@@ -15,7 +18,9 @@ export const smartCompile = (device: GPUDevice, ...code: Array<string>) => {
           warning: Severity.WARNING,
           error: Severity.ERROR,
         }[message.type],
-        `${message.message}\n${concatenated.split('\n')[message.lineNum - 1]}`
+        `${message.message}\n${
+          concatenated.split('\n')[message.lineNum - 1]
+        }\n\nCode:\n${concatenated}\n`
       )
     )
   );

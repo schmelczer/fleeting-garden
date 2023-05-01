@@ -1,5 +1,7 @@
 export interface GameLoopSettings {
   agentCount: number;
-  renderSpeed: number;
   startingRadius: number;
+
+  renderSpeed: number;
+  simulatedDelayMs: number;
 }

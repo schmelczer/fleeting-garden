@@ -19,9 +19,11 @@ export const settings: GameLoopSettings &
   BrushSettings &
   DiffusionSettings &
   RenderSettings = {
-  agentCount: 500_000,
-  renderSpeed: 1,
+  agentCount: 500,
   startingRadius: 0.15,
+
+  renderSpeed: 1,
+  simulatedDelayMs: 0,
 
   brushWidth: 20,
   brushWidthRandomness: 8,

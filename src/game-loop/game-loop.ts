@@ -6,6 +6,7 @@ import { DiffusionPipeline } from '../pipelines/diffusion/diffusion-pipeline';
 import { RenderPipeline } from '../pipelines/render/render-pipeline';
 import { settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
+import { sleep } from '../utils/sleep';
 import { spawnAgents } from './spawn-agents';
 
 import { vec2 } from 'gl-matrix';
@@ -58,14 +59,16 @@ export default class GameLoop {
     this.renderPipeline = new RenderPipeline(context, this.device, this.commonState);
 
     window.addEventListener('resize', this.resize.bind(this));
+
     window.addEventListener('mousemove', this.onSwipe.bind(this));
     window.addEventListener('mousedown', (e) => {
+      this.brushPipeline.clearSwipes();
       this.isSwipeActive = true;
       this.onSwipe(e);
     });
-    window.addEventListener('mouseup', (_) => {
+    window.addEventListener('mouseup', (e) => {
+      this.onSwipe(e);
       this.isSwipeActive = false;
-      this.brushPipeline.clearSwipes();
     });
   }
 
@@ -115,7 +118,7 @@ export default class GameLoop {
     });
   }
 
-  private render(time: DOMHighResTimeStamp) {
+  private async render(time: DOMHighResTimeStamp) {
     if (this.hasFinished) {
       return;
     }
@@ -147,7 +150,9 @@ export default class GameLoop {
 
     this.device.queue.submit([commandEncoder.finish()]);
 
-    // await sleep(200);
+    if (settings.simulatedDelayMs > 0) {
+      await sleep(settings.simulatedDelayMs);
+    }
     requestAnimationFrame(this.render.bind(this));
   }
 

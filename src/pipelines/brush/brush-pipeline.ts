@@ -1,6 +1,6 @@
-import { catmullRomInterpolation } from '../../utils/catmull-rom-interpolation';
-import { generateFbmNoise } from '../../utils/graphics/fbm-noise/fbm-noise';
+import { clamp } from '../../utils/clamp';
 import { smartCompile } from '../../utils/graphics/smart-compile';
+import { last } from '../../utils/last';
 import { CommonState } from '../common-state/common-state';
 import { BrushSettings } from './brush-settings';
 import shader from './brush.wgsl';
@@ -9,7 +9,7 @@ import { vec2 } from 'gl-matrix';
 
 export class BrushPipeline {
   private static readonly UNIFORM_COUNT = 2;
-  private static readonly MAX_LINE_COUNT = 100;
+  private static readonly MAX_LINE_COUNT = 3;
   private static readonly VERTICES_PER_LINE_SEGMENT = 6;
   private static readonly ATTRIBUTES_PER_LINE_SEGMENT = 6;
 
@@ -20,8 +20,7 @@ export class BrushPipeline {
   private readonly vertexBuffer: GPUBuffer;
 
   private linePoints: Array<vec2> = [];
-  private previousPoints: Array<vec2> = [];
-  private nextPoint: vec2 | null = null;
+  private actualPoints: Array<vec2> = [];
 
   public constructor(
     private readonly device: GPUDevice,
@@ -113,14 +112,11 @@ export class BrushPipeline {
   }
 
   public addSwipe(position: vec2) {
-    this.nextPoint = position;
-    // this.linePoints.push(position);
+    this.linePoints.push(position);
   }
 
   public clearSwipes() {
     this.linePoints.length = 0;
-    this.previousPoints.length = 0;
-    this.nextPoint = null;
   }
 
   public setParameters({ brushWidth, brushWidthRandomness }: BrushSettings) {
@@ -130,36 +126,27 @@ export class BrushPipeline {
       new Float32Array([brushWidth / 2, brushWidthRandomness])
     );
 
-    if (this.nextPoint == null) {
-      return;
-    }
-    this.previousPoints.push(this.nextPoint);
-    if (this.previousPoints.length < 3) {
+    if (this.linePoints.length === 0) {
       return;
     }
 
-    this.linePoints = [];
-    for (let t = 0; t < 1; t += 1 / BrushPipeline.MAX_LINE_COUNT) {
-      this.linePoints.push(
-        catmullRomInterpolation(
-          this.previousPoints[0],
-          this.previousPoints[1],
-          this.previousPoints[2],
-          this.nextPoint,
-          t
-        )
-      );
+    this.actualPoints = this.linePoints.slice();
+
+    if (this.linePoints.length === 1) {
+      this.actualPoints.push(this.linePoints[0]); // allow single point swipes
     }
 
-    this.previousPoints.splice(0, this.previousPoints.length - 3);
+    if (this.actualPoints.length > BrushPipeline.MAX_LINE_COUNT + 1) {
+      this.actualPoints = BrushPipeline.subsampleLinePoints(this.actualPoints);
+    }
 
     this.device.queue.writeBuffer(
       this.vertexBuffer,
       0,
       new Float32Array(
         new Array(this.lineCount).fill(0).flatMap((_, i) => {
-          const from = this.linePoints[i];
-          const to = this.linePoints[i + 1];
+          const from = this.actualPoints[i];
+          const to = this.actualPoints[i + 1];
           const [a, b, c, d] = this.getSegmentBoundingBox(from, to, brushWidth / 2);
           return [a, b, c, b, c, d].flatMap((v) => [...v, ...from, ...to]);
         })
@@ -167,13 +154,51 @@ export class BrushPipeline {
     );
   }
 
-  private get lineCount() {
-    return Math.max(0, this.linePoints.length - 1);
+  private static subsampleLinePoints(points: Array<vec2>): Array<vec2> {
+    const lines = [];
+    for (let i = 0; i < points.length - 2; i++) {
+      lines.push({
+        from: points[i],
+        to: points[i + 1],
+        length: vec2.dist(points[i], points[i + 1]),
+      });
+    }
+
+    const sumLength = lines.reduce((sum, line) => sum + line.length, 0);
+
+    let currentLineIndex = 0;
+    let lineLengthSoFar = 0;
+    const result: Array<vec2> = [points[0]];
+    for (let i = 1; i < BrushPipeline.MAX_LINE_COUNT; i++) {
+      const t = (i * sumLength) / (BrushPipeline.MAX_LINE_COUNT + 1);
+      while (lineLengthSoFar + lines[currentLineIndex].length < t) {
+        lineLengthSoFar += lines[currentLineIndex].length;
+        currentLineIndex++;
+      }
+
+      const line = lines[currentLineIndex];
+      const position = vec2.lerp(
+        vec2.create(),
+        line.from,
+        line.to,
+        (t - lineLengthSoFar) / line.length
+      );
+
+      result.push(position);
+    }
+
+    result.push(last(points));
+
+    return result;
   }
 
   private getSegmentBoundingBox(from: vec2, to: vec2, width: number): Array<vec2> {
-    const dir = vec2.sub(vec2.create(), to, from);
+    let dir = vec2.sub(vec2.create(), to, from);
     vec2.normalize(dir, dir);
+
+    if (vec2.len(dir) === 0) {
+      dir = vec2.fromValues(1, 0); // allow single point swipes
+    }
 
     const perp = vec2.fromValues(dir[1], -dir[0]);
 
@@ -230,5 +255,9 @@ export class BrushPipeline {
         },
       ],
     };
+  }
+
+  private get lineCount() {
+    return clamp(this.actualPoints.length - 1, 0, BrushPipeline.MAX_LINE_COUNT);
   }
 }

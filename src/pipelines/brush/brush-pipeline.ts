@@ -126,11 +126,11 @@ export class BrushPipeline {
       new Float32Array([brushWidth / 2, brushWidthRandomness])
     );
 
-    if (this.linePoints.length === 0) {
+    this.actualPoints = this.linePoints.slice();
+
+    if (this.actualPoints.length === 0) {
       return;
     }
-
-    this.actualPoints = this.linePoints.slice();
 
     if (this.linePoints.length === 1) {
       this.actualPoints.push(this.linePoints[0]); // allow single point swipes

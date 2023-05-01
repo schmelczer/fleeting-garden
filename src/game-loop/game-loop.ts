@@ -150,6 +150,10 @@ export default class GameLoop {
 
     this.device.queue.submit([commandEncoder.finish()]);
 
+    if (!this.isSwipeActive) {
+      this.brushPipeline.clearSwipes();
+    }
+
     if (settings.simulatedDelayMs > 0) {
       await sleep(settings.simulatedDelayMs);
     }

@@ -51,12 +51,10 @@ export class AgentPipeline {
 
     new Float32Array(this.agentsBuffer.getMappedRange()).set(
       agents.flatMap((agent) => [
-        agent.position[0],
-        agent.position[1],
-        agent.angle,
+        ...agent.position,
+        ...agent.direction,
         agent.species,
         agent.timeToLive,
-        0, // padding
       ])
     );
     this.agentsBuffer.unmap();
@@ -66,8 +64,8 @@ export class AgentPipeline {
     brushTrailWeight,
     moveSpeed,
     turnSpeed,
-    sensorAngleDegrees,
-    sensorOffsetDst,
+    sensorOffsetAngle,
+    sensorOffsetDistance,
   }: AgentSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
@@ -76,8 +74,8 @@ export class AgentPipeline {
         brushTrailWeight,
         moveSpeed,
         turnSpeed,
-        (sensorAngleDegrees * Math.PI) / 180,
-        sensorOffsetDst,
+        (sensorOffsetAngle * Math.PI) / 180,
+        sensorOffsetDistance,
       ])
     );
   }

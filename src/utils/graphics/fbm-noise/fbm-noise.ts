@@ -36,7 +36,7 @@ export const generateFbmNoise = ({
   const cacheKey = `${width}x${height}x${JSON.stringify(constants)}`;
   if (!textureCache.has(cacheKey)) {
     const { buffer, vertex } = setUpFullScreenQuad(device);
-    const quadVertexBuffer = buffer;
+    const vertexBuffer = buffer;
 
     const pipeline = device.createRenderPipeline({
       layout: 'auto',
@@ -81,7 +81,7 @@ export const generateFbmNoise = ({
 
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(pipeline);
-    passEncoder.setVertexBuffer(0, quadVertexBuffer);
+    passEncoder.setVertexBuffer(0, vertexBuffer);
     passEncoder.draw(4, 1);
     passEncoder.end();
 

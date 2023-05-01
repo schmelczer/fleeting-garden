@@ -1,6 +1,6 @@
 struct Agent {
   position: vec2<f32>,
-  angle: f32,
+  direction: vec2<f32>,
   species: f32,
   timeToLive: f32
 }
@@ -15,10 +15,10 @@ struct Settings {
 
 @group(1) @binding(0) var<uniform> settings: Settings;
 @group(1) @binding(1) var<storage, read_write> agents: array<Agent>;
-@group(1) @binding(2) var TrailMapIn: texture_2d<f32>;
-@group(1) @binding(3) var TrailMapOut: texture_storage_2d<rgba16float, write>;
+@group(1) @binding(2) var trailMapIn: texture_2d<f32>;
+@group(1) @binding(3) var trailMapOut: texture_storage_2d<rgba16float, write>;
 
-@compute @workgroup_size(8, 8)
+@compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let id = global_id.x;
 
@@ -29,20 +29,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var agent = agents[id];
 
   if (agent.timeToLive <= 0.) {
-    agent.position = vec2(
-      random_with_seed(agent.position, f32(id) + state.time),
-      random_with_seed(agent.position, f32(id) + state.time + 12),
-    );
-    agent.angle = random_with_seed(vec2(agent.angle), f32(id) + state.time);
-    agent.species = 1;
-    agent.timeToLive = 1000;
-    agents[id] = agent;
+    // agent.position = vec2(
+    //   random_with_seed(agent.position, f32(id) + state.time),
+    //   random_with_seed(agent.position, f32(id) + state.time + 12),
+    // );
+    // agent.angle = random_with_seed(vec2(agent.angle), f32(id) + state.time);
+    // agent.species = 1;
+    // agent.timeToLive = 1000;
+    // agents[id] = agent;
     return;
   }
 
   let random = random_with_seed(agent.position, f32(id) + state.time);
+  let trailCurrent = textureLoad(trailMapIn, vec2<i32>(agent.position), 0);
 
-  let trailCurrent = sense(agent, 0, 0);
   var weight: f32;
   if(agent.species == 0) {
     weight = trailCurrent.r - trailCurrent.g;
@@ -53,10 +53,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     agent.timeToLive = 0;
     return;
   }
+
   
-  let trailForward = sense(agent, settings.sensorOffset, 0);
-  let trailLeft = sense(agent, settings.sensorOffset, settings.sensorAngle);
-  let trailRight = sense(agent, settings.sensorOffset, -settings.sensorAngle);
+  let trailForward = sense(agent.position, agent.direction, settings.sensorOffset, 0);
+  let trailLeft = sense(agent.position, agent.direction, settings.sensorOffset, settings.sensorAngle);
+  let trailRight = sense(agent.position, agent.direction, settings.sensorOffset, -settings.sensorAngle);
 
   var weightForward: f32 = trailForward.a * settings.brushTrailWeight;
   var weightLeft: f32 = trailLeft.a * settings.brushTrailWeight;
@@ -71,42 +72,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     weightRight += trailRight.g - trailRight.r;
   }
 
+  var rotation: f32 = 0;
   if (weightForward < weightLeft && weightForward < weightRight) {
-    agent.angle += (random - 0.5) * 2. * settings.turnRate * state.deltaTime;
+    rotation = (random - 0.5) * 2. * settings.turnRate * state.deltaTime;
   } else if (weightLeft < weightRight) {
-    agent.angle -= random * settings.turnRate * state.deltaTime;
+    rotation = random * -settings.turnRate * state.deltaTime;
   } else if (weightRight < weightLeft) {
-    agent.angle += random * settings.turnRate * state.deltaTime;
+    rotation = random * settings.turnRate * state.deltaTime;
   }
 
-  let direction = vec2(cos(agent.angle), sin(agent.angle));
-  var newPos = agent.position + direction / normalize(state.size) * settings.moveRate * state.deltaTime;
-  newPos = clamp(newPos, vec2<f32>(0, 0), vec2<f32>(1, 1));
-  if (newPos.x == 0. || newPos.x == 1. || newPos.y == 0. || newPos.y == 1.) {
-    agent.angle += 3.14159265359 + random - 0.5;
+  var nextDirection = agent.direction * mat2x2<f32>(cos(rotation), sin(rotation), -sin(rotation), cos(rotation));
+
+  var nextPosition = agent.position + agent.direction * settings.moveRate * state.deltaTime;
+  nextPosition = clamp(nextPosition, vec2<f32>(0, 0), state.size);
+  if nextPosition.x == 0 || nextPosition.x == state.size.x || nextPosition.y == 0 || nextPosition.y == state.size.y {
+    rotation = 3.14159265359 + random - 0.5;
+    nextDirection = agent.direction * mat2x2<f32>(cos(rotation), sin(rotation), -sin(rotation), cos(rotation));
   }
 
   var trail = vec4<f32>(0, 1, 0, 0);
   if (agent.species == 0) {
-    trail = vec4(1, 0, 0, 0);
+    trail = vec4(0.1, 0, 0, 0);
   }
-  textureStore(TrailMapOut, vec2<i32>(newPos * state.size), trail);
 
-  agent.position = newPos;
+  let current = textureLoad(trailMapIn, vec2<i32>(nextPosition), 0); 
+  textureStore(trailMapOut, vec2<i32>(nextPosition), vec4(trail.rgb + current.rgb, 0));
+
+  agent.position = nextPosition;
+  agent.direction = nextDirection;
   agent.timeToLive -= state.deltaTime;
   agents[id] = agent;
 }
 
-fn sense(agent: Agent, sensorOffset: f32, sensorOffsetAngle: f32) -> vec4<f32> {
-  let sensorAngle = agent.angle + sensorOffsetAngle;
-
-  let sensorDir: vec2<f32> = vec2(cos(sensorAngle), sin(sensorAngle)) / normalize(state.size);
-  let sensorPos: vec2<f32> = agent.position + sensorDir * sensorOffset;
-  return textureLoad(TrailMapIn, vec2<i32>(sensorPos * state.size), 0); 
+fn sense(agentPosition: vec2<f32>, agentDirection: vec2<f32>, sensorOffset: f32, sensorOffsetAngle: f32) -> vec4<f32> {
+  let sensorDirection = agentDirection * mat2x2<f32>(cos(sensorOffsetAngle), sin(sensorOffsetAngle), -sin(sensorOffsetAngle), cos(sensorOffsetAngle));
+  let sensorPosition = vec2<i32>(agentPosition + sensorDirection * sensorOffset);
+  return textureLoad(trailMapIn, sensorPosition, 0); 
 }
-
 
 fn random_with_seed(uv: vec2<f32>, seed: f32) -> f32 {
   return fract(sin(dot(uv, vec2(12.9898 + seed, 78.233 + seed)))* 43758.5453123 + seed);
 }
-

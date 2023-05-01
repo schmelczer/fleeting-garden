@@ -6,6 +6,7 @@ import { DiffusionPipeline } from '../pipelines/diffusion/diffusion-pipeline';
 import { RenderPipeline } from '../pipelines/render/render-pipeline';
 import { settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
+import { ResizableTexture } from '../utils/graphics/resizable-texture';
 import { sleep } from '../utils/sleep';
 import { spawnAgents } from './spawn-agents';
 
@@ -14,17 +15,14 @@ import { vec2 } from 'gl-matrix';
 export default class GameLoop {
   private readonly deltaTimeCalculator = new DeltaTimeCalculator();
 
+  private readonly trailMapA: ResizableTexture;
+  private readonly trailMapB: ResizableTexture;
   private readonly commonState: CommonState;
   private readonly copyPipeline: CopyPipeline;
   private readonly agentPipeline: AgentPipeline;
   private readonly renderPipeline: RenderPipeline;
   private readonly brushPipeline: BrushPipeline;
   private readonly diffusionPipeline: DiffusionPipeline;
-
-  private trailMapA?: GPUTexture;
-  private trailMapB?: GPUTexture;
-  private trailMapAView?: GPUTextureView;
-  private trailMapBView?: GPUTextureView;
 
   private hasFinished = false;
   private readonly hasFinishedPromise: Promise<void> = new Promise(
@@ -45,6 +43,8 @@ export default class GameLoop {
       alphaMode: 'premultiplied',
     });
 
+    this.trailMapA = new ResizableTexture(this.device, this.canvasSize);
+    this.trailMapB = new ResizableTexture(this.device, this.canvasSize);
     this.resize();
 
     this.commonState = new CommonState(this.device);
@@ -60,8 +60,8 @@ export default class GameLoop {
 
     window.addEventListener('resize', this.resize.bind(this));
 
-    window.addEventListener('mousemove', this.onSwipe.bind(this));
-    window.addEventListener('mousedown', (e) => {
+    canvas.addEventListener('mousemove', this.onSwipe.bind(this));
+    canvas.addEventListener('mousedown', (e) => {
       this.brushPipeline.clearSwipes();
       this.isSwipeActive = true;
       this.onSwipe(e);
@@ -91,31 +91,6 @@ export default class GameLoop {
     const devicePixelRatio = window.devicePixelRatio || 1;
     this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
     this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
-
-    this.trailMapA?.destroy();
-    this.trailMapA = this.createTrailMap();
-    this.trailMapAView = this.trailMapA.createView();
-
-    this.trailMapB?.destroy();
-    this.trailMapB = this.createTrailMap();
-    this.trailMapBView = this.trailMapB.createView();
-  }
-
-  private createTrailMap(): GPUTexture {
-    return this.device.createTexture({
-      format: 'rgba16float',
-      dimension: '2d',
-      mipLevelCount: 1,
-      size: {
-        width: this.canvas.width,
-        height: this.canvas.height,
-        depthOrArrayLayers: 1,
-      },
-      usage:
-        GPUTextureUsage.STORAGE_BINDING |
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
   }
 
   private async render(time: DOMHighResTimeStamp) {
@@ -137,15 +112,23 @@ export default class GameLoop {
     const commandEncoder = this.device.createCommandEncoder();
 
     for (let i = 0; i < settings.renderSpeed; i++) {
-      this.copyPipeline.execute(commandEncoder, this.trailMapAView, this.trailMapBView);
-      this.brushPipeline.execute(commandEncoder, this.trailMapBView);
-      this.agentPipeline.execute(commandEncoder, this.trailMapAView, this.trailMapBView);
+      this.copyPipeline.execute(
+        commandEncoder,
+        this.trailMapA.getTextureView(),
+        this.trailMapB.getTextureView()
+      );
+      this.brushPipeline.execute(commandEncoder, this.trailMapB.getTextureView());
+      this.agentPipeline.execute(
+        commandEncoder,
+        this.trailMapA.getTextureView(),
+        this.trailMapB.getTextureView()
+      );
       this.diffusionPipeline.execute(
         commandEncoder,
-        this.trailMapBView,
-        this.trailMapAView
+        this.trailMapB.getTextureView(),
+        this.trailMapA.getTextureView()
       );
-      this.renderPipeline.execute(commandEncoder, this.trailMapAView);
+      this.renderPipeline.execute(commandEncoder, this.trailMapA.getTextureView());
     }
 
     this.device.queue.submit([commandEncoder.finish()]);
@@ -157,6 +140,11 @@ export default class GameLoop {
     if (settings.simulatedDelayMs > 0) {
       await sleep(settings.simulatedDelayMs);
     }
+
+    // avoid resizing during rendering
+    this.trailMapA.resize(this.canvasSize);
+    this.trailMapB.resize(this.canvasSize);
+
     requestAnimationFrame(this.render.bind(this));
   }
 

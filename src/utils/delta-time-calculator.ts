@@ -14,6 +14,7 @@ export class DeltaTimeCalculator {
 
     const delta = currentTime - this.previousTime;
     this.previousTime = currentTime;
+    return 1 / 60;
     return Math.min(delta / 1000, this.maxDeltaTimeInSeconds);
   }
 

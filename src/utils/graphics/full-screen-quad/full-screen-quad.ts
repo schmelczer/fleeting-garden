@@ -8,7 +8,7 @@ export const setUpFullScreenQuad = (
   vertex: GPUVertexState;
 } => {
   const buffer = device.createBuffer({
-    size: 4 * 4 * 4, // 4x vec4<f32>
+    size: 4 * 4 * Float32Array.BYTES_PER_ELEMENT, // 4 x vec4<f32>
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
   });
@@ -30,7 +30,7 @@ export const setUpFullScreenQuad = (
       entryPoint: 'vertex',
       buffers: [
         {
-          arrayStride: 4 * 4,
+          arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
           stepMode: 'vertex',
           attributes: [
             {

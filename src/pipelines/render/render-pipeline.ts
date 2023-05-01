@@ -11,7 +11,7 @@ export class RenderPipeline {
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
-  private readonly quadVertexBuffer: GPUBuffer;
+  private readonly vertexBuffer: GPUBuffer;
 
   private bindGroup?: GPUBindGroup;
   private previousColorTexture?: GPUTextureView;
@@ -24,7 +24,7 @@ export class RenderPipeline {
     this.bindGroupLayout = device.createBindGroupLayout(RenderPipeline.bindGroupLayout);
 
     const { buffer, vertex } = setUpFullScreenQuad(device);
-    this.quadVertexBuffer = buffer;
+    this.vertexBuffer = buffer;
 
     this.pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({
@@ -82,7 +82,7 @@ export class RenderPipeline {
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
     this.commonState.execute(passEncoder);
-    passEncoder.setVertexBuffer(0, this.quadVertexBuffer);
+    passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.draw(4, 1);
     passEncoder.end();
@@ -118,7 +118,7 @@ export class RenderPipeline {
   }
 
   public destroy() {
-    this.quadVertexBuffer.destroy();
+    this.vertexBuffer.destroy();
     this.uniforms.destroy();
   }
 

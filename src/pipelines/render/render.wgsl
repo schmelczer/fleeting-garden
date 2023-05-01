@@ -18,13 +18,13 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   let brushStrength = traces.a;
 
   let rgbColor = sqrt(vec3(
-    settings.speciesColorA * speciesAStrength +
-    settings.speciesColorB * speciesBStrength +
+    settings.speciesColorA * clamp(speciesAStrength, 0, 1) +
+    settings.speciesColorB * clamp(speciesBStrength, 0, 1) +
     settings.brushColor * brushStrength
   ));
 
 
-  let bg = vec3(0.9) + 0.05 * (random.r - 0.5);
+  let bg = vec3(0.9) + 0.075 * random.r;
   
   
   return vec4(bg - rgbColor, 1);

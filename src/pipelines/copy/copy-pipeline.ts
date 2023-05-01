@@ -1,10 +1,17 @@
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
 import { smartCompile } from '../../utils/graphics/smart-compile';
+import shader from './copy.wgsl';
+
+import { vec2 } from 'gl-matrix';
 
 export class CopyPipeline {
+  private static readonly UNIFORM_COUNT = 2;
+
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPURenderPipeline;
-  private readonly quadVertexBuffer: GPUBuffer;
+  private readonly uniforms: GPUBuffer;
+
+  private readonly vertexBuffer: GPUBuffer;
 
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTextureView;
@@ -12,26 +19,50 @@ export class CopyPipeline {
   public constructor(private readonly device: GPUDevice) {
     this.bindGroupLayout = device.createBindGroupLayout(CopyPipeline.bindGroupLayout);
 
-    const { buffer, vertex } = setUpFullScreenQuad(device);
-    this.quadVertexBuffer = buffer;
+    this.uniforms = this.device.createBuffer({
+      size: CopyPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    this.vertexBuffer = device.createBuffer({
+      size: 2 * 4 * Float32Array.BYTES_PER_ELEMENT, // 4 x vec2<f32>
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+    // prettier-ignore
+    const vertexData = [
+    // U    V
+      0.0, 1.0,
+      1.0, 1.0,
+      0.0, 0.0,
+      1.0, 0.0,
+    ];
+    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertexData);
+    this.vertexBuffer.unmap();
 
     this.pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({
         bindGroupLayouts: [this.bindGroupLayout],
       }),
-      vertex,
+      vertex: {
+        module: smartCompile(device, shader),
+        entryPoint: 'vertex',
+        buffers: [
+          {
+            arrayStride: 2 * Float32Array.BYTES_PER_ELEMENT,
+            stepMode: 'vertex',
+            attributes: [
+              {
+                shaderLocation: 0,
+                offset: 0,
+                format: 'float32x2',
+              },
+            ],
+          },
+        ],
+      },
       fragment: {
-        module: smartCompile(
-          device,
-          /* wgsl */ `
-          @group(0) @binding(0) var Sampler: sampler;
-          @group(0) @binding(1) var original: texture_2d<f32>;
-
-          @fragment
-          fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-              return textureSample(original, Sampler, uv);
-          }`
-        ),
+        module: smartCompile(device, shader),
         entryPoint: 'fragment',
         targets: [
           {
@@ -48,8 +79,11 @@ export class CopyPipeline {
   public execute(
     commandEncoder: GPUCommandEncoder,
     trailMapIn: GPUTextureView,
-    trailMapOut: GPUTextureView
+    trailMapOut: GPUTextureView,
+    scale: vec2 = vec2.fromValues(1, 1)
   ) {
+    this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array(scale));
+
     const renderPassDescriptor: GPURenderPassDescriptor = {
       colorAttachments: [
         {
@@ -64,13 +98,13 @@ export class CopyPipeline {
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.bindGroup);
-    passEncoder.setVertexBuffer(0, this.quadVertexBuffer);
+    passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.draw(4, 1);
     passEncoder.end();
   }
 
   public destroy() {
-    this.quadVertexBuffer.destroy();
+    this.vertexBuffer.destroy();
   }
 
   private ensureBindGroupExists(trailMapIn: GPUTextureView) {
@@ -80,13 +114,19 @@ export class CopyPipeline {
         entries: [
           {
             binding: 0,
+            resource: {
+              buffer: this.uniforms,
+            },
+          },
+          {
+            binding: 1,
             resource: this.device.createSampler({
               magFilter: 'linear',
               minFilter: 'linear',
             }),
           },
           {
-            binding: 1,
+            binding: 2,
             resource: trailMapIn,
           },
         ],
@@ -101,13 +141,20 @@ export class CopyPipeline {
       entries: [
         {
           binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {
+            type: 'uniform',
+          },
+        },
+        {
+          binding: 1,
           visibility: GPUShaderStage.FRAGMENT,
           sampler: {
             type: 'filtering',
           },
         },
         {
-          binding: 1,
+          binding: 2,
           visibility: GPUShaderStage.FRAGMENT,
           texture: {
             sampleType: 'float',

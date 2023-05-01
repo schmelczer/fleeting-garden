@@ -10,7 +10,7 @@ export class DiffusionPipeline {
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
-  private readonly quadVertexBuffer: GPUBuffer;
+  private readonly vertexBuffer: GPUBuffer;
   private readonly noise: GPUTextureView;
 
   private bindGroup?: GPUBindGroup;
@@ -25,7 +25,7 @@ export class DiffusionPipeline {
     );
 
     const { buffer, vertex } = setUpFullScreenQuad(device);
-    this.quadVertexBuffer = buffer;
+    this.vertexBuffer = buffer;
 
     this.pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({
@@ -90,7 +90,7 @@ export class DiffusionPipeline {
 
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setVertexBuffer(0, this.quadVertexBuffer);
+    passEncoder.setVertexBuffer(0, this.vertexBuffer);
     this.commonState.execute(passEncoder);
     passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.draw(4, 1);
@@ -127,7 +127,7 @@ export class DiffusionPipeline {
   }
 
   public destroy() {
-    this.quadVertexBuffer.destroy();
+    this.vertexBuffer.destroy();
     this.uniforms.destroy();
   }
 

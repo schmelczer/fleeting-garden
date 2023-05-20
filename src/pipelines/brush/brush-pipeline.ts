@@ -9,7 +9,7 @@ import { vec2 } from 'gl-matrix';
 
 export class BrushPipeline {
   private static readonly UNIFORM_COUNT = 2;
-  private static readonly MAX_LINE_COUNT = 3;
+  private static readonly MAX_LINE_COUNT = 20;
   private static readonly VERTICES_PER_LINE_SEGMENT = 6;
   private static readonly ATTRIBUTES_PER_LINE_SEGMENT = 6;
 
@@ -127,13 +127,14 @@ export class BrushPipeline {
     );
 
     this.actualPoints = this.linePoints.slice();
+    this.linePoints.splice(0, this.linePoints.length - 1);
 
     if (this.actualPoints.length === 0) {
       return;
     }
 
-    if (this.linePoints.length === 1) {
-      this.actualPoints.push(this.linePoints[0]); // allow single point swipes
+    if (this.actualPoints.length === 1) {
+      this.actualPoints.push(this.actualPoints[0]); // allow single point swipes
     }
 
     if (this.actualPoints.length > BrushPipeline.MAX_LINE_COUNT + 1) {
@@ -234,8 +235,6 @@ export class BrushPipeline {
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.draw(BrushPipeline.VERTICES_PER_LINE_SEGMENT * this.lineCount, 1);
     passEncoder.end();
-
-    this.linePoints.splice(0, this.linePoints.length - 1);
   }
 
   public destroy() {

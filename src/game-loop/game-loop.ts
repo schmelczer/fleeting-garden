@@ -1,6 +1,5 @@
 import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
 import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
-import { spawnAgents } from '../pipelines/agents/spawn-agents';
 import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
 import { CommonState } from '../pipelines/common-state/common-state';
 import { CopyPipeline } from '../pipelines/copy/copy-pipeline';

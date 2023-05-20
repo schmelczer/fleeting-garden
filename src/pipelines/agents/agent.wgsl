@@ -83,13 +83,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     nextAngle = agent.angle + rotation;
   }
 
-  var trail = vec4<f32>(0, 1, 0, 0);
+  var trail = vec4<f32>(0, 0.1, 0, 0);
   if (agent.species == 0) {
     trail = vec4(0.1, 0, 0, 0);
   }
 
   let current = textureLoad(trailMapIn, vec2<i32>(nextPosition), 0); 
-  textureStore(trailMapOut, vec2<i32>(nextPosition), vec4(trail.rgb + current.rgb, 0));
+  textureStore(trailMapOut, vec2<i32>(nextPosition), vec4(trail.rgb + current.rgb, current.a));
 
   agent.position = nextPosition;
   agent.angle = nextAngle;

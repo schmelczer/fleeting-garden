@@ -34,9 +34,9 @@ export const settings: GameLoopSettings &
   sensorOffsetDistance: 60,
 
   diffusionRateTrails: 0.4, // inverse
-  decayRateTrails: 0.9,
+  decayRateTrails: 0.9, // inverse
   diffusionRateBrush: 4, // inverse
-  decayRateBrush: 0.98,
+  decayRateBrush: 0.99, // inverse
 
   brushColor: palette.blue,
   speciesColorA: palette.yellow,

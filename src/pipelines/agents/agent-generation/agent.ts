@@ -7,4 +7,4 @@ export interface Agent {
   timeToLive: number;
 }
 
-export const AGENT_SIZE_IN_BYTES = 6 * Float32Array.BYTES_PER_ELEMENT;
+export const AGENT_SIZE_IN_BYTES = 5 * Float32Array.BYTES_PER_ELEMENT;

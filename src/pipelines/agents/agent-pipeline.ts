@@ -1,7 +1,7 @@
 import random from '../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
-import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
+import { AGENT_SIZE_IN_BYTES, Agent } from './agent-generation/agent';
 import agentSchme from './agent-generation/agent-schema.wgsl';
 import { AgentSettings } from './agent-settings';
 import shader from './agent.wgsl';

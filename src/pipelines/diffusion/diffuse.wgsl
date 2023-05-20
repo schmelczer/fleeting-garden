@@ -31,10 +31,10 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 
   current += change / 4;
 
-  let decayed = vec4(
+  let decayed = clamp(vec4(
     current.rgb * settings.decayRateTrails,
     current.a * settings.decayRateBrush
-  );
+  ), vec4(0), vec4(1));
  
   return decayed;
 }

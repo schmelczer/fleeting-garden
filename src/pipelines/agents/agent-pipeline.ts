@@ -52,7 +52,8 @@ export class AgentPipeline {
     new Float32Array(this.agentsBuffer.getMappedRange()).set(
       agents.flatMap((agent) => [
         ...agent.position,
-        ...agent.direction,
+        agent.angle,
+        0, // padding
         agent.species,
         agent.timeToLive,
       ])

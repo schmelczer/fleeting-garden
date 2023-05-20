@@ -2,7 +2,7 @@ import { vec2 } from 'gl-matrix';
 
 export interface Agent {
   position: vec2;
-  direction: vec2;
+  angle: number;
   species: number;
   timeToLive: number;
 }

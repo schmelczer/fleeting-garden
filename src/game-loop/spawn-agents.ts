@@ -18,7 +18,7 @@ export const spawnAgents = (canvasSize: vec2, agentCount: number): Array<Agent> 
 
     return {
       position,
-      direction: vec2.fromValues(Math.cos(angle + Math.PI), Math.sin(angle + Math.PI)),
+      angle: angle + Math.PI,
       species: 0,
       timeToLive: Random.randomBetween(10, 15000),
     };

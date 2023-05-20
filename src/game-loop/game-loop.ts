@@ -36,7 +36,7 @@ export default class GameLoop {
     private readonly canvas: HTMLCanvasElement,
     private readonly device: GPUDevice
   ) {
-    const context = this.canvas.getContext('webgpu') as any;
+    const context = this.canvas.getContext('webgpu') as any as GPUCanvasContext;
     context.configure({
       device: this.device,
       format: navigator.gpu.getPreferredCanvasFormat(),
@@ -82,15 +82,17 @@ export default class GameLoop {
       return;
     }
 
-    this.brushPipeline.addSwipe(
-      vec2.fromValues(event.clientX, this.canvas.height - event.clientY)
+    const position = vec2.fromValues(
+      event.clientX * this.devicePixelRatio,
+      this.canvas.height - event.clientY * this.devicePixelRatio
     );
+    this.brushPipeline.addSwipe(position);
   }
 
   private resize() {
     const devicePixelRatio = window.devicePixelRatio || 1;
-    this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
-    this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
+    this.canvas.width = this.canvas.clientWidth * this.devicePixelRatio;
+    this.canvas.height = this.canvas.clientHeight * this.devicePixelRatio;
   }
 
   private async render(time: DOMHighResTimeStamp) {
@@ -166,5 +168,9 @@ export default class GameLoop {
 
   private get canvasSize(): vec2 {
     return vec2.fromValues(this.canvas.width, this.canvas.height);
+  }
+
+  private get devicePixelRatio(): number {
+    return window.devicePixelRatio || 1;
   }
 }

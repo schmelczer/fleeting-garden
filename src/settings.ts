@@ -29,7 +29,7 @@ export const settings: GameLoopSettings &
   brushWidthRandomness: 8,
 
   brushTrailWeight: 5,
-  moveSpeed: 80,
+  moveSpeed: 50,
   turnSpeed: 10,
   sensorOffsetAngle: 30,
   sensorOffsetDistance: 60,

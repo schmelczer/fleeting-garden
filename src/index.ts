@@ -1,9 +1,11 @@
 import '../assets/icons/info.svg';
 import GameLoop from './game-loop/game-loop';
 import './index.scss';
+import { FullScreenHandler } from './page/full-screen-handler';
+import { InfoPageHandler } from './page/info-page-handler';
+import { MenuHider } from './page/menu-hider';
 import { applyArrayPlugins } from './utils/array';
 import { ErrorHandler, Severity } from './utils/error-handler';
-import { FullScreenHandler } from './utils/full-screen-handler';
 import { initializeGpu } from './utils/graphics/initialize-gpu';
 
 declare global {
@@ -26,6 +28,7 @@ declare global {
 const getElements = () => ({
   aside: document.querySelector('aside') as HTMLDivElement,
   infoButton: document.querySelector('button.info') as HTMLButtonElement,
+  infoElement: document.querySelector('.pages') as HTMLDivElement,
   minimizeFullScreenButton: document.querySelector(
     'button.minimize-full-screen'
   ) as HTMLButtonElement,
@@ -55,16 +58,8 @@ const main = async () => {
   try {
     applyArrayPlugins();
 
-    const defaultTimeToLive = 3500;
-    const interval = 50;
-    let timeToLive = defaultTimeToLive;
-    setInterval(() => {
-      timeToLive = Math.max(0, timeToLive - interval);
-      elements.aside.style.opacity =
-        timeToLive == 0 && FullScreenHandler.isInFullScreenMode() ? '0' : '1';
-    }, interval);
-    elements.aside.addEventListener('mouseover', () => (timeToLive = defaultTimeToLive));
-
+    new InfoPageHandler(elements.infoButton, elements.infoElement);
+    new MenuHider(elements.aside, FullScreenHandler.isInFullScreenMode);
     new FullScreenHandler(
       elements.minimizeFullScreenButton,
       elements.maximizeFullScreenButton,

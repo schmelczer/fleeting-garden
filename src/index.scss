@@ -15,6 +15,19 @@
   }
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Comfortaa', sans-serif;
+}
+
+p {
+  font-family: 'Open Sans', sans-serif;
+}
+
 html {
   height: 100%;
   -webkit-font-smooth: antialiased;
@@ -61,6 +74,8 @@ html {
       border-radius: var(--border-radius);
       margin: var(--small-margin);
 
+      display: flex;
+
       > nav.buttons {
         @include center-children;
         flex-direction: column;
@@ -85,7 +100,18 @@ html {
       }
 
       > main.pages {
-        display: none;
+        width: max(500px, 70vw);
+        overflow: hidden;
+        transition: width var(--transition-time-long);
+
+        &.hidden {
+          width: 0;
+        }
+
+        .info-page {
+          padding: var(--normal-margin);
+          width: max(500px, 70vw);
+        }
       }
     }
   }

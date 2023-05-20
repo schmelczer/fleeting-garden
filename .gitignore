@@ -4,6 +4,8 @@ modules/
 ts-node--*/
 rss.xml
 
+dist
+
 # Logs
 logs
 *.log

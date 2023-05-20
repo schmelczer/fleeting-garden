@@ -6,7 +6,7 @@ import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
 
 export class RenderPipeline {
-  private static readonly UNIFORM_COUNT = 12;
+  private static readonly UNIFORM_COUNT = 13;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPURenderPipeline;
@@ -51,7 +51,12 @@ export class RenderPipeline {
     });
   }
 
-  public setParameters({ brushColor, speciesColorA, speciesColorB }: RenderSettings) {
+  public setParameters({
+    brushColor,
+    speciesColorA,
+    speciesColorB,
+    clarity,
+  }: RenderSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
@@ -61,7 +66,7 @@ export class RenderPipeline {
         ...speciesColorA,
         0, //padding
         ...speciesColorB,
-        0, //padding
+        clarity,
       ])
     );
   }

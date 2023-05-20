@@ -1,0 +1,9 @@
+struct Agent {
+  position: vec2<f32>,
+  angle: f32,
+  species: f32,
+  timeToLive: f32,
+  timeToLive2: f32,
+}
+
+@group(1) @binding(1) var<storage, read_write> agents: array<Agent>;

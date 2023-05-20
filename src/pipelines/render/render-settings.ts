@@ -4,4 +4,5 @@ export interface RenderSettings {
   brushColor: vec3;
   speciesColorA: vec3;
   speciesColorB: vec3;
+  clarity: number;
 }

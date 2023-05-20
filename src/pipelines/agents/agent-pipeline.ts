@@ -1,6 +1,8 @@
+import random from '../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
+import agentSchme from './agent-generation/agent-schema.wgsl';
 import { AgentSettings } from './agent-settings';
 import shader from './agent.wgsl';
 
@@ -11,7 +13,6 @@ export class AgentPipeline {
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
   private readonly uniforms: GPUBuffer;
-  private readonly agentsBuffer: GPUBuffer;
 
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTextureView;
@@ -19,13 +20,9 @@ export class AgentPipeline {
 
   public constructor(
     private readonly device: GPUDevice,
-    agents: Array<Agent>,
-    private readonly commonState: CommonState
+    private readonly commonState: CommonState,
+    private readonly agentsBuffer: GPUBuffer
   ) {
-    if (agents.length === 0) {
-      throw new Error('No agents provided');
-    }
-
     this.bindGroupLayout = device.createBindGroupLayout(AgentPipeline.bindGroupLayout);
 
     this.pipeline = device.createComputePipeline({
@@ -33,7 +30,7 @@ export class AgentPipeline {
         bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
       }),
       compute: {
-        module: smartCompile(device, CommonState.shaderCode, shader),
+        module: smartCompile(device, CommonState.shaderCode, random, agentSchme, shader),
         entryPoint: 'main',
       },
     });
@@ -42,23 +39,6 @@ export class AgentPipeline {
       size: AgentPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-
-    this.agentsBuffer = device.createBuffer({
-      size: agents.length * AGENT_SIZE_IN_BYTES,
-      usage: GPUBufferUsage.STORAGE,
-      mappedAtCreation: true,
-    });
-
-    new Float32Array(this.agentsBuffer.getMappedRange()).set(
-      agents.flatMap((agent) => [
-        ...agent.position,
-        agent.angle,
-        0, // padding
-        agent.species,
-        agent.timeToLive,
-      ])
-    );
-    this.agentsBuffer.unmap();
   }
 
   public setParameters({
@@ -79,25 +59,6 @@ export class AgentPipeline {
         sensorOffsetDistance,
       ])
     );
-  }
-
-  public executeRenderPass(
-    commandEncoder: GPUCommandEncoder,
-    trailMapIn: GPUTextureView,
-    trailMapOut: GPUTextureView
-  ) {
-    this.ensureBindGroupExists(trailMapIn, trailMapOut);
-
-    const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(this.pipeline);
-    this.commonState.execute(passEncoder);
-    passEncoder.setBindGroup(1, this.bindGroup);
-    passEncoder.dispatchWorkgroups(
-      Math.ceil(
-        this.agentsBuffer.size / AGENT_SIZE_IN_BYTES / AgentPipeline.WORKGROUP_SIZE
-      )
-    );
-    passEncoder.end();
   }
 
   public execute(

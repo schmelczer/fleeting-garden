@@ -1,10 +1,3 @@
-struct Agent {
-  position: vec2<f32>,
-  angle: f32,
-  species: f32,
-  timeToLive: f32
-}
-
 struct Settings {
   brushTrailWeight: f32,
   moveRate: f32,
@@ -14,7 +7,6 @@ struct Settings {
 };
 
 @group(1) @binding(0) var<uniform> settings: Settings;
-@group(1) @binding(1) var<storage, read_write> agents: array<Agent>;
 @group(1) @binding(2) var trailMapIn: texture_2d<f32>;
 @group(1) @binding(3) var trailMapOut: texture_storage_2d<rgba16float, write>;
 
@@ -28,31 +20,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var agent = agents[id];
 
-  if (agent.timeToLive <= 0.) {
-    // agent.position = vec2(
-    //   random_with_seed(agent.position, f32(id) + state.time),
-    //   random_with_seed(agent.position, f32(id) + state.time + 12),
-    // );
-    // agent.angle = random_with_seed(vec2(agent.angle), f32(id) + state.time);
-    // agent.species = 1;
-    // agent.timeToLive = 1000;
-    // agents[id] = agent;
-    // return;
-  }
+  // if (agent.timeToLive <= 0.) {
+  //   agent.position = vec2(
+  //     random_with_seed(agent.position, f32(id) + state.time),
+  //     random_with_seed(agent.position, f32(id) + state.time + 12),
+  //   );
+  //   agent.angle = random_with_seed(vec2(agent.angle), f32(id) + state.time);
+  //   agent.species = 1;
+  //   agent.timeToLive = 1000;
+  //   agents[id] = agent;
+  //   return;
+  // }
 
-  let random = random_with_seed(agent.position, f32(id) + state.time);
+  let random = hash(id + u32(state.time * 16732.0));
   let trailCurrent = textureLoad(trailMapIn, vec2<i32>(agent.position), 0);
 
-  var weight: f32;
-  if(agent.species == 0) {
-    weight = trailCurrent.r - trailCurrent.g;
-  } else {
-    weight = trailCurrent.g - trailCurrent.r;
-  }
-  if (weight < 0) {
-    agent.timeToLive = 0;
-    return;
-  }
+  // var weight: f32;
+  // if(agent.species == 0) {
+  //   weight = trailCurrent.r - trailCurrent.g;
+  // } else {
+  //   weight = trailCurrent.g - trailCurrent.r;
+  // }
+  // if (weight < 0) {
+  //   agent.timeToLive = 0;
+  //   return;
+  // }
 
   
   let trailForward = sense(agent.position, agent.angle, settings.sensorOffset, 0);
@@ -110,8 +102,4 @@ fn sense(agentPosition: vec2<f32>, agentAngle: f32, sensorOffset: f32, sensorOff
   let sensorDirection = vec2(cos(sensorAngle), sin(sensorAngle));
   let sensorPosition = vec2<i32>(agentPosition + sensorDirection * sensorOffset);
   return textureLoad(trailMapIn, sensorPosition, 0); 
-}
-
-fn random_with_seed(uv: vec2<f32>, seed: f32) -> f32 {
-  return fract(sin(dot(uv, vec2(12.9898 + seed, 78.233 + seed)))* 43758.5453123 + seed);
 }

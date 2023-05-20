@@ -1,4 +1,6 @@
+import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
 import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
+import { spawnAgents } from '../pipelines/agents/spawn-agents';
 import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
 import { CommonState } from '../pipelines/common-state/common-state';
 import { CopyPipeline } from '../pipelines/copy/copy-pipeline';
@@ -8,7 +10,6 @@ import { settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
 import { ResizableTexture } from '../utils/graphics/resizable-texture';
 import { sleep } from '../utils/sleep';
-import { spawnAgents } from './spawn-agents';
 
 import { vec2 } from 'gl-matrix';
 
@@ -19,6 +20,7 @@ export default class GameLoop {
   private readonly trailMapB: ResizableTexture;
   private readonly commonState: CommonState;
   private readonly copyPipeline: CopyPipeline;
+  private readonly agentGenerationPipeline: AgentGenerationPipeline;
   private readonly agentPipeline: AgentPipeline;
   private readonly renderPipeline: RenderPipeline;
   private readonly brushPipeline: BrushPipeline;
@@ -48,18 +50,25 @@ export default class GameLoop {
     this.resize();
 
     this.commonState = new CommonState(this.device);
+    this.commonState.setParameters(this.canvasSize, 0, 0);
+
     this.copyPipeline = new CopyPipeline(this.device);
+
+    this.agentGenerationPipeline = new AgentGenerationPipeline(
+      this.device,
+      this.commonState
+    );
+
     this.agentPipeline = new AgentPipeline(
       this.device,
-      spawnAgents(this.canvasSize, settings.agentCount),
-      this.commonState
+      this.commonState,
+      this.agentGenerationPipeline.generateAgents(settings.agentCount)
     );
     this.brushPipeline = new BrushPipeline(this.device, this.commonState);
     this.diffusionPipeline = new DiffusionPipeline(this.device, this.commonState);
     this.renderPipeline = new RenderPipeline(context, this.device, this.commonState);
 
     window.addEventListener('resize', this.resize.bind(this));
-
     canvas.addEventListener('mousemove', this.onSwipe.bind(this));
     canvas.addEventListener('mousedown', (e) => {
       this.brushPipeline.clearSwipes();
@@ -90,7 +99,6 @@ export default class GameLoop {
   }
 
   private resize() {
-    const devicePixelRatio = window.devicePixelRatio || 1;
     this.canvas.width = this.canvas.clientWidth * this.devicePixelRatio;
     this.canvas.height = this.canvas.clientHeight * this.devicePixelRatio;
   }

@@ -2,7 +2,8 @@
 
 ## todo
 
-- deploy to github pages
-- add infro page
-- generate starting shpe on the gpu
+- add info page
+- generate starting shape on the gpu
 - add cancer
+- graceful error messages when no support
+- settings page

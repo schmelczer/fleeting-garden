@@ -1,6 +1,5 @@
+// https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript, Mulberry32
 export abstract class Random {
-  // https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript, Mulberry32
-
   private static _seed = 42;
 
   public static set seed(value: number) {

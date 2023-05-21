@@ -11,7 +11,6 @@ const setIndexAlias = (name: string, index: number, type: any) => {
   }
 };
 
-/** @internal */
 export const applyArrayPlugins = () => {
   setIndexAlias('x', 0, Array);
   setIndexAlias('y', 1, Array);

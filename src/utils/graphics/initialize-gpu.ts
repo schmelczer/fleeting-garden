@@ -18,7 +18,15 @@ export const initializeGpu = async (): Promise<GPUDevice> => {
   ErrorHandler.addMetadata('features', adapter.features);
   ErrorHandler.addMetadata('limits', adapter.limits);
 
-  const gpuDevice = await adapter.requestDevice(); // could request more resources
+  const gpuDevice = await adapter.requestDevice({
+    requiredLimits: {
+      maxBufferSize: adapter.limits.maxBufferSize,
+      maxComputeInvocationsPerWorkgroup: adapter.limits.maxComputeInvocationsPerWorkgroup,
+      maxComputeWorkgroupSizeX: adapter.limits.maxComputeWorkgroupSizeX,
+      maxComputeWorkgroupSizeY: adapter.limits.maxComputeWorkgroupSizeY,
+      maxComputeWorkgroupSizeZ: adapter.limits.maxComputeWorkgroupSizeZ,
+    },
+  });
 
   gpuDevice.addEventListener('uncapturederror', (event: GPUUncapturedErrorEvent) =>
     ErrorHandler.addError(Severity.ERROR, event.error.message)

@@ -2,7 +2,9 @@ import random from '../../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../../utils/graphics/smart-compile';
 import { CommonState } from '../../common-state/common-state';
 import { AGENT_SIZE_IN_BYTES, Agent } from './agent';
-import shader from './agent-generation.wgsl';
+import countingShader from './agent-counting.wgsl';
+import firstGenerationShader from './agent-first-generation.wgsl';
+import agentGenerationShader from './agent-generation.wgsl';
 import agentSchema from './agent-schema.wgsl';
 import { GenerationCounts } from './generation-counts';
 
@@ -10,13 +12,16 @@ import { vec2 } from 'gl-matrix';
 
 export class AgentGenerationPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 6;
+  private static readonly UNIFORM_COUNT = 4;
   private static readonly COUNTER_COUNT = 3;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
-  private readonly pipeline: GPUComputePipeline;
   private readonly uniforms: GPUBuffer;
   private readonly bindGroup: GPUBindGroup;
+
+  private readonly firstGenerationPipeline: GPUComputePipeline;
+  private readonly nextGenerationPipeline: GPUComputePipeline;
+  private readonly countingPipeline: GPUComputePipeline;
 
   public readonly agentsBuffer: GPUBuffer;
   public readonly countersBuffer: GPUBuffer;
@@ -101,54 +106,98 @@ export class AgentGenerationPipeline {
       ],
     });
 
-    this.pipeline = device.createComputePipeline({
+    this.firstGenerationPipeline = device.createComputePipeline({
       layout: device.createPipelineLayout({
         bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
       }),
       compute: {
-        module: smartCompile(device, CommonState.shaderCode, random, agentSchema, shader),
+        module: smartCompile(
+          device,
+          CommonState.shaderCode,
+          random,
+          agentSchema,
+          firstGenerationShader
+        ),
+        entryPoint: 'main',
+      },
+    });
+
+    this.nextGenerationPipeline = device.createComputePipeline({
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+      }),
+      compute: {
+        module: smartCompile(
+          device,
+          CommonState.shaderCode,
+          random,
+          agentSchema,
+          agentGenerationShader
+        ),
+        entryPoint: 'main',
+      },
+    });
+
+    this.countingPipeline = device.createComputePipeline({
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+      }),
+      compute: {
+        module: smartCompile(
+          device,
+          CommonState.shaderCode,
+          random,
+          agentSchema,
+          countingShader
+        ),
         entryPoint: 'main',
       },
     });
   }
 
-  public async spawnNextGenerationCover(
-    generationId: number,
-    count: number
-  ): Promise<GenerationCounts> {
-    this.device.queue.writeBuffer(
-      this.uniforms,
-      0,
-      new Float32Array([0, 0, 0, generationId, 0])
-    );
-
-    this.device.queue.writeBuffer(this.countersBuffer, 0, new Int32Array([0, 0, count]));
-
-    return this.execute();
-  }
-
-  public async spawnNextGenerationCircle(
-    generationId: number,
-    count: number,
-    center: vec2,
-    radius: number
-  ): Promise<GenerationCounts> {
-    this.device.queue.writeBuffer(
-      this.uniforms,
-      0,
-      new Float32Array([...center, radius, generationId, 1])
-    );
-
-    this.device.queue.writeBuffer(this.countersBuffer, 0, new Int32Array([0, 0, count]));
-
-    return this.execute();
-  }
-
-  private async execute(): Promise<GenerationCounts> {
+  public spawnFirstGeneration(): void {
     const commandEncoder = this.device.createCommandEncoder();
 
     const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(this.pipeline);
+    this.commonState.execute(passEncoder);
+    passEncoder.setPipeline(this.firstGenerationPipeline);
+    passEncoder.setBindGroup(1, this.bindGroup);
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(this.agentCount / AgentGenerationPipeline.WORKGROUP_SIZE)
+    );
+    passEncoder.end();
+
+    this.device.queue.submit([commandEncoder.finish()]);
+  }
+
+  public spawnNextGeneration(center: vec2, radius: number, generationId: number): void {
+    this.device.queue.writeBuffer(
+      this.uniforms,
+      0,
+      new Float32Array([...center, radius, generationId])
+    );
+
+    const commandEncoder = this.device.createCommandEncoder();
+
+    const passEncoder = commandEncoder.beginComputePass();
+    this.commonState.execute(passEncoder);
+    passEncoder.setPipeline(this.nextGenerationPipeline);
+    passEncoder.setBindGroup(1, this.bindGroup);
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(this.agentCount / AgentGenerationPipeline.WORKGROUP_SIZE)
+    );
+    passEncoder.end();
+
+    this.device.queue.submit([commandEncoder.finish()]);
+  }
+
+  public async countAgents(): Promise<GenerationCounts> {
+    this.device.queue.writeBuffer(this.countersBuffer, 0, new Int32Array([0, 0]));
+
+    const commandEncoder = this.device.createCommandEncoder();
+
+    const passEncoder = commandEncoder.beginComputePass();
+    passEncoder.setPipeline(this.countingPipeline);
     this.commonState.execute(passEncoder);
     passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.dispatchWorkgroups(
@@ -171,8 +220,8 @@ export class AgentGenerationPipeline {
     const data = new Int32Array(this.countersStagingBuffer.getMappedRange().slice(0));
     this.countersStagingBuffer.unmap();
     return {
-      currentGenerationCount: data[0],
-      nextGenerationCount: data[1],
+      evenGenerationCount: data[0],
+      oddGenerationCount: data[1],
     };
   }
 

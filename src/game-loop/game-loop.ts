@@ -48,6 +48,8 @@ export default class GameLoop {
     this.trailMapB = new ResizableTexture(this.device, this.canvasSize);
     this.resize();
 
+    this.copyPipeline = new CopyPipeline(this.device);
+
     this.commonState = new CommonState(this.device);
     this.commonState.setParameters({
       canvasSize: this.canvasSize,
@@ -55,13 +57,12 @@ export default class GameLoop {
       deltaTime: 0,
     });
 
-    this.copyPipeline = new CopyPipeline(this.device);
-
     this.agentGenerationPipeline = new AgentGenerationPipeline(
       this.device,
       this.commonState,
       settings.agentCount
     );
+    this.agentGenerationPipeline.spawnFirstGeneration();
 
     this.agentPipeline = new AgentPipeline(
       this.device,
@@ -87,10 +88,23 @@ export default class GameLoop {
 
   public async start(): Promise<void> {
     requestAnimationFrame(this.render.bind(this));
+    requestAnimationFrame(this.updateCounts.bind(this));
     return this.hasFinishedPromise;
   }
 
-  public get aliveAgentCounts(): GenerationCounts {
+  private async updateCounts(): Promise<void> {
+    if (this.hasFinished) {
+      return;
+    }
+    const generationCounts = await this.agentGenerationPipeline.countAgents();
+    this.gameRules.updateGenerationCounts(generationCounts);
+    requestAnimationFrame(this.updateCounts.bind(this));
+  }
+
+  public get aliveAgentCounts(): {
+    currentGenerationCount: number;
+    nextGenerationCount: number;
+  } {
     return this.gameRules.generationCounts;
   }
 
@@ -131,7 +145,15 @@ export default class GameLoop {
     ].forEach((pipeline) =>
       pipeline.setParameters({
         time,
-        nextGenerationAggression: this.gameRules.nextGenerationAgression,
+        evenGenerationAggression:
+          this.gameRules.nextGenerationId % 2
+            ? -1
+            : this.gameRules.nextGenerationAgression,
+        oddGenerationAggression:
+          this.gameRules.nextGenerationId % 2
+            ? this.gameRules.nextGenerationAgression
+            : -1,
+        nextGenerationId: this.gameRules.nextGenerationId,
         deltaTime,
         canvasSize: this.canvasSize,
         ...settings,
@@ -141,26 +163,11 @@ export default class GameLoop {
     for (let i = 0; i < settings.renderSpeed; i++) {
       const commandEncoder = this.device.createCommandEncoder();
 
-      if (
-        this.gameRules.generationCounts.currentGenerationCount == 0 &&
-        this.gameRules.generationCounts.nextGenerationCount == 0
-      ) {
-        this.gameRules.updateGenerationCounts(
-          await this.agentGenerationPipeline.spawnNextGenerationCover(
-            0,
-            settings.agentCount * (1 - settings.initialDeadRatio)
-          )
-        );
-      }
-
       const spawnAction = this.gameRules.getSpawnAction(timeInSeconds, this.canvasSize);
-      this.gameRules.updateGenerationCounts(
-        await this.agentGenerationPipeline.spawnNextGenerationCircle(
-          spawnAction.generation,
-          spawnAction.count,
-          spawnAction.position,
-          settings.nextGenerationSpawnRadius
-        )
+      this.agentGenerationPipeline.spawnNextGeneration(
+        spawnAction.position,
+        spawnAction.radius,
+        spawnAction.generation
       );
 
       this.copyPipeline.execute(

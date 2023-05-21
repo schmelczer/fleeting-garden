@@ -1,4 +1,4 @@
 export interface GenerationCounts {
-  currentGenerationCount: number;
-  nextGenerationCount: number;
+  evenGenerationCount: number;
+  oddGenerationCount: number;
 }

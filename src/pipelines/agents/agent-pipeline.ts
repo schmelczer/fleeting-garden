@@ -8,7 +8,7 @@ import shader from './agent.wgsl';
 
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 6;
+  private static readonly UNIFORM_COUNT = 8;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
@@ -47,8 +47,14 @@ export class AgentPipeline {
     turnSpeed,
     sensorOffsetAngle,
     sensorOffsetDistance,
-    nextGenerationAggression,
-  }: AgentSettings & { nextGenerationAggression: number }) {
+    evenGenerationAggression,
+    oddGenerationAggression,
+    nextGenerationId,
+  }: AgentSettings & {
+    evenGenerationAggression: number;
+    oddGenerationAggression: number;
+    nextGenerationId: number;
+  }) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
@@ -58,7 +64,9 @@ export class AgentPipeline {
         turnSpeed,
         (sensorOffsetAngle * Math.PI) / 180,
         sensorOffsetDistance,
-        nextGenerationAggression,
+        evenGenerationAggression,
+        oddGenerationAggression,
+        nextGenerationId,
       ])
     );
   }

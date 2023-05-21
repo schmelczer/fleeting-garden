@@ -8,15 +8,16 @@ import { vec2 } from 'gl-matrix';
 export interface SpawnAction {
   generation: number;
   position: vec2;
-  count: number;
+  radius: number;
 }
 
 export class GameRules {
-  private static SPAWN_INTERVAL = 3;
-
   private lastSpawnTimeInSeconds = 0;
-  private nextGenerationId = 0;
-  public generationCounts: GenerationCounts = {
+  public nextGenerationId = 1;
+  public generationCounts: {
+    currentGenerationCount: number;
+    nextGenerationCount: number;
+  } = {
     currentGenerationCount: 0,
     nextGenerationCount: 0,
   };
@@ -26,11 +27,14 @@ export class GameRules {
   }
 
   public getSpawnAction(timeInSeconds: number, canvasSize: vec2): SpawnAction {
-    if (timeInSeconds - this.lastSpawnTimeInSeconds < GameRules.SPAWN_INTERVAL) {
+    if (
+      timeInSeconds - this.lastSpawnTimeInSeconds <
+      settings.nextGenerationSpawnInterval
+    ) {
       return {
         generation: this.nextGenerationId,
         position: vec2.create(),
-        count: 0,
+        radius: 0,
       };
     }
 
@@ -42,17 +46,19 @@ export class GameRules {
         Random.randomBetween(0, canvasSize.x),
         Random.randomBetween(0, canvasSize.y)
       ),
-      count:
-        settings.agentCount -
-        this.generationCounts.nextGenerationCount -
-        this.generationCounts.currentGenerationCount,
+      radius: settings.nextGenerationSpawnRadius,
     };
   }
 
   public updateGenerationCounts({
-    currentGenerationCount,
-    nextGenerationCount,
+    evenGenerationCount,
+    oddGenerationCount,
   }: GenerationCounts): void {
+    const nextGenerationCount =
+      this.nextGenerationId % 2 === 1 ? oddGenerationCount : evenGenerationCount;
+    const currentGenerationCount =
+      this.nextGenerationId % 2 === 1 ? evenGenerationCount : oddGenerationCount;
+
     if (currentGenerationCount === 0) {
       this.nextGenerationId++;
     }

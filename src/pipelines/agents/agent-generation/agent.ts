@@ -4,7 +4,6 @@ export interface Agent {
   position: vec2;
   angle: number;
   species: number;
-  timeToLive: number;
 }
 
-export const AGENT_SIZE_IN_BYTES = 5 * Float32Array.BYTES_PER_ELEMENT;
+export const AGENT_SIZE_IN_BYTES = 4 * Float32Array.BYTES_PER_ELEMENT;

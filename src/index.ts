@@ -76,8 +76,8 @@ const main = async () => {
 
     const updateCounters = () => {
       elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
-Gen1: ${game?.aliveAgentCounts.currentGenerationCount ?? 0}
-Gen2: ${game?.aliveAgentCounts.nextGenerationCount ?? 0}`;
+current gen: ${game?.aliveAgentCounts.currentGenerationCount ?? 0}
+next gen: ${game?.aliveAgentCounts.nextGenerationCount ?? 0}`;
       window.requestAnimationFrame(updateCounters);
     };
     updateCounters();

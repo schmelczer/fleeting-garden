@@ -31,7 +31,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // even generation id -> red channel
   // odd generation id -> green channel
 
-  let isFromEvenGeneration = agent.species % 2 == 0;
+  let isFromEvenGeneration = agent.generation % 2 == 0;
   
   let trailForward = sense(agent.position, agent.angle, settings.sensorOffset, 0);
   let trailLeft = sense(agent.position, agent.angle, settings.sensorOffset, settings.sensorAngle);
@@ -81,18 +81,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   if(isFromEvenGeneration) {
     if next.r < next.g {
-      if agent.species == settings.nextGenerationId {
-        // agent.species -= 1;
+      if agent.generation == settings.nextGenerationId {
+        // agent.generation -= 1;
       } else {
-        agent.species += 1;
+        agent.generation += 1;
       }
     }
   } else {
     if next.g < next.r {
-       if agent.species == settings.nextGenerationId {
-        // agent.species -= 1;
+       if agent.generation == settings.nextGenerationId {
+        // agent.generation -= 1;
       } else {
-        agent.species += 1;
+        agent.generation += 1;
       }
     }
   }

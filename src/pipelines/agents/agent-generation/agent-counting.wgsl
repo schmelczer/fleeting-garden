@@ -13,7 +13,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  if agents[id].species % 2 == 0 {
+  if agents[id].generation % 2 == 0 {
     atomicAdd(&counters.evenGenerationAlive, 1);
   } else {
     atomicAdd(&counters.oddGenerationAlive, 1);

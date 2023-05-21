@@ -15,6 +15,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   if length(settings.center - agents[id].position) < settings.radius {
-    agents[id].species = settings.nextGenerationId;
+    agents[id].generation = settings.nextGenerationId;
   }
 }

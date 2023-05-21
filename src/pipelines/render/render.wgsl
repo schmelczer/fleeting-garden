@@ -1,7 +1,7 @@
 struct Settings {
   brushColor: vec3<f32>,
-  speciesAColor: vec3<f32>,
-  speciesBColor: vec3<f32>,
+  evenGenerationColor: vec3<f32>,
+  oddGenerationColor: vec3<f32>,
   clarity: f32,
 };
 
@@ -16,12 +16,12 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 
   let backgroundColor = vec3(0.9) + 0.075 * random.r;
 
-  let speciesAStrength = clamp(pow(traces.r, settings.clarity), 0, 1);
-  let speciesBStrength = clamp(pow(traces.g, settings.clarity), 0, 1);
+  let evenGenerationStrength = clamp(pow(traces.r, settings.clarity), 0, 1);
+  let oddGenerationStrength = clamp(pow(traces.g, settings.clarity), 0, 1);
   let brushStrength = traces.a;
 
-  let agentColor = step(speciesAStrength, speciesBStrength) * settings.speciesBColor * speciesBStrength + step(speciesBStrength, speciesAStrength) * settings.speciesAColor * speciesAStrength;
-  let agentStrength = speciesAStrength + speciesBStrength;
+  let agentColor = step(evenGenerationStrength, oddGenerationStrength) * settings.oddGenerationColor * oddGenerationStrength + step(oddGenerationStrength, evenGenerationStrength) * settings.evenGenerationColor * evenGenerationStrength;
+  let agentStrength = evenGenerationStrength + oddGenerationStrength;
 
   let rgbColor = sqrt(
     mix(agentColor, settings.brushColor * brushStrength, clamp(brushStrength - agentStrength, 0, 1))

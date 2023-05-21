@@ -1,4 +1,5 @@
 @use 'sass:math';
+@use 'sass:color';
 
 $breakpoint-width: 700px !default;
 
@@ -10,12 +11,6 @@ $breakpoint-width: 700px !default;
 
 @mixin on-large-screen() {
   @media (min-width: $breakpoint-width) {
-    @content;
-  }
-}
-
-@mixin in-dark-mode() {
-  html[theme='dark'] {
     @content;
   }
 }
@@ -68,7 +63,8 @@ $breakpoint-width: 700px !default;
   transform: translateX(-50%) translateY(-50%);
 }
 
-@mixin blurred-background() {
+@mixin blurred-background($color: transparent) {
+  background-color: color.adjust($color, $alpha: -0.66);
   backdrop-filter: blur(var(--blur-radius));
   -webkit-backdrop-filter: blur(var(--blur-radius));
 
@@ -76,7 +72,7 @@ $breakpoint-width: 700px !default;
     (backdrop-filter: blur(var(--blur-radius))) or
       (-webkit-backdrop-filter: blur(var(--blur-radius)))
   ) {
-    background-color: var(--card-color);
+    background-color: $color;
   }
 }
 

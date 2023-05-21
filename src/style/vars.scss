@@ -1,11 +1,13 @@
 @use 'mixins' as *;
 
+$accent-color: #b7455e;
+
 :root {
   --transition-time: 200ms;
   --transition-time-long: 350ms;
   --line-width: 4px;
   --line-height: 1.125rem;
-  --accent-color: #b7455e;
+  --accent-color: $accent-color;
   --sun-color: #f7f78c;
   --very-light-text-color: #ffffff;
   --background: #ffffff;
@@ -32,13 +34,4 @@
     --large-margin: 2.8rem;
     --normal-margin: 2rem;
   }
-}
-
-@include in-dark-mode {
-  --background: #242638;
-  --normal-text-color: #ffffff;
-  --card-color: #263551;
-  --blurred-card-color: #212f4a77;
-  --special-text-color: #ffffff;
-  --inset-shadow: inset 0 0 10px 2px rgba(0, 0, 0, 0.3), inset 0 0 4px rgba(0, 0, 0, 0.5);
 }

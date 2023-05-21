@@ -1,5 +1,4 @@
 import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
-import { GenerationCounts } from '../pipelines/agents/agent-generation/generation-counts';
 import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
 import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
 import { CommonState } from '../pipelines/common-state/common-state';
@@ -11,6 +10,7 @@ import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
 import { initializeContext } from '../utils/graphics/initialize-context';
 import { ResizableTexture } from '../utils/graphics/resizable-texture';
 import { sleep } from '../utils/sleep';
+import { GamePresentation } from './game-presentation';
 import { GameRules } from './game-rules';
 
 import { vec2 } from 'gl-matrix';
@@ -27,8 +27,6 @@ export default class GameLoop {
   private readonly brushPipeline: BrushPipeline;
   private readonly diffusionPipeline: DiffusionPipeline;
 
-  private readonly gameRules = new GameRules(performance.now() / 1000);
-
   private hasFinished = false;
   private readonly hasFinishedPromise: Promise<void> = new Promise(
     (resolve) => (this.resolveHasFinished = resolve)
@@ -40,7 +38,8 @@ export default class GameLoop {
   public constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly device: GPUDevice,
-    private readonly deltaTimeCalculator: DeltaTimeCalculator
+    private readonly deltaTimeCalculator: DeltaTimeCalculator,
+    private readonly gameRules: GameRules
   ) {
     const context = initializeContext({ device, canvas });
 
@@ -131,10 +130,19 @@ export default class GameLoop {
       return;
     }
 
+    const accentColor = GamePresentation.getGenerationColor(
+      this.gameRules.nextGenerationId - 1
+    );
+    document.documentElement.style.setProperty(
+      '--accent-color',
+      `rgb(${accentColor.map((v) => v * 255).join(',')})`
+    );
+
     const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);
 
     time *= settings.renderSpeed;
     const timeInSeconds = time / 1000;
+    const spawnAction = this.gameRules.getSpawnAction(timeInSeconds, this.canvasSize);
 
     [
       this.commonState,
@@ -156,19 +164,27 @@ export default class GameLoop {
         nextGenerationId: this.gameRules.nextGenerationId,
         deltaTime,
         canvasSize: this.canvasSize,
+        brushColor: GamePresentation.getGenerationColor(
+          this.gameRules.nextGenerationId - 1
+        ),
+        evenGenerationColor: GamePresentation.getGenerationColor(
+          this.gameRules.nextGenerationId % 2 == 0
+            ? this.gameRules.nextGenerationId
+            : this.gameRules.nextGenerationId - 1
+        ),
+        oddGenerationColor: GamePresentation.getGenerationColor(
+          this.gameRules.nextGenerationId % 2 == 1
+            ? this.gameRules.nextGenerationId
+            : this.gameRules.nextGenerationId - 1
+        ),
         ...settings,
+        center: spawnAction.position,
+        radius: spawnAction.radius,
       })
     );
 
     for (let i = 0; i < settings.renderSpeed; i++) {
       const commandEncoder = this.device.createCommandEncoder();
-
-      const spawnAction = this.gameRules.getSpawnAction(timeInSeconds, this.canvasSize);
-      this.agentGenerationPipeline.spawnNextGeneration(
-        spawnAction.position,
-        spawnAction.radius,
-        spawnAction.generation
-      );
 
       this.copyPipeline.execute(
         commandEncoder,

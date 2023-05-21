@@ -1,9 +1,10 @@
-import { generateFbmNoise } from '../../utils/graphics/fbm-noise/fbm-noise';
 import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
 import { RenderSettings } from './render-settings';
 import shader from './render.wgsl';
+
+import { vec3 } from 'gl-matrix';
 
 export class RenderPipeline {
   private static readonly UNIFORM_COUNT = 13;
@@ -56,7 +57,11 @@ export class RenderPipeline {
     evenGenerationColor,
     oddGenerationColor,
     clarity,
-  }: RenderSettings) {
+  }: RenderSettings & {
+    brushColor: vec3;
+    evenGenerationColor: vec3;
+    oddGenerationColor: vec3;
+  }) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,

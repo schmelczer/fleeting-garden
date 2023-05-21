@@ -6,4 +6,6 @@ export interface GameLoopSettings {
   aggressionFactor: number;
   nextGenerationSpawnRadius: number;
   nextGenerationSpawnInterval: number;
+
+  startColorHue: number;
 }

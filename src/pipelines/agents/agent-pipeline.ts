@@ -1,19 +1,20 @@
 import random from '../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
-import { AGENT_SIZE_IN_BYTES, Agent } from './agent-generation/agent';
+import { AGENT_SIZE_IN_BYTES } from './agent-generation/agent';
 import agentSchme from './agent-generation/agent-schema.wgsl';
 import { AgentSettings } from './agent-settings';
 import shader from './agent.wgsl';
 
+import { vec2 } from 'gl-matrix';
+
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 8;
+  private static readonly UNIFORM_COUNT = 16;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
   private readonly uniforms: GPUBuffer;
-
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTextureView;
   private previousTrailMapOut?: GPUTextureView;
@@ -50,10 +51,18 @@ export class AgentPipeline {
     evenGenerationAggression,
     oddGenerationAggression,
     nextGenerationId,
+    center,
+    radius,
+    turnWhenGoingInTheRightDirection,
+    turnWhenLost,
+    individualTrailWeight,
+    deinfectionProbability,
   }: AgentSettings & {
     evenGenerationAggression: number;
     oddGenerationAggression: number;
     nextGenerationId: number;
+    center: vec2;
+    radius: number;
   }) {
     this.device.queue.writeBuffer(
       this.uniforms,
@@ -67,6 +76,12 @@ export class AgentPipeline {
         evenGenerationAggression,
         oddGenerationAggression,
         nextGenerationId,
+        ...center,
+        radius,
+        turnWhenGoingInTheRightDirection,
+        turnWhenLost,
+        individualTrailWeight,
+        deinfectionProbability,
       ])
     );
   }

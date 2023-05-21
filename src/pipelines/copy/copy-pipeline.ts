@@ -1,4 +1,3 @@
-import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import shader from './copy.wgsl';
 

@@ -3,7 +3,8 @@
 ## todo
 
 - add info page
-- generate starting shape on the gpu
-- add cancer
-- graceful error messages when no support
 - settings page
+- shareable settings
+- query max agent count
+
+- graceful error messages when no support

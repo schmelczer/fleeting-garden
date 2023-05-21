@@ -1,5 +1,6 @@
 import '../assets/icons/info.svg';
 import GameLoop from './game-loop/game-loop';
+import { GameRules } from './game-loop/game-rules';
 import './index.scss';
 import { FullScreenHandler } from './page/full-screen-handler';
 import { InfoPageHandler } from './page/info-page-handler';
@@ -49,7 +50,7 @@ const main = async () => {
   let shouldStop = false;
   let game: GameLoop | null = null;
 
-  ErrorHandler.addOnErrorListener((error, metadata) => {
+  ErrorHandler.addOnErrorListener((error, _metadata) => {
     elements.errorContainer.innerHTML += `
       <pre class="${error.severity}">${error.message}</div>
     `;
@@ -73,7 +74,9 @@ const main = async () => {
     elements.restartButton.addEventListener('click', () => game?.destroy());
 
     const deltaTimeCalculator = new DeltaTimeCalculator();
+    const gameRules = new GameRules(performance.now() / 1000);
 
+    console.log(gameRules.nextGenerationId);
     const updateCounters = () => {
       elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
 current gen: ${game?.aliveAgentCounts.currentGenerationCount ?? 0}
@@ -83,7 +86,7 @@ next gen: ${game?.aliveAgentCounts.nextGenerationCount ?? 0}`;
     updateCounters();
 
     while (!shouldStop) {
-      game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator);
+      game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
       await game.start();
     }
   } catch (e) {

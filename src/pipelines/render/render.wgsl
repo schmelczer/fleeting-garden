@@ -16,15 +16,19 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 
   let backgroundColor = vec3(0.9) + 0.075 * random.r;
 
-  let evenGenerationStrength = clamp(pow(traces.r, settings.clarity), 0, 1);
-  let oddGenerationStrength = clamp(pow(traces.g, settings.clarity), 0, 1);
+  let evenGenerationStrength = pow(traces.r, settings.clarity);
+  let oddGenerationStrength = pow(traces.g, settings.clarity);
   let brushStrength = traces.a;
 
-  let agentColor = step(evenGenerationStrength, oddGenerationStrength) * settings.oddGenerationColor * oddGenerationStrength + step(oddGenerationStrength, evenGenerationStrength) * settings.evenGenerationColor * evenGenerationStrength;
-  let agentStrength = evenGenerationStrength + oddGenerationStrength;
+  let color = max(
+    mix(
+      evenGenerationStrength * settings.evenGenerationColor,
+      oddGenerationStrength * settings.oddGenerationColor,
+      oddGenerationStrength / (evenGenerationStrength + oddGenerationStrength + 0.000001)
+    ),
+    brushStrength * settings.brushColor);
 
-  let rgbColor = sqrt(
-    mix(agentColor, settings.brushColor * brushStrength, clamp(brushStrength - agentStrength, 0, 1))
-  );
-  return vec4(backgroundColor - rgbColor, 1);
+  let strength = max(evenGenerationStrength, max(oddGenerationStrength, brushStrength));
+
+  return vec4(mix(backgroundColor, color, strength), 1);
 }

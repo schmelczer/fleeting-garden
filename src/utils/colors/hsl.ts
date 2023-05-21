@@ -6,7 +6,7 @@ export const hsl = (hue: number, saturation: number, lightness: number): vec3 =>
   hue /= 360;
   saturation /= 100;
   lightness /= 100;
-  let r, g, b;
+  let r: number, g: number, b: number;
 
   if (saturation == 0) {
     r = g = b = lightness;

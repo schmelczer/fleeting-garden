@@ -1,13 +1,11 @@
 @use 'mixins' as *;
 
-$accent-color: #b7455e;
-
 :root {
   --transition-time: 200ms;
   --transition-time-long: 350ms;
   --line-width: 4px;
   --line-height: 1.125rem;
-  --accent-color: $accent-color;
+  --accent-color: #ff6b6b;
   --sun-color: #f7f78c;
   --very-light-text-color: #ffffff;
   --background: #ffffff;

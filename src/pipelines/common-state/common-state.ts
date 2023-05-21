@@ -86,7 +86,15 @@ export class CommonState {
     });
   }
 
-  public setParameters(canvasSize: vec2, deltaTime: number, time: number) {
+  public setParameters({
+    canvasSize,
+    deltaTime,
+    time,
+  }: {
+    canvasSize: vec2;
+    deltaTime: number;
+    time: number;
+  }) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,

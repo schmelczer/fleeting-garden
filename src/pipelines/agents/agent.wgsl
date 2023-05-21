@@ -4,6 +4,8 @@ struct Settings {
   turnRate: f32,
   sensorAngle: f32,
   sensorOffset: f32,
+  nextGenerationAggression: f32,
+  // nextGenerationParity: f32,
 };
 
 @group(1) @binding(0) var<uniform> settings: Settings;
@@ -14,38 +16,29 @@ struct Settings {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let id = global_id.x;
 
-  if (id >= arrayLength(&agents)) {
+  if (id >= arrayLength(&agents) || agents[id].timeToLive <= 0) {
     return;
   }
 
   var agent = agents[id];
 
-  // if (agent.timeToLive <= 0.) {
-  //   agent.position = vec2(
-  //     random_with_seed(agent.position, f32(id) + state.time),
-  //     random_with_seed(agent.position, f32(id) + state.time + 12),
-  //   );
-  //   agent.angle = random_with_seed(vec2(agent.angle), f32(id) + state.time);
-  //   agent.species = 1;
-  //   agent.timeToLive = 1000;
-  //   agents[id] = agent;
-  //   return;
-  // }
-
-  let random = hash(id + u32(state.time * 16732.0));
+  let random = hash(id + u32(state.time % 107 * 1673.7));
   let trailCurrent = textureLoad(trailMapIn, vec2<i32>(agent.position), 0);
 
-  // var weight: f32;
-  // if(agent.species == 0) {
-  //   weight = trailCurrent.r - trailCurrent.g;
-  // } else {
-  //   weight = trailCurrent.g - trailCurrent.r;
-  // }
-  // if (weight < 0) {
-  //   agent.timeToLive = 0;
-  //   return;
-  // }
-
+  var weight: f32;
+  if(agent.species == 0) {
+    if trailCurrent.r < trailCurrent.g {
+      agent.species = 1;
+      agents[id] = agent;
+      return;
+    }
+  } else {
+    if trailCurrent.g < trailCurrent.r {
+      agent.timeToLive = 0;
+      agents[id] = agent;
+      return;
+    }
+  }
   
   let trailForward = sense(agent.position, agent.angle, settings.sensorOffset, 0);
   let trailLeft = sense(agent.position, agent.angle, settings.sensorOffset, settings.sensorAngle);
@@ -59,9 +52,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     weightLeft += trailLeft.r - trailLeft.g;
     weightRight += trailRight.r - trailRight.g;
   } else {
-    weightForward += trailForward.g - trailForward.r;
-    weightLeft += trailLeft.g - trailLeft.r;
-    weightRight += trailRight.g - trailRight.r;
+    weightForward += trailForward.g + trailForward.r * settings.nextGenerationAggression;
+    weightLeft += trailLeft.g + trailLeft.r * settings.nextGenerationAggression;
+    weightRight += trailRight.g + trailRight.r * settings.nextGenerationAggression;
   }
 
   var rotation: f32 = 0;

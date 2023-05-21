@@ -8,7 +8,7 @@ import shader from './agent.wgsl';
 
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 5;
+  private static readonly UNIFORM_COUNT = 6;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
@@ -21,7 +21,7 @@ export class AgentPipeline {
   public constructor(
     private readonly device: GPUDevice,
     private readonly commonState: CommonState,
-    private readonly agentsBuffer: GPUBuffer
+    private readonly agentsBuffer: GPUBuffer // doesn't get destroyed
   ) {
     this.bindGroupLayout = device.createBindGroupLayout(AgentPipeline.bindGroupLayout);
 
@@ -47,7 +47,8 @@ export class AgentPipeline {
     turnSpeed,
     sensorOffsetAngle,
     sensorOffsetDistance,
-  }: AgentSettings) {
+    nextGenerationAggression,
+  }: AgentSettings & { nextGenerationAggression: number }) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
@@ -57,6 +58,7 @@ export class AgentPipeline {
         turnSpeed,
         (sensorOffsetAngle * Math.PI) / 180,
         sensorOffsetDistance,
+        nextGenerationAggression,
       ])
     );
   }
@@ -118,7 +120,6 @@ export class AgentPipeline {
 
   public destroy() {
     this.uniforms.destroy();
-    this.agentsBuffer.destroy();
   }
 
   private static get bindGroupLayout(): GPUBindGroupLayoutDescriptor {

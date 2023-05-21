@@ -19,9 +19,13 @@ export const settings: GameLoopSettings &
   BrushSettings &
   DiffusionSettings &
   RenderSettings = {
-  agentCount: 4_000_000,
+  agentCount: 4_000_000, // requires restart
+  initialDeadRatio: 0.2, // requires restart
 
-  renderSpeed: 1,
+  aggressionFactor: 0.5, // requires restart
+  nextGenerationSpawnRadius: 50,
+
+  renderSpeed: 5,
   simulatedDelayMs: 0,
 
   brushWidth: 20,
@@ -39,7 +43,7 @@ export const settings: GameLoopSettings &
   decayRateBrush: 0.995, // inverse
 
   brushColor: palette.blue,
-  speciesColorA: palette.yellow,
-  speciesColorB: palette.purple,
+  speciesAColor: palette.yellow,
+  speciesBColor: palette.purple,
   clarity: 3,
 };

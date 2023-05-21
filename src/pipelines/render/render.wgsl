@@ -1,7 +1,7 @@
 struct Settings {
   brushColor: vec3<f32>,
-  speciesColorA: vec3<f32>,
-  speciesColorB: vec3<f32>,
+  speciesAColor: vec3<f32>,
+  speciesBColor: vec3<f32>,
   clarity: f32,
 };
 
@@ -20,7 +20,7 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   let speciesBStrength = clamp(pow(traces.g, settings.clarity), 0, 1);
   let brushStrength = traces.a;
 
-  let agentColor =  settings.speciesColorA * speciesAStrength + settings.speciesColorB * speciesBStrength;
+  let agentColor = step(speciesAStrength, speciesBStrength) * settings.speciesBColor * speciesBStrength + step(speciesBStrength, speciesAStrength) * settings.speciesAColor * speciesAStrength;
   let agentStrength = speciesAStrength + speciesBStrength;
 
   let rgbColor = sqrt(

@@ -53,8 +53,8 @@ export class RenderPipeline {
 
   public setParameters({
     brushColor,
-    speciesColorA,
-    speciesColorB,
+    speciesAColor,
+    speciesBColor,
     clarity,
   }: RenderSettings) {
     this.device.queue.writeBuffer(
@@ -63,9 +63,9 @@ export class RenderPipeline {
       new Float32Array([
         ...brushColor,
         0, //padding
-        ...speciesColorA,
+        ...speciesAColor,
         0, //padding
-        ...speciesColorB,
+        ...speciesBColor,
         clarity,
       ])
     );

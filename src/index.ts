@@ -5,6 +5,7 @@ import { FullScreenHandler } from './page/full-screen-handler';
 import { InfoPageHandler } from './page/info-page-handler';
 import { MenuHider } from './page/menu-hider';
 import { applyArrayPlugins } from './utils/array';
+import { DeltaTimeCalculator } from './utils/delta-time-calculator';
 import { ErrorHandler, Severity } from './utils/error-handler';
 import { initializeGpu } from './utils/graphics/initialize-gpu';
 
@@ -39,6 +40,7 @@ const getElements = () => ({
   canvas: document.querySelector('canvas') as HTMLCanvasElement,
   canvasContainer: document.querySelector('main.canvas-container') as HTMLCanvasElement,
   errorContainer: document.querySelector('.errors-container') as HTMLDivElement,
+  counters: document.querySelector('.counters > pre') as HTMLPreElement,
 });
 
 const main = async () => {
@@ -70,8 +72,18 @@ const main = async () => {
 
     elements.restartButton.addEventListener('click', () => game?.destroy());
 
+    const deltaTimeCalculator = new DeltaTimeCalculator();
+
+    const updateCounters = () => {
+      elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
+Gen1: ${game?.aliveAgentCounts.currentGenerationCount ?? 0}
+Gen2: ${game?.aliveAgentCounts.nextGenerationCount ?? 0}`;
+      window.requestAnimationFrame(updateCounters);
+    };
+    updateCounters();
+
     while (!shouldStop) {
-      game = new GameLoop(elements.canvas, gpu);
+      game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator);
       await game.start();
     }
   } catch (e) {

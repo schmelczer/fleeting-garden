@@ -8,6 +8,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  color: var(--very-light-text-color);
 
   @media (prefers-reduced-motion) {
     transition: none !important;
@@ -51,7 +52,6 @@ html {
       }
 
       > .errors-container {
-        color: red;
         position: absolute;
         top: 0;
         left: 0;
@@ -59,12 +59,26 @@ html {
 
         pre {
           font-size: 20px;
+          color: red;
+        }
+      }
+
+      .counters {
+        @include blurred-background(white);
+        position: absolute;
+        top: var(--normal-margin);
+        right: var(--normal-margin);
+        border-radius: var(--border-radius);
+        padding: var(--small-margin);
+
+        pre {
+          color: black;
         }
       }
     }
 
     > aside {
-      @include blurred-background;
+      @include blurred-background(#777);
 
       position: absolute;
       top: 50%;

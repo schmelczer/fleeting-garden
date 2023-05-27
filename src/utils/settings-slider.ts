@@ -63,11 +63,15 @@ export class SettingsSlider<T extends Record<string, number>> {
     valueDisplay: HTMLSpanElement
   ) {
     const wrapper = document.createElement('div');
+    wrapper.classList.add('slider');
     const label = document.createElement('label');
 
-    label.innerText = SettingsSlider.formatLabel(name);
+    const title = document.createElement('p');
+    title.innerText = SettingsSlider.formatLabel(name);
+    title.appendChild(valueDisplay);
+
+    label.appendChild(title);
     label.appendChild(slider);
-    label.appendChild(valueDisplay);
     wrapper.appendChild(label);
 
     return wrapper;

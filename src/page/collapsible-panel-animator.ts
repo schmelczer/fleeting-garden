@@ -6,20 +6,14 @@ export class CollapsiblePanelAnimator {
 
   public constructor(
     infoButton: HTMLButtonElement,
-    private readonly infoPage: HTMLElement
+    private readonly infoPage: HTMLElement,
+    ignoreForCloseOnClick: HTMLElement
   ) {
     infoButton.addEventListener('click', this.toggle.bind(this));
-    window.addEventListener('click', (event) => {
-      if ([infoButton, this.infoPage].includes(event.target as HTMLElement)) {
-        return;
-      }
-
-      if (this.infoPage.contains(event.target as Node)) {
-        return;
-      }
-
-      this.close();
-    });
+    window.addEventListener(
+      'click',
+      (event) => !ignoreForCloseOnClick.contains(event.target as Node) && this.close()
+    );
   }
 
   public open() {

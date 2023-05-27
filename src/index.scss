@@ -31,7 +31,6 @@ p {
 html {
   height: 100%;
   -webkit-font-smooth: antialiased;
-
   > body {
     width: 100%;
     height: 100%;
@@ -89,6 +88,7 @@ html {
         top: 50%;
         left: 0;
         transform: translateY(-50%);
+        height: 400px;
       }
 
       @include on-small-screen {
@@ -133,10 +133,20 @@ html {
       }
 
       > main.pages {
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
+        &::-webkit-scrollbar-track,
+        &::-webkit-scrollbar {
+          background-color: transparent;
+          width: 6px;
+        }
+        &::-webkit-scrollbar-thumb {
+          background-color: var(--main-color);
+          border-radius: var(--border-radius);
+        }
 
         &,
-        * {
+        > * {
           transition: width var(--transition-time-long),
             height var(--transition-time-long);
 
@@ -160,7 +170,50 @@ html {
         }
 
         > section {
-          margin: var(--normal-margin);
+          padding: var(--normal-margin);
+
+          .slider {
+            $track-height: 12px;
+            margin-bottom: var(--small-margin);
+
+            p {
+              display: flex;
+              justify-content: space-between;
+            }
+
+            input[type='range'] {
+              width: 100%;
+              height: $track-height;
+              appearance: none;
+              background: transparent;
+              outline: none;
+              border-radius: 1000px;
+
+              &::-webkit-slider-runnable-track {
+                appearance: none;
+                cursor: pointer;
+                border-radius: 1000px;
+                @include square(15px);
+                background: var(--accent-color);
+              }
+
+              &::-webkit-slider-thumb {
+                appearance: none;
+                cursor: pointer;
+                border-radius: 1000px;
+                $size: 24px;
+                @include square($size);
+                background: white;
+                box-shadow: 0 0 5px 1px var(--accent-color);
+
+                transform: translateY(-5px);
+                transition: transform var(--transition-time);
+                &:hover {
+                  transform: translateY(-5px) scale(1.1);
+                }
+              }
+            }
+          }
         }
       }
     }

@@ -3,23 +3,21 @@ import { AgentSettings } from './pipelines/agents/agent-settings';
 import { BrushSettings } from './pipelines/brush/brush-settings';
 import { DiffusionSettings } from './pipelines/diffusion/diffusion-settings';
 import { RenderSettings } from './pipelines/render/render-settings';
+import { persist } from './utils/persist';
 
-export const settings: GameLoopSettings &
+export const settings: { [key: string]: number } & GameLoopSettings &
   AgentSettings &
   BrushSettings &
   DiffusionSettings &
-  RenderSettings = {
-  agentCount: 4_000_000, // requires restart
+  RenderSettings = persist({
+  agentCount: 1_000_000,
+
+  brushWidth: 12,
+  brushWidthRandomness: 0.5,
 
   aggressionFactor: 3,
   nextGenerationSpawnRadius: 5,
-  nextGenerationSpawnInterval: 1,
-
-  renderSpeed: 2,
-  simulatedDelayMs: 0,
-
-  brushWidth: 12,
-  brushWidthRandomness: 5.5,
+  nextGenerationSpawnInterval: 600,
 
   brushTrailWeight: 5,
   moveSpeed: 80,
@@ -37,5 +35,12 @@ export const settings: GameLoopSettings &
   decayRateBrush: 0.003,
 
   clarity: 2,
+
   startColorHue: 200,
-};
+
+  maxAgentCountUpperLimit: 64_000_000, // requires restart
+
+  // debug options
+  renderSpeed: 1,
+  simulatedDelayMs: 0,
+});

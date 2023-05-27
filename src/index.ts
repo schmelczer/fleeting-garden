@@ -67,14 +67,17 @@ const main = async () => {
 
     const infoPageHandler = new CollapsiblePanelAnimator(
       elements.infoButton,
-      elements.infoElement
+      elements.infoElement,
+      elements.aside
     );
     const settingsPageHandler = new CollapsiblePanelAnimator(
       elements.settingsButton,
-      elements.settingsPage
+      elements.settingsPage,
+      elements.aside
     );
     settingsPageHandler.onOpen = infoPageHandler.close.bind(infoPageHandler);
     infoPageHandler.onOpen = settingsPageHandler.close.bind(settingsPageHandler);
+    infoPageHandler.open();
 
     new MenuHider(elements.aside, FullScreenHandler.isInFullScreenMode);
     new FullScreenHandler(
@@ -103,9 +106,7 @@ next gen: ${formatNumber(game?.aliveAgentCounts.nextGenerationCount ?? 0)}`;
       game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
       if (!isSettingsPageSetUp) {
         isSettingsPageSetUp = true;
-        setUpSettingsPage(elements.settingsPage, game.maxAgentCount, () =>
-          game?.destroy()
-        );
+        setUpSettingsPage(elements.settingsPage, game.maxAgentCount);
       }
 
       await game.start();

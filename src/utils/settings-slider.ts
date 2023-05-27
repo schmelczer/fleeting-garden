@@ -17,7 +17,7 @@ export interface SliderConfiguration {
 }
 
 export class SettingsSlider<T extends Record<string, number>> {
-  private static readonly DEFAULT_STEP_COUNT = 200;
+  private static readonly DEFAULT_STEP_COUNT = 20000;
 
   private readonly slider: HTMLInputElement;
   private readonly valueDisplay: HTMLSpanElement;
@@ -89,6 +89,7 @@ export class SettingsSlider<T extends Record<string, number>> {
     this.settings[this.settingName] = this.config.rounding(
       this.inverseScaling(Number(this.slider.value))
     ) as any;
+
     this.config.onChangeCallback?.(this.settings[this.settingName]);
     this.valueDisplay.innerText = formatNumber(
       this.settings[this.settingName],
@@ -101,16 +102,14 @@ export class SettingsSlider<T extends Record<string, number>> {
 
     if (this.config.step === undefined) {
       this.config.step =
-        this.scaling(this.config.max - this.scaling(this.config.min)) /
+        (this.scaling(this.config.max) - this.scaling(this.config.min)) /
         SettingsSlider.DEFAULT_STEP_COUNT;
     }
 
-    this.slider.value = this.scaling(this.settings[this.settingName]).toString();
     this.slider.min = this.scaling(this.config.min).toString();
     this.slider.max = this.scaling(this.config.max).toString();
-
     this.slider.step = this.config.step.toString();
-
+    this.slider.value = this.scaling(this.settings[this.settingName]).toString();
     this.onChange();
   }
 

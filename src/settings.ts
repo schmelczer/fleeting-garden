@@ -12,33 +12,33 @@ export const settings: { [key: string]: number } & GameLoopSettings &
   RenderSettings = persist({
   agentCount: 1_000_000,
 
-  brushWidth: 12,
-  brushWidthRandomness: 0.5,
-
   aggressionFactor: 3,
-  nextGenerationSpawnRadius: 5,
-  nextGenerationSpawnInterval: 600,
 
-  brushTrailWeight: 5,
   moveSpeed: 80,
   turnSpeed: 550,
   sensorOffsetAngle: 30,
   sensorOffsetDistance: 30,
   turnWhenGoingInTheRightDirection: 0.05,
   turnWhenLost: 0.2,
-  individualTrailWeight: 0.5,
   deinfectionProbability: 0.001,
 
+  brushTrailWeight: 5,
+  individualTrailWeight: 0.5,
   diffusionRateTrails: 2, // inverse
   decayRateTrails: 0.9, // inverse
   diffusionRateBrush: 4, // inverse
   decayRateBrush: 0.003,
 
+  spawnRadius: 5,
+  spawnInterval: 600,
+
   clarity: 2,
+  brushWidth: 12,
+  brushWidthVariation: 0.5,
 
   startColorHue: 200,
 
-  maxAgentCountUpperLimit: 64_000_000, // requires restart
+  maxAgentCountUpperLimit: Number.POSITIVE_INFINITY, // requires restart
 
   // debug options
   renderSpeed: 1,

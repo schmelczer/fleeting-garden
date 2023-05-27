@@ -119,11 +119,11 @@ export class BrushPipeline {
     this.linePoints.length = 0;
   }
 
-  public setParameters({ brushWidth, brushWidthRandomness }: BrushSettings) {
+  public setParameters({ brushWidth, brushWidthVariation }: BrushSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([brushWidth / 2, (brushWidth / 2) * brushWidthRandomness])
+      new Float32Array([brushWidth / 2, (brushWidth / 2) * brushWidthVariation])
     );
 
     this.actualPoints = this.linePoints.slice();

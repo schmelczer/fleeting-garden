@@ -27,10 +27,7 @@ export class GameRules {
   }
 
   public getSpawnAction(timeInSeconds: number, canvasSize: vec2): SpawnAction {
-    if (
-      timeInSeconds - this.lastSpawnTimeInSeconds <
-      settings.nextGenerationSpawnInterval
-    ) {
+    if (timeInSeconds - this.lastSpawnTimeInSeconds < settings.spawnInterval) {
       return {
         generation: this.nextGenerationId,
         position: vec2.create(),
@@ -46,7 +43,7 @@ export class GameRules {
         Random.randomBetween(0, canvasSize.x),
         Random.randomBetween(0, canvasSize.y)
       ),
-      radius: settings.nextGenerationSpawnRadius,
+      radius: settings.spawnRadius,
     };
   }
 

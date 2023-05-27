@@ -5,8 +5,8 @@ export interface GameLoopSettings {
   simulatedDelayMs: number;
 
   aggressionFactor: number;
-  nextGenerationSpawnRadius: number;
-  nextGenerationSpawnInterval: number;
+  spawnRadius: number;
+  spawnInterval: number;
 
   startColorHue: number;
 }

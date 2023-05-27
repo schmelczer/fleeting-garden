@@ -1,39 +1,18 @@
-import { Random } from '../../random';
-import { setUpFullScreenQuad } from '../full-screen-quad/full-screen-quad';
-import random from '../random.wgsl';
-import { smartCompile } from '../smart-compile';
-import noise from './fbm-noise.wgsl';
+import { setUpFullScreenQuad } from './full-screen-quad/full-screen-quad';
+import { smartCompile } from './smart-compile';
 
 const textureCache = new Map<string, GPUTexture>();
 
-export const generateFbmNoise = ({
+export const generateNoise = ({
   device,
   width = 1024,
   height = 1024,
-  octaves = 8,
-  lacunarity = 2,
-  amplitude = 0.5,
-  gain = 0.5,
 }: {
   device: GPUDevice;
   width?: number;
   height?: number;
-  octaves?: number;
-  lacunarity?: number;
-  amplitude?: number;
-  gain?: number;
 }): GPUTextureView => {
-  const constants = {
-    octaves,
-    lacunarity,
-    amplitude,
-    gain,
-    seedR: Random.getRandom(),
-    seedG: Random.getRandom(),
-    seedB: Random.getRandom(),
-    seedA: Random.getRandom(),
-  };
-  const cacheKey = `${width}x${height}x${JSON.stringify(constants)}`;
+  const cacheKey = `${width}x${height}`;
   if (!textureCache.has(cacheKey)) {
     const { buffer, vertex } = setUpFullScreenQuad(device);
     const vertexBuffer = buffer;
@@ -42,9 +21,24 @@ export const generateFbmNoise = ({
       layout: 'auto',
       vertex,
       fragment: {
-        module: smartCompile(device, random, noise),
+        module: smartCompile(
+          device,
+          /* wgsl */ `
+          fn random_with_seed(uv: vec2<f32>, seed: f32) -> f32 {
+            return fract(sin(dot(uv, vec2(12.9898 + seed, 78.233 + seed)))* 43758.5453123 + seed);
+          }
+          
+          @fragment
+          fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+            return vec4(
+              random_with_seed(uv, 1),
+              random_with_seed(uv, 2),
+              random_with_seed(uv, 3),
+              random_with_seed(uv, 4),
+            );
+          }`
+        ),
         entryPoint: 'fragment',
-        constants,
         targets: [
           {
             format: 'rgba16float',

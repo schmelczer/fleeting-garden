@@ -2,9 +2,10 @@
 
 ## todo
 
-- add info page
+- add info page description
+- add share link
 - settings page
+  add reset link
 - shareable settings
-- query max agent count
-
 - graceful error messages when no support
+- fix up generation id automatically

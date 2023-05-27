@@ -49,9 +49,9 @@ export class AgentPipeline {
     turnSpeed,
     sensorOffsetAngle,
     sensorOffsetDistance,
-    evenGenerationAggression,
-    oddGenerationAggression,
-    nextGenerationId,
+    currentGenerationAggression,
+    nextGenerationAggression,
+    isNextGenerationOdd,
     center,
     radius,
     turnWhenGoingInTheRightDirection,
@@ -60,9 +60,9 @@ export class AgentPipeline {
     deinfectionProbability,
     agentCount,
   }: AgentSettings & {
-    evenGenerationAggression: number;
-    oddGenerationAggression: number;
-    nextGenerationId: number;
+    currentGenerationAggression: number;
+    nextGenerationAggression: number;
+    isNextGenerationOdd: number;
     center: vec2;
     radius: number;
     agentCount: number;
@@ -77,9 +77,9 @@ export class AgentPipeline {
         turnSpeed,
         (sensorOffsetAngle * Math.PI) / 180,
         sensorOffsetDistance,
-        evenGenerationAggression,
-        oddGenerationAggression,
-        nextGenerationId,
+        currentGenerationAggression,
+        nextGenerationAggression,
+        isNextGenerationOdd,
         ...center,
         radius,
         turnWhenGoingInTheRightDirection,

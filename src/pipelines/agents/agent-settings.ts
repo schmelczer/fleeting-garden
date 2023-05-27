@@ -8,4 +8,6 @@ export interface AgentSettings {
   turnWhenLost: number;
   individualTrailWeight: number;
   deinfectionProbability: number;
+  currentGenerationAggression: number;
+  nextGenerationAggression: number;
 }

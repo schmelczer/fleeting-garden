@@ -188,15 +188,7 @@ export default class GameLoop {
     ].forEach((pipeline) =>
       pipeline.setParameters({
         time,
-        evenGenerationAggression:
-          this.gameRules.nextGenerationId % 2
-            ? -1
-            : this.gameRules.nextGenerationAgression,
-        oddGenerationAggression:
-          this.gameRules.nextGenerationId % 2
-            ? this.gameRules.nextGenerationAgression
-            : -1,
-        nextGenerationId: this.gameRules.nextGenerationId,
+        isNextGenerationOdd: this.gameRules.nextGenerationId % 2,
         deltaTime,
         canvasSize: this.canvasSize,
         brushColor: GamePresentation.getGenerationColor(

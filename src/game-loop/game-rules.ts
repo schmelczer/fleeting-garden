@@ -1,6 +1,5 @@
 import { GenerationCounts } from '../pipelines/agents/agent-generation/generation-counts';
 import { settings } from '../settings';
-import { clamp01 } from '../utils/clamp';
 import { Random } from '../utils/random';
 
 import { vec2 } from 'gl-matrix';
@@ -64,18 +63,5 @@ export class GameRules {
       currentGenerationCount,
       nextGenerationCount,
     };
-  }
-
-  public get nextGenerationAgression(): number {
-    if (this.generationCounts.currentGenerationCount === 0) {
-      return 0;
-    }
-
-    return clamp01(
-      (this.generationCounts.nextGenerationCount /
-        this.generationCounts.currentGenerationCount -
-        1) *
-        settings.aggressionFactor
-    );
   }
 }

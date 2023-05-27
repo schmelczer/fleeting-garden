@@ -21,9 +21,14 @@ export const setUpSettingsPage = (
         rounding: Math.round,
       }),
 
-      new SettingsSlider(settings, 'aggressionFactor', {
-        min: 0,
-        max: 10,
+      new SettingsSlider(settings, 'currentGenerationAggression', {
+        min: -20,
+        max: 20,
+      }),
+
+      new SettingsSlider(settings, 'nextGenerationAggression', {
+        min: -20,
+        max: 20,
       }),
 
       new SettingsSlider(settings, 'spawnRadius', {

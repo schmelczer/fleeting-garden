@@ -4,7 +4,6 @@ export interface GameLoopSettings {
   renderSpeed: number;
   simulatedDelayMs: number;
 
-  aggressionFactor: number;
   spawnRadius: number;
   spawnInterval: number;
 

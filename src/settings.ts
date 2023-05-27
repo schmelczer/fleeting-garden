@@ -12,7 +12,8 @@ export const settings: { [key: string]: number } & GameLoopSettings &
   RenderSettings = persist({
   agentCount: 1_000_000,
 
-  aggressionFactor: 3,
+  currentGenerationAggression: 0.1,
+  nextGenerationAggression: 10,
 
   moveSpeed: 80,
   turnSpeed: 550,

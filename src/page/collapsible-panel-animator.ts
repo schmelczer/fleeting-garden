@@ -1,5 +1,5 @@
 export class CollapsiblePanelAnimator {
-  private isOpen = false;
+  private _isOpen = false;
 
   public onOpen: () => unknown = () => {};
   public onClose: () => unknown = () => {};
@@ -17,24 +17,28 @@ export class CollapsiblePanelAnimator {
   }
 
   public open() {
-    this.isOpen = true;
+    this._isOpen = true;
     this.collapsibleContent.classList.remove('hidden');
     this.toggleButton.classList.add('active');
     this.onOpen();
   }
 
   public close() {
-    this.isOpen = false;
+    this._isOpen = false;
     this.collapsibleContent.classList.add('hidden');
     this.toggleButton.classList.remove('active');
     this.onClose();
   }
 
   public toggle() {
-    if (this.isOpen) {
+    if (this._isOpen) {
       this.close();
     } else {
       this.open();
     }
+  }
+
+  public get isOpen() {
+    return this._isOpen;
   }
 }

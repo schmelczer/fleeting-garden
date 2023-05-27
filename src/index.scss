@@ -260,6 +260,7 @@ html {
           .slider {
             $track-height: 12px;
             margin-bottom: var(--small-margin);
+            user-select: none;
 
             p {
               display: flex;

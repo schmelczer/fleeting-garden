@@ -12,7 +12,7 @@ for (let i = 0; i < 100; i++) {
 }
 
 const colors = hues.map((hue) =>
-  hsl(hue, Random.randomBetween(80, 90), Random.randomBetween(20, 30))
+  hsl(hue, Random.randomBetween(90, 100), Random.randomBetween(20, 30))
 );
 
 export class GamePresentation {

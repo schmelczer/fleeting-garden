@@ -79,7 +79,13 @@ const main = async () => {
     infoPageHandler.onOpen = settingsPageHandler.close.bind(settingsPageHandler);
     infoPageHandler.open();
 
-    new MenuHider(elements.aside, FullScreenHandler.isInFullScreenMode);
+    new MenuHider(
+      elements.aside,
+      () =>
+        FullScreenHandler.isInFullScreenMode() &&
+        !settingsPageHandler.isOpen &&
+        !infoPageHandler.isOpen
+    );
     new FullScreenHandler(
       elements.minimizeFullScreenButton,
       elements.maximizeFullScreenButton,

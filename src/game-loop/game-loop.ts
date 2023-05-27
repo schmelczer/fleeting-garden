@@ -74,12 +74,34 @@ export default class GameLoop {
 
     window.addEventListener('resize', this.resize.bind(this));
     canvas.addEventListener('mousemove', this.onSwipe.bind(this));
+    canvas.addEventListener('touchmove', this.onSwipe.bind(this));
     canvas.addEventListener('mousedown', (e) => {
-      this.brushPipeline.clearSwipes();
-      this.isSwipeActive = true;
+      if (!this.isSwipeActive) {
+        this.brushPipeline.clearSwipes();
+        this.isSwipeActive = true;
+      }
       this.onSwipe(e);
     });
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (!this.isSwipeActive) {
+        this.brushPipeline.clearSwipes();
+        this.isSwipeActive = true;
+      }
+      this.onSwipe(e);
+    });
+
     window.addEventListener('mouseup', (e) => {
+      this.onSwipe(e);
+      this.isSwipeActive = false;
+    });
+
+    window.addEventListener('touchend', (e) => {
+      this.onSwipe(e);
+      this.isSwipeActive = false;
+    });
+
+    window.addEventListener('touchcancel', (e) => {
       this.onSwipe(e);
       this.isSwipeActive = false;
     });
@@ -107,14 +129,25 @@ export default class GameLoop {
     return this.gameRules.generationCounts;
   }
 
-  private onSwipe(event: MouseEvent) {
-    if (!this.isSwipeActive) {
+  public get maxAgentCount(): number {
+    return this.agentGenerationPipeline.maxAgentCount;
+  }
+
+  private onSwipe(event: MouseEvent | TouchEvent) {
+    if (!this.isSwipeActive || !event) {
       return;
     }
 
+    if (event instanceof TouchEvent && event.touches.length === 0) {
+      return;
+    }
+
+    const x = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+    const y = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
+
     const position = vec2.fromValues(
-      event.clientX * this.devicePixelRatio,
-      this.canvas.height - event.clientY * this.devicePixelRatio
+      x * this.devicePixelRatio,
+      this.canvas.height - y * this.devicePixelRatio
     );
     this.brushPipeline.addSwipe(position);
   }

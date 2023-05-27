@@ -22,10 +22,7 @@ export const initializeGpu = async (): Promise<GPUDevice> => {
     requiredLimits: {
       maxBufferSize: adapter.limits.maxBufferSize,
       maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
-      maxComputeInvocationsPerWorkgroup: adapter.limits.maxComputeInvocationsPerWorkgroup,
-      maxComputeWorkgroupSizeX: adapter.limits.maxComputeWorkgroupSizeX,
-      maxComputeWorkgroupSizeY: adapter.limits.maxComputeWorkgroupSizeY,
-      maxComputeWorkgroupSizeZ: adapter.limits.maxComputeWorkgroupSizeZ,
+      maxComputeWorkgroupsPerDimension: adapter.limits.maxComputeWorkgroupsPerDimension,
     },
   });
 

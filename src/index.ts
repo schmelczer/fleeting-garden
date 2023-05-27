@@ -2,12 +2,14 @@ import '../assets/icons/info.svg';
 import GameLoop from './game-loop/game-loop';
 import { GameRules } from './game-loop/game-rules';
 import './index.scss';
+import { CollapsiblePanelAnimator } from './page/collapsible-panel-animator';
 import { FullScreenHandler } from './page/full-screen-handler';
-import { InfoPageHandler } from './page/info-page-handler';
 import { MenuHider } from './page/menu-hider';
+import { setUpSettingsPage } from './page/set-up-settings-page';
 import { applyArrayPlugins } from './utils/array';
 import { DeltaTimeCalculator } from './utils/delta-time-calculator';
 import { ErrorHandler, Severity } from './utils/error-handler';
+import { formatNumber } from './utils/format-number';
 import { initializeGpu } from './utils/graphics/initialize-gpu';
 
 declare global {
@@ -30,13 +32,15 @@ declare global {
 const getElements = () => ({
   aside: document.querySelector('aside') as HTMLDivElement,
   infoButton: document.querySelector('button.info') as HTMLButtonElement,
-  infoElement: document.querySelector('.pages') as HTMLDivElement,
+  infoElement: document.querySelector('.info-page') as HTMLDivElement,
+  settingsPage: document.querySelector('.settings-page') as HTMLDivElement,
   minimizeFullScreenButton: document.querySelector(
     'button.minimize-full-screen'
   ) as HTMLButtonElement,
   maximizeFullScreenButton: document.querySelector(
     'button.maximize-full-screen'
   ) as HTMLButtonElement,
+  settingsButton: document.querySelector('button.settings') as HTMLButtonElement,
   restartButton: document.querySelector('button.restart') as HTMLButtonElement,
   canvas: document.querySelector('canvas') as HTMLCanvasElement,
   canvasContainer: document.querySelector('main.canvas-container') as HTMLCanvasElement,
@@ -61,7 +65,17 @@ const main = async () => {
   try {
     applyArrayPlugins();
 
-    new InfoPageHandler(elements.infoButton, elements.infoElement);
+    const infoPageHandler = new CollapsiblePanelAnimator(
+      elements.infoButton,
+      elements.infoElement
+    );
+    const settingsPageHandler = new CollapsiblePanelAnimator(
+      elements.settingsButton,
+      elements.settingsPage
+    );
+    settingsPageHandler.onOpen = infoPageHandler.close.bind(infoPageHandler);
+    infoPageHandler.onOpen = settingsPageHandler.close.bind(settingsPageHandler);
+
     new MenuHider(elements.aside, FullScreenHandler.isInFullScreenMode);
     new FullScreenHandler(
       elements.minimizeFullScreenButton,
@@ -75,22 +89,30 @@ const main = async () => {
 
     const deltaTimeCalculator = new DeltaTimeCalculator();
     const gameRules = new GameRules(performance.now() / 1000);
+    let isSettingsPageSetUp = false;
 
-    console.log(gameRules.nextGenerationId);
     const updateCounters = () => {
       elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
-current gen: ${game?.aliveAgentCounts.currentGenerationCount ?? 0}
-next gen: ${game?.aliveAgentCounts.nextGenerationCount ?? 0}`;
+current gen: ${formatNumber(game?.aliveAgentCounts.currentGenerationCount ?? 0)}
+next gen: ${formatNumber(game?.aliveAgentCounts.nextGenerationCount ?? 0)}`;
       window.requestAnimationFrame(updateCounters);
     };
     updateCounters();
 
     while (!shouldStop) {
       game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
+      if (!isSettingsPageSetUp) {
+        isSettingsPageSetUp = true;
+        setUpSettingsPage(elements.settingsPage, game.maxAgentCount, () =>
+          game?.destroy()
+        );
+      }
+
       await game.start();
     }
   } catch (e) {
-    ErrorHandler.addError(Severity.ERROR, e.message);
+    ErrorHandler.addError(Severity.ERROR, e.stack);
+    console.error(e);
   }
 };
 

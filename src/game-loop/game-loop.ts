@@ -59,7 +59,7 @@ export default class GameLoop {
     this.agentGenerationPipeline = new AgentGenerationPipeline(
       this.device,
       this.commonState,
-      settings.agentCount
+      settings.maxAgentCountUpperLimit
     );
     this.agentGenerationPipeline.spawnFirstGeneration();
 
@@ -117,7 +117,9 @@ export default class GameLoop {
     if (this.hasFinished) {
       return;
     }
-    const generationCounts = await this.agentGenerationPipeline.countAgents();
+    const generationCounts = await this.agentGenerationPipeline.countAgents(
+      settings.agentCount
+    );
     this.gameRules.updateGenerationCounts(generationCounts);
     requestAnimationFrame(this.updateCounts.bind(this));
   }
@@ -168,7 +170,7 @@ export default class GameLoop {
     );
     document.documentElement.style.setProperty(
       '--accent-color',
-      `rgb(${accentColor.map((v) => v * 255).join(',')})`
+      `rgb(${accentColor.map((v: number) => v * 255).join(',')})`
     );
 
     const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);

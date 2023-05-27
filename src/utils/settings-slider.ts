@@ -1,3 +1,5 @@
+import { formatNumber } from './format-number';
+
 export interface SliderConfiguration {
   min: number;
   max: number;
@@ -72,17 +74,13 @@ export class SettingsSlider<T extends Record<string, number>> {
     );
   }
 
-  private get formattedValue(): string {
-    const value = this.settings[this.settingName];
-    const unit = this.config.unit ?? '';
-
-    return `${value === Math.floor(value) ? value : value.toFixed(2)}${unit}`;
-  }
-
   private onChange() {
     this.settings[this.settingName] = Number(this.slider.value) as any;
     this.config.onChangeCallback?.(this.settings[this.settingName]);
-    this.valueDisplay.innerText = this.formattedValue;
+    this.valueDisplay.innerText = formatNumber(
+      this.settings[this.settingName],
+      this.config.unit
+    );
   }
 
   public updateConfig(config: Partial<SliderConfiguration>) {

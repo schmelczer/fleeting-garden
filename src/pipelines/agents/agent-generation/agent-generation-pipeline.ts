@@ -1,3 +1,4 @@
+import { getWorkgroupCounts } from '../../../utils/graphics/get-workgroup-counts';
 import random from '../../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../../utils/graphics/smart-compile';
 import { CommonState } from '../../common-state/common-state';
@@ -9,7 +10,7 @@ import { GenerationCounts } from './generation-counts';
 
 export class AgentGenerationPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 4;
+  private static readonly UNIFORM_COUNT = 1;
   private static readonly COUNTER_COUNT = 3;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
@@ -60,17 +61,17 @@ export class AgentGenerationPipeline {
     });
 
     this.countersBuffer = this.device.createBuffer({
-      size: AgentGenerationPipeline.COUNTER_COUNT * Int32Array.BYTES_PER_ELEMENT,
+      size: AgentGenerationPipeline.COUNTER_COUNT * Uint32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     });
 
     this.countersStagingBuffer = this.device.createBuffer({
-      size: AgentGenerationPipeline.COUNTER_COUNT * Int32Array.BYTES_PER_ELEMENT,
+      size: AgentGenerationPipeline.COUNTER_COUNT * Uint32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
     this.uniforms = this.device.createBuffer({
-      size: AgentGenerationPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT,
+      size: AgentGenerationPipeline.UNIFORM_COUNT * Uint32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
@@ -134,7 +135,8 @@ export class AgentGenerationPipeline {
   public get maxAgentCount(): number {
     return Math.min(
       this.maxAgentCountUpperLimit,
-      Math.floor(this.device.limits.maxBufferSize / AGENT_SIZE_IN_BYTES)
+      Math.floor(this.device.limits.maxBufferSize / AGENT_SIZE_IN_BYTES),
+      this.device.limits.maxComputeWorkgroupsPerDimension ** 3
     );
   }
 
@@ -146,15 +148,20 @@ export class AgentGenerationPipeline {
     passEncoder.setPipeline(this.firstGenerationPipeline);
     passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.dispatchWorkgroups(
-      Math.ceil(this.maxAgentCount / AgentGenerationPipeline.WORKGROUP_SIZE)
+      ...getWorkgroupCounts(
+        this.device,
+        this.maxAgentCount,
+        AgentGenerationPipeline.WORKGROUP_SIZE
+      )
     );
     passEncoder.end();
 
     this.device.queue.submit([commandEncoder.finish()]);
   }
 
-  public async countAgents(): Promise<GenerationCounts> {
-    this.device.queue.writeBuffer(this.countersBuffer, 0, new Int32Array([0, 0]));
+  public async countAgents(agentCount: number): Promise<GenerationCounts> {
+    this.device.queue.writeBuffer(this.countersBuffer, 0, new Uint32Array([0, 0]));
+    this.device.queue.writeBuffer(this.uniforms, 0, new Uint32Array([agentCount]));
 
     const commandEncoder = this.device.createCommandEncoder();
 
@@ -163,7 +170,11 @@ export class AgentGenerationPipeline {
     this.commonState.execute(passEncoder);
     passEncoder.setBindGroup(1, this.bindGroup);
     passEncoder.dispatchWorkgroups(
-      Math.ceil(this.maxAgentCount / AgentGenerationPipeline.WORKGROUP_SIZE)
+      ...getWorkgroupCounts(
+        this.device,
+        agentCount,
+        AgentGenerationPipeline.WORKGROUP_SIZE
+      )
     );
     passEncoder.end();
 
@@ -172,14 +183,14 @@ export class AgentGenerationPipeline {
       0,
       this.countersStagingBuffer,
       0,
-      AgentGenerationPipeline.COUNTER_COUNT * Int32Array.BYTES_PER_ELEMENT
+      AgentGenerationPipeline.COUNTER_COUNT * Uint32Array.BYTES_PER_ELEMENT
     );
 
     this.device.queue.submit([commandEncoder.finish()]);
 
     await this.countersStagingBuffer.mapAsync(GPUMapMode.READ);
 
-    const data = new Int32Array(this.countersStagingBuffer.getMappedRange().slice(0));
+    const data = new Uint32Array(this.countersStagingBuffer.getMappedRange().slice(0));
     this.countersStagingBuffer.unmap();
     return {
       evenGenerationCount: data[0],

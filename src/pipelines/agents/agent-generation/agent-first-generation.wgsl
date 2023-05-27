@@ -9,10 +9,14 @@ fn main(
     return;
   }
 
-  let position = vec2(
-    hash(id) * state.size.x,
-    hash(id * id) * state.size.y,
+  let random = textureSampleLevel(
+    noise,
+    noiseSampler,
+    vec2(f32(id % 1999) / 2000, f32(id) / 1999 / 2000),
+    0
   );
+
+  let position = random.xy * state.size;
   let center = state.size / 2.0;
   let direction = position - center;
 

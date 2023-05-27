@@ -1,4 +1,4 @@
-import { generateNoise } from '../../utils/graphics/noise/noise';
+import { generateNoise } from '../../utils/graphics/noise';
 
 import { vec2 } from 'gl-matrix';
 

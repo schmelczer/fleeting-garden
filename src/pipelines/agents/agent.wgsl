@@ -1,13 +1,12 @@
 struct Settings {
   brushTrailWeight: f32,
   moveRate: f32,
-
   turnRate: f32,
+
   sensorAngle: f32,
-
   sensorOffset: f32,
-  evenGenerationAggression: f32,
 
+  evenGenerationAggression: f32,
   oddGenerationAggression: f32,
   nextGenerationId: f32,
 
@@ -62,7 +61,13 @@ fn main(
     return;
   }
 
-  let random = hash(id + u32(state.time % 107 * 1673.7));
+  let random = textureSampleLevel(
+    noise,
+    noiseSampler,
+    vec2(f32(id) % 23647 / 2000,
+    state.time % 6294 / 2000),
+    0
+  ).a;
 
   let isFromEvenGeneration = agent.generation % 2 == 0;
   let isFromNextGeneration = agent.generation == settings.nextGenerationId;

@@ -2,7 +2,7 @@ import { clamp } from './clamp';
 import { exponentialDecay } from './exponential-decay';
 
 export class DeltaTimeCalculator {
-  private static FPS_EXPONENTIAL_DECAY_STRENGTH = 0.1;
+  private static FPS_EXPONENTIAL_DECAY_STRENGTH = 0.01;
 
   private previousTime: DOMHighResTimeStamp | null = null;
   private deltaTimeAccumulator: number | null = null;

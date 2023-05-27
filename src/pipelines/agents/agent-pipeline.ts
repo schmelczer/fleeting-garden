@@ -1,5 +1,4 @@
 import { getWorkgroupCounts } from '../../utils/graphics/get-workgroup-counts';
-import random from '../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
 import agentSchme from './agent-generation/agent-schema.wgsl';
@@ -33,7 +32,7 @@ export class AgentPipeline {
         bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
       }),
       compute: {
-        module: smartCompile(device, CommonState.shaderCode, random, agentSchme, shader),
+        module: smartCompile(device, CommonState.shaderCode, agentSchme, shader),
         entryPoint: 'main',
       },
     });

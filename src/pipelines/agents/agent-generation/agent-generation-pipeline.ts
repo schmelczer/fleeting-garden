@@ -1,5 +1,4 @@
 import { getWorkgroupCounts } from '../../../utils/graphics/get-workgroup-counts';
-import random from '../../../utils/graphics/random.wgsl';
 import { smartCompile } from '../../../utils/graphics/smart-compile';
 import { CommonState } from '../../common-state/common-state';
 import { AGENT_SIZE_IN_BYTES } from './agent';
@@ -107,7 +106,6 @@ export class AgentGenerationPipeline {
         module: smartCompile(
           device,
           CommonState.shaderCode,
-          random,
           agentSchema,
           firstGenerationShader
         ),
@@ -120,13 +118,7 @@ export class AgentGenerationPipeline {
         bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
       }),
       compute: {
-        module: smartCompile(
-          device,
-          CommonState.shaderCode,
-          random,
-          agentSchema,
-          countingShader
-        ),
+        module: smartCompile(device, CommonState.shaderCode, agentSchema, countingShader),
         entryPoint: 'main',
       },
     });
@@ -135,7 +127,7 @@ export class AgentGenerationPipeline {
   public get maxAgentCount(): number {
     return Math.min(
       this.maxAgentCountUpperLimit,
-      Math.floor(this.device.limits.maxBufferSize / AGENT_SIZE_IN_BYTES),
+      Math.floor(this.device.limits.maxBufferSize / AGENT_SIZE_IN_BYTES) - 1,
       this.device.limits.maxComputeWorkgroupsPerDimension ** 3
     );
   }

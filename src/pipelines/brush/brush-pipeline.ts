@@ -123,7 +123,7 @@ export class BrushPipeline {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([brushWidth / 2, brushWidthRandomness])
+      new Float32Array([brushWidth / 2, (brushWidth / 2) * brushWidthRandomness])
     );
 
     this.actualPoints = this.linePoints.slice();

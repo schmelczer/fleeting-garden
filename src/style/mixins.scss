@@ -1,7 +1,7 @@
 @use 'sass:math';
 @use 'sass:color';
 
-$breakpoint-width: 700px !default;
+$breakpoint-width: 600px !default;
 
 @mixin on-small-screen() {
   @media (max-width: ($breakpoint-width - 1px)) {

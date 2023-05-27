@@ -65,35 +65,51 @@ html {
       .counters {
         @include blurred-background(white);
         position: absolute;
-        top: var(--normal-margin);
-        right: var(--normal-margin);
         border-radius: var(--border-radius);
         padding: var(--small-margin);
 
-        pre {
-          color: black;
+        @include on-large-screen {
+          top: var(--normal-margin);
+          right: var(--normal-margin);
+        }
+
+        @include on-small-screen {
+          bottom: var(--normal-margin);
+          right: var(--normal-margin);
         }
       }
     }
 
     > aside {
       @include blurred-background(#fff);
-
+      display: flex;
       position: absolute;
-      top: 50%;
-      left: 0;
-      transform: translateY(-50%);
+
+      @include on-large-screen {
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+      }
+
+      @include on-small-screen {
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        flex-direction: column;
+      }
+
       transition: opacity var(--transition-time-long);
       border-radius: var(--border-radius);
       margin: var(--small-margin);
 
-      display: flex;
-
       > nav.buttons {
         @include center-children;
-        flex-direction: column;
         gap: var(--normal-margin);
         margin: var(--small-margin);
+
+        @include on-large-screen {
+          flex-direction: column;
+        }
 
         > button.info {
           @include image-button(url('../assets/icons/info.svg'), var(--accent-color));
@@ -107,23 +123,44 @@ html {
           @include image-button(url('../assets/icons/minimize.svg'), var(--accent-color));
         }
 
+        > button.settings {
+          @include image-button(url('../assets/icons/settings.svg'), var(--accent-color));
+        }
+
         > button.restart {
           @include image-button(url('../assets/icons/restart.svg'), var(--accent-color));
         }
       }
 
       > main.pages {
-        width: max(500px, 70vw);
         overflow: hidden;
-        transition: width var(--transition-time-long);
 
-        &.hidden {
-          width: 0;
+        &,
+        * {
+          transition: width var(--transition-time-long),
+            height var(--transition-time-long);
+
+          @include on-large-screen {
+            width: max(500px, 10vw);
+          }
+
+          @include on-small-screen {
+            height: max(500px, 70vh);
+          }
         }
 
-        .info-page {
-          padding: var(--normal-margin);
-          width: max(500px, 70vw);
+        &.hidden {
+          @include on-large-screen {
+            width: 0;
+          }
+
+          @include on-small-screen {
+            height: 0;
+          }
+        }
+
+        > section {
+          margin: var(--normal-margin);
         }
       }
     }

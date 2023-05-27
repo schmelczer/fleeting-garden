@@ -5,11 +5,11 @@ export class CollapsiblePanelAnimator {
   public onClose: () => unknown = () => {};
 
   public constructor(
-    infoButton: HTMLButtonElement,
-    private readonly infoPage: HTMLElement,
+    private readonly toggleButton: HTMLButtonElement,
+    private readonly collapsibleContent: HTMLElement,
     ignoreForCloseOnClick: HTMLElement
   ) {
-    infoButton.addEventListener('click', this.toggle.bind(this));
+    toggleButton.addEventListener('click', this.toggle.bind(this));
     window.addEventListener(
       'click',
       (event) => !ignoreForCloseOnClick.contains(event.target as Node) && this.close()
@@ -18,13 +18,15 @@ export class CollapsiblePanelAnimator {
 
   public open() {
     this.isOpen = true;
-    this.infoPage.classList.remove('hidden');
+    this.collapsibleContent.classList.remove('hidden');
+    this.toggleButton.classList.add('active');
     this.onOpen();
   }
 
   public close() {
     this.isOpen = false;
-    this.infoPage.classList.add('hidden');
+    this.collapsibleContent.classList.add('hidden');
+    this.toggleButton.classList.remove('active');
     this.onClose();
   }
 

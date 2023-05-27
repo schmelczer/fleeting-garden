@@ -33,22 +33,6 @@ $breakpoint-width: 600px !default;
   }
 }
 
-@mixin image-button($background-image, $background-color) {
-  @include square(var(--icon-size));
-  border: none;
-  cursor: pointer;
-
-  background-color: $background-color;
-  mask-image: $background-image;
-  -webkit-mask-image: $background-image;
-  mask-repeat: no-repeat;
-
-  transition: transform var(--transition-time), background-color var(--transition-time);
-  &:hover {
-    transform: scale(1.15);
-  }
-}
-
 @mixin center-children() {
   display: flex;
   align-items: center;

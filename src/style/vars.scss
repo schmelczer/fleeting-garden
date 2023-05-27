@@ -19,7 +19,7 @@
   --normal-margin: 2rem;
   --small-margin: 1rem;
   --shadow: 0 0 5px 2px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.2);
-  --icon-size: 2.8rem;
+  --icon-size: 2.5rem;
   --large-icon-size: 3.75rem;
   --body-width: min(80%, 60rem);
 }
@@ -29,5 +29,6 @@
     --body-width: 90%;
     --large-margin: 2.8rem;
     --normal-margin: 2rem;
+    --icon-size: 2rem;
   }
 }

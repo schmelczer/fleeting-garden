@@ -1,9 +1,8 @@
 export const persist = <T extends Record<string, number>>(wrapee: T): T => {
-  const initialState = { ...wrapee };
   const keys = Object.keys(wrapee);
 
   const keysToShortKeys = Object.fromEntries(
-    keys.map((key, i) => [key, String.fromCharCode(65 + i)])
+    keys.map((key, i) => [key, String.fromCharCode(97 + i)])
   );
 
   const params = new URLSearchParams(window.location.search);
@@ -25,11 +24,7 @@ export const persist = <T extends Record<string, number>>(wrapee: T): T => {
     set: (target, key: string, value: number) => {
       const params = new URLSearchParams(window.location.search);
 
-      if (initialState[key] === value) {
-        params.delete(keysToShortKeys[key]);
-      } else {
-        params.set(keysToShortKeys[key], value.toString());
-      }
+      params.set(keysToShortKeys[key], value.toString());
 
       (target as any)[key] = value;
 

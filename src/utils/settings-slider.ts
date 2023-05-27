@@ -1,11 +1,19 @@
 import { formatNumber } from './format-number';
 
+export enum ValueScaling {
+  Linear,
+  Quadratic,
+  Logarithmic,
+}
+
 export interface SliderConfiguration {
   min: number;
   max: number;
   unit?: string;
   step?: number;
   onChangeCallback?: (value: number) => unknown;
+  scaling: ValueScaling;
+  rounding: (value: number) => number;
 }
 
 export class SettingsSlider<T extends Record<string, number>> {
@@ -17,6 +25,8 @@ export class SettingsSlider<T extends Record<string, number>> {
   private readonly config: SliderConfiguration = {
     min: 0,
     max: 1,
+    scaling: ValueScaling.Linear,
+    rounding: (value) => value,
   };
 
   public constructor(
@@ -24,7 +34,7 @@ export class SettingsSlider<T extends Record<string, number>> {
     private readonly settingName: keyof T & string,
     config: Partial<SliderConfiguration> = {}
   ) {
-    this.slider = SettingsSlider.createSlider(this.settings[this.settingName]);
+    this.slider = SettingsSlider.createSlider();
     this.valueDisplay = SettingsSlider.createValueDisplay();
     this.sliderWrapper = SettingsSlider.createSliderWrapper(
       this.settingName,
@@ -37,12 +47,9 @@ export class SettingsSlider<T extends Record<string, number>> {
     this.updateConfig(config);
   }
 
-  private static createSlider(initialValue: any) {
+  private static createSlider() {
     const input = document.createElement('input');
-
     input.type = 'range';
-    input.value = initialValue.toString();
-
     return input;
   }
 
@@ -75,7 +82,9 @@ export class SettingsSlider<T extends Record<string, number>> {
   }
 
   private onChange() {
-    this.settings[this.settingName] = Number(this.slider.value) as any;
+    this.settings[this.settingName] = this.config.rounding(
+      this.inverseScaling(Number(this.slider.value))
+    ) as any;
     this.config.onChangeCallback?.(this.settings[this.settingName]);
     this.valueDisplay.innerText = formatNumber(
       this.settings[this.settingName],
@@ -88,11 +97,14 @@ export class SettingsSlider<T extends Record<string, number>> {
 
     if (this.config.step === undefined) {
       this.config.step =
-        (this.config.max - this.config.min) / SettingsSlider.DEFAULT_STEP_COUNT;
+        this.scaling(this.config.max - this.scaling(this.config.min)) /
+        SettingsSlider.DEFAULT_STEP_COUNT;
     }
 
-    this.slider.min = this.config.min.toString();
-    this.slider.max = this.config.max.toString();
+    this.slider.value = this.scaling(this.settings[this.settingName]).toString();
+    this.slider.min = this.scaling(this.config.min).toString();
+    this.slider.max = this.scaling(this.config.max).toString();
+
     this.slider.step = this.config.step.toString();
 
     this.onChange();
@@ -100,5 +112,27 @@ export class SettingsSlider<T extends Record<string, number>> {
 
   public get element(): HTMLElement {
     return this.sliderWrapper;
+  }
+
+  private get scaling(): (value: number) => number {
+    switch (this.config.scaling) {
+      case ValueScaling.Linear:
+        return (value) => value;
+      case ValueScaling.Quadratic:
+        return (value) => Math.sqrt(value);
+      case ValueScaling.Logarithmic:
+        return (value) => Math.log10(value);
+    }
+  }
+
+  private get inverseScaling(): (value: number) => number {
+    switch (this.config.scaling) {
+      case ValueScaling.Linear:
+        return (value) => value;
+      case ValueScaling.Quadratic:
+        return (value) => Math.pow(value, 2);
+      case ValueScaling.Logarithmic:
+        return (value) => Math.pow(10, value);
+    }
   }
 }

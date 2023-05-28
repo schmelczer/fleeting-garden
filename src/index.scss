@@ -1,302 +1,271 @@
-@use 'style/vars';
-@use 'style/fonts';
 @use 'style/mixins' as *;
+@use 'style/common';
 
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-
-  @media (prefers-reduced-motion) {
-    transition: none !important;
-    animation: none !important;
-  }
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Comfortaa', sans-serif;
-  margin-bottom: var(--small-margin);
-}
-
-p {
-  font-family: 'Open Sans', sans-serif;
-}
-
-html {
+html > body {
+  width: 100%;
   height: 100%;
-  -webkit-font-smooth: antialiased;
+  display: flex;
+  position: relative;
 
-  > body {
-    width: 100%;
+  > .canvas-container {
     height: 100%;
+    width: 100%;
     display: flex;
-    position: relative;
 
-    > .canvas-container {
+    > canvas {
       height: 100%;
       width: 100%;
-      display: flex;
 
-      > canvas {
-        height: 100%;
-        width: 100%;
+      cursor: url('../assets/icons/brush.svg') 0 24, auto;
+    }
 
-        cursor: url('../assets/icons/brush.svg') 0 24, auto;
-      }
+    > .errors-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      margin: var(--normal-margin);
 
-      > .errors-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        margin: var(--normal-margin);
-
-        pre {
-          font-size: 20px;
-          color: red;
-        }
-      }
-
-      .counters {
-        @include blurred-background(white);
-        position: absolute;
-        border-radius: var(--border-radius);
-        padding: var(--small-margin);
-
-        @include on-large-screen {
-          top: var(--normal-margin);
-          right: var(--normal-margin);
-        }
-
-        @include on-small-screen {
-          bottom: var(--normal-margin);
-          right: var(--normal-margin);
-        }
+      pre {
+        font-size: 20px;
+        color: red;
       }
     }
 
-    > aside {
-      @include blurred-background(#fff);
-      display: flex;
+    .counters {
+      @include blurred-background(white);
       position: absolute;
-      overflow: hidden;
+      border-radius: var(--border-radius);
+      padding: var(--small-margin);
 
       @include on-large-screen {
-        top: 50%;
-        left: 0;
-        transform: translateY(-50%);
-        max-height: 350px;
+        top: var(--normal-margin);
+        right: var(--normal-margin);
       }
 
       @include on-small-screen {
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
+        bottom: var(--normal-margin);
+        right: var(--normal-margin);
+      }
+    }
+  }
+
+  > aside {
+    @include blurred-background(#fff);
+    box-shadow: var(--shadow);
+    display: flex;
+    position: absolute;
+    overflow: hidden;
+
+    @include on-large-screen {
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      max-height: 350px;
+    }
+
+    @include on-small-screen {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: column;
+    }
+
+    transition: opacity var(--transition-time-long);
+    border-radius: var(--border-radius);
+    margin: var(--small-margin);
+
+    > nav.buttons {
+      @include center-children;
+      justify-content: space-evenly;
+
+      @include on-large-screen {
         flex-direction: column;
       }
 
-      transition: opacity var(--transition-time-long);
-      border-radius: var(--border-radius);
-      margin: var(--small-margin);
+      > button {
+        position: relative;
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
 
-      > nav.buttons {
-        @include center-children;
-        justify-content: space-evenly;
+        @include square(var(--icon-size));
+        margin: var(--small-margin);
 
-        @include on-large-screen {
-          flex-direction: column;
+        &::before,
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          width: 100%;
         }
 
-        > button {
-          position: relative;
-          border: none;
-          background-color: transparent;
-          cursor: pointer;
+        &::before {
+          background-color: var(--accent-color);
 
-          @include square(var(--icon-size));
-          margin: var(--small-margin);
-
-          &::before,
-          &::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 100%;
-          }
-
-          &::before {
-            background-color: var(--accent-color);
-
-            @include on-large-screen {
-              width: 0;
-              border-radius: 0 var(--border-radius) var(--border-radius) 0;
-              transition: background-color var(--transition-time),
-                width var(--transition-time);
-              left: calc(-1 * var(--small-margin));
-              height: 140%;
-              top: 50%;
-              transform: translateY(-50%);
-            }
-
-            @include on-small-screen {
-              height: 0;
-              border-radius: 0 0 var(--border-radius) var(--border-radius);
-              transition: background-color var(--transition-time),
-                height var(--transition-time);
-              top: calc(-1 * var(--small-margin));
-              width: 140%;
-              left: 50%;
-              transform: translateX(-50%);
-            }
-          }
-
-          &::after {
-            background-color: var(--accent-color);
-
-            transition: transform var(--transition-time),
-              background-color var(--transition-time);
-
-            -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
-
-            @include square(var(--icon-size));
-          }
-
-          &.active {
-            &::before {
-              @include on-large-screen {
-                width: calc(100% + 2 * var(--small-margin));
-              }
-
-              @include on-small-screen {
-                height: calc(100% + 2 * var(--small-margin));
-              }
-            }
-
-            &::after {
-              background-color: white;
-            }
-          }
-
-          &:hover::after {
-            transform: scale(1.15);
-          }
-
-          &.info::after {
-            -webkit-mask-image: url('../assets/icons/info.svg');
-            mask-image: url('../assets/icons/info.svg');
-          }
-
-          &.maximize-full-screen::after {
-            -webkit-mask-image: url('../assets/icons/maximize.svg');
-            mask-image: url('../assets/icons/maximize.svg');
-          }
-
-          &.minimize-full-screen::after {
-            -webkit-mask-image: url('../assets/icons/minimize.svg');
-            mask-image: url('../assets/icons/minimize.svg');
-          }
-
-          &.settings::after {
-            -webkit-mask-image: url('../assets/icons/settings.svg');
-            mask-image: url('../assets/icons/settings.svg');
-          }
-
-          &.restart::after {
-            -webkit-mask-image: url('../assets/icons/restart.svg');
-            mask-image: url('../assets/icons/restart.svg');
-          }
-        }
-      }
-
-      > main.pages {
-        overflow-x: hidden;
-        overflow-y: auto;
-        &::-webkit-scrollbar-track,
-        &::-webkit-scrollbar {
-          background-color: transparent;
-          width: 6px;
-        }
-        &::-webkit-scrollbar-thumb {
-          background-color: var(--main-color);
-          border-radius: var(--border-radius);
-        }
-
-        &,
-        > * {
-          transition: width var(--transition-time-long),
-            height var(--transition-time-long);
-
-          @include on-large-screen {
-            width: max(500px, 10vw);
-          }
-
-          @include on-small-screen {
-            height: max(500px, 70vh);
-          }
-        }
-
-        &.hidden {
           @include on-large-screen {
             width: 0;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            transition: background-color var(--transition-time),
+              width var(--transition-time);
+            left: calc(-1 * var(--small-margin));
+            height: 140%;
+            top: 50%;
+            transform: translateY(-50%);
           }
 
           @include on-small-screen {
             height: 0;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            transition: background-color var(--transition-time),
+              height var(--transition-time);
+            top: calc(-1 * var(--small-margin));
+            width: 140%;
+            left: 50%;
+            transform: translateX(-50%);
           }
         }
 
-        > section {
-          padding: var(--normal-margin);
+        &::after {
+          background-color: var(--accent-color);
 
-          .slider {
-            $track-height: 12px;
-            margin-bottom: var(--small-margin);
-            user-select: none;
+          transition: transform var(--transition-time),
+            background-color var(--transition-time);
 
-            p {
-              display: flex;
-              justify-content: space-between;
+          -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+
+          @include square(var(--icon-size));
+        }
+
+        &.active {
+          &::before {
+            @include on-large-screen {
+              width: calc(100% + 2 * var(--small-margin));
             }
 
-            input[type='range'] {
-              width: 100%;
-              height: $track-height;
+            @include on-small-screen {
+              height: calc(100% + 2 * var(--small-margin));
+            }
+          }
+
+          &::after {
+            background-color: white;
+          }
+        }
+
+        &:hover::after {
+          transform: scale(1.15);
+        }
+
+        &.info::after {
+          -webkit-mask-image: url('../assets/icons/info.svg');
+          mask-image: url('../assets/icons/info.svg');
+        }
+
+        &.maximize-full-screen::after {
+          -webkit-mask-image: url('../assets/icons/maximize.svg');
+          mask-image: url('../assets/icons/maximize.svg');
+        }
+
+        &.minimize-full-screen::after {
+          -webkit-mask-image: url('../assets/icons/minimize.svg');
+          mask-image: url('../assets/icons/minimize.svg');
+        }
+
+        &.settings::after {
+          -webkit-mask-image: url('../assets/icons/settings.svg');
+          mask-image: url('../assets/icons/settings.svg');
+        }
+
+        &.restart::after {
+          -webkit-mask-image: url('../assets/icons/restart.svg');
+          mask-image: url('../assets/icons/restart.svg');
+        }
+      }
+    }
+
+    > main.pages {
+      overflow-x: hidden;
+      overflow-y: auto;
+      &::-webkit-scrollbar-track,
+      &::-webkit-scrollbar {
+        background-color: transparent;
+        width: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--main-color);
+        border-radius: var(--border-radius);
+      }
+
+      &,
+      > * {
+        transition: width var(--transition-time-long), height var(--transition-time-long);
+
+        @include on-large-screen {
+          width: max(500px, 10vw);
+        }
+
+        @include on-small-screen {
+          height: max(500px, 70vh);
+        }
+      }
+
+      &.hidden {
+        @include on-large-screen {
+          width: 0;
+        }
+
+        @include on-small-screen {
+          height: 0;
+        }
+      }
+
+      > section {
+        padding: var(--normal-margin);
+        display: flex;
+        flex-direction: column;
+
+        .slider {
+          $track-height: 12px;
+          margin-bottom: var(--small-margin);
+          user-select: none;
+
+          p {
+            display: flex;
+            justify-content: space-between;
+          }
+
+          input[type='range'] {
+            width: 100%;
+            height: $track-height;
+            appearance: none;
+            background: transparent;
+            outline: none;
+            border-radius: 1000px;
+
+            &::-webkit-slider-runnable-track {
               appearance: none;
-              background: transparent;
-              outline: none;
+              cursor: pointer;
               border-radius: 1000px;
+              @include square(15px);
+              background: var(--accent-color);
+            }
 
-              &::-webkit-slider-runnable-track {
-                appearance: none;
-                cursor: pointer;
-                border-radius: 1000px;
-                @include square(15px);
-                background: var(--accent-color);
-              }
+            &::-webkit-slider-thumb {
+              appearance: none;
+              cursor: pointer;
+              border-radius: 1000px;
+              $size: 24px;
+              @include square($size);
+              background: white;
+              box-shadow: 0 0 5px 1px var(--accent-color);
 
-              &::-webkit-slider-thumb {
-                appearance: none;
-                cursor: pointer;
-                border-radius: 1000px;
-                $size: 24px;
-                @include square($size);
-                background: white;
-                box-shadow: 0 0 5px 1px var(--accent-color);
-
-                transform: translateY(-5px);
-                transition: transform var(--transition-time);
-                &:hover {
-                  transform: translateY(-5px) scale(1.1);
-                }
+              transform: translateY(-5px);
+              transition: transform var(--transition-time);
+              &:hover {
+                transform: translateY(-5px) scale(1.1);
               }
             }
           }

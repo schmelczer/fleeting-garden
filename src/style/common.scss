@@ -1,0 +1,47 @@
+@use 'vars';
+@use 'fonts';
+@use 'mixins' as *;
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+  @media (prefers-reduced-motion) {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Comfortaa', sans-serif;
+  margin-bottom: var(--small-margin);
+}
+
+p {
+  font-family: 'Open Sans', sans-serif;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smooth: antialiased;
+}
+
+.large-button {
+  border: none;
+  background-color: var(--accent-color);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  padding: calc(var(--small-margin) / 2) var(--small-margin);
+  margin: var(--small-margin) auto;
+  align-self: flex-end;
+  @include main-font();
+  color: white;
+}

@@ -1,5 +1,5 @@
 import { settings } from '../settings';
-import { SettingsSlider, ValueScaling } from '../utils/settings-slider';
+import { SettingsSlider, ValueScaling } from './settings-slider';
 
 export const setUpSettingsPage = (
   settingsPage: HTMLDivElement,

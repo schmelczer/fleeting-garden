@@ -1,4 +1,4 @@
-import { formatNumber } from './format-number';
+import { formatNumber } from '../utils/format-number';
 
 export enum ValueScaling {
   Linear,

@@ -1,4 +1,4 @@
-import { setUpFullScreenQuad } from './full-screen-quad/full-screen-quad';
+import { setUpFullScreenQuad } from './full-screen-quad';
 import { smartCompile } from './smart-compile';
 
 const textureCache = new Map<string, GPUTexture>();

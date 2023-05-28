@@ -1,5 +1,5 @@
-import { smartCompile } from '../smart-compile';
 import shader from './full-screen-quad.wgsl';
+import { smartCompile } from './smart-compile';
 
 export const setUpFullScreenQuad = (
   device: GPUDevice
@@ -26,7 +26,22 @@ export const setUpFullScreenQuad = (
   return {
     buffer,
     vertex: {
-      module: smartCompile(device, shader),
+      module: smartCompile(
+        device,
+        /* wgsl */ `
+        struct VertexOutput {
+          @builtin(position) position: vec4<f32>,
+          @location(0) uv: vec2<f32>,
+        }
+        
+        @vertex
+        fn vertex(
+          @location(0) position: vec2<f32>,
+          @location(1) uv: vec2<f32>
+        ) -> VertexOutput {
+          return VertexOutput(vec4(position, 0.0, 1.0), uv);
+        }`
+      ),
       entryPoint: 'vertex',
       buffers: [
         {

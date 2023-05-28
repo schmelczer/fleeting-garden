@@ -1,5 +1,5 @@
 import { settings } from '../settings';
-import { hsl } from '../utils/colors/hsl';
+import { hsl } from '../utils/hsl';
 import { last } from '../utils/last';
 import { Random } from '../utils/random';
 

@@ -1,4 +1,4 @@
-import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad/full-screen-quad';
+import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
 import { RenderSettings } from './render-settings';

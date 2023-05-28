@@ -1,4 +1,3 @@
-import shader from './full-screen-quad.wgsl';
 import { smartCompile } from './smart-compile';
 
 export const setUpFullScreenQuad = (

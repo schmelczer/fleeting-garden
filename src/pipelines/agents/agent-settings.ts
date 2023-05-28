@@ -4,7 +4,6 @@ export interface AgentSettings {
   turnSpeed: number;
   sensorOffsetAngle: number;
   sensorOffsetDistance: number;
-  turnWhenGoingInTheRightDirection: number;
   turnWhenLost: number;
   individualTrailWeight: number;
   deinfectionProbability: number;

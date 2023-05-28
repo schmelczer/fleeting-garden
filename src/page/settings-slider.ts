@@ -97,6 +97,11 @@ export class SettingsSlider<T extends Record<string, number>> {
     );
   }
 
+  public updateSliderValueBasedOnSource() {
+    this.slider.value = this.scaling(this.settings[this.settingName]).toString();
+    this.onChange();
+  }
+
   public updateConfig(config: Partial<SliderConfiguration>) {
     Object.assign(this.config, config);
 

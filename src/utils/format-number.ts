@@ -7,5 +7,5 @@ export const formatNumber = (value: number, unit = ''): string => {
     return `${(value / 1e3).toFixed(1)} thousand ${unit}`;
   }
 
-  return `${value === Math.floor(value) ? value : value.toFixed(2)}${unit}`;
+  return `${value === Math.floor(value) ? value : value.toFixed(2)} ${unit}`;
 };

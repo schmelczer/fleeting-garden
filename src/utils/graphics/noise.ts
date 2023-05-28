@@ -5,12 +5,12 @@ const textureCache = new Map<string, GPUTexture>();
 
 export const generateNoise = ({
   device,
-  width = 1024,
-  height = 1024,
+  width,
+  height,
 }: {
   device: GPUDevice;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
 }): GPUTextureView => {
   const cacheKey = `${width}x${height}`;
   if (!textureCache.has(cacheKey)) {
@@ -31,10 +31,10 @@ export const generateNoise = ({
           @fragment
           fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
             return vec4(
+              random_with_seed(uv, 0),
               random_with_seed(uv, 1),
               random_with_seed(uv, 2),
               random_with_seed(uv, 3),
-              random_with_seed(uv, 4),
             );
           }`
         ),

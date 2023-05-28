@@ -9,7 +9,7 @@ import { vec2 } from 'gl-matrix';
 
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 17;
+  private static readonly UNIFORM_COUNT = 16;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
@@ -54,7 +54,6 @@ export class AgentPipeline {
     isNextGenerationOdd,
     center,
     radius,
-    turnWhenGoingInTheRightDirection,
     turnWhenLost,
     individualTrailWeight,
     deinfectionProbability,
@@ -72,20 +71,24 @@ export class AgentPipeline {
       this.uniforms,
       0,
       new Float32Array([
+        ...center,
+        radius,
+
         brushTrailWeight,
         moveSpeed,
         turnSpeed,
+
         (sensorOffsetAngle * Math.PI) / 180,
         sensorOffsetDistance,
+
         currentGenerationAggression,
         nextGenerationAggression,
         isNextGenerationOdd,
-        ...center,
-        radius,
-        turnWhenGoingInTheRightDirection,
+
         turnWhenLost,
         individualTrailWeight,
         deinfectionProbability,
+
         agentCount,
       ])
     );

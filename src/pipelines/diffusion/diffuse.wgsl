@@ -1,40 +1,48 @@
 struct Settings {
-  diffusionRateTrails: f32,
+  inverseDiffusionRateTrails: f32,
   decayRateTrails: f32,
-  diffusionRateBrush: f32,
+  inverseDiffusionRateBrush: f32,
   decayRateBrush: f32,
 };
+
 
 @group(1) @binding(0) var<uniform> settings: Settings;
 @group(1) @binding(1) var Sampler: sampler;
 @group(1) @binding(2) var trailMap: texture_2d<f32>;
 
+
 @fragment
 fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var current = textureSample(trailMap, Sampler, uv);
-  var change = vec4<f32>(0);
-  for (var x: i32 = -1; x <= 1; x++) {
-    for (var y: i32 = -1; y <= 1; y++) {
-      if (x != 0 || y != 0) {
-        let offset = vec2(f32(x), f32(y));
-        let neighbour = textureSample(trailMap, Sampler, uv + offset / state.size);
-        let random = textureSample(noise, noiseSampler, uv + offset / state.size * 0.5).r;
-        
-        let difference = clamp(neighbour - current, vec4(0), vec4(1));
-        change += vec4(
-          length(neighbour.rgb) * pow(random, settings.diffusionRateTrails) * difference.rgb,
-          min(1.0, length(neighbour.a)) * pow(random, settings.diffusionRateBrush) * difference.a
-        );
-      }
-    }
-  }
 
-  current += change / 4;
+  current += (
+        propagate(uv, vec2(-1.0, -1.0), current)
+      + propagate(uv, vec2(-1.0, 1.0), current)
+      + propagate(uv, vec2(1.0, -1.0), current)
+      + propagate(uv, vec2(1.0, 1.0), current)
+
+      + propagate(uv, vec2(-1.0, 0.0), current)
+      + propagate(uv, vec2(0.0, -1.0), current)
+      + propagate(uv, vec2(1.0, 0.0), current)
+      + propagate(uv, vec2(0.0, 1.0), current)
+  ) / 8;
 
   let decayed = clamp(vec4(
-    current.rgb * settings.decayRateTrails,
-    max(0, current.a - settings.decayRateBrush)
+    current.rgb - settings.decayRateTrails,
+    max(0, current.a + (current.a - 1.001) * settings.decayRateBrush)
   ), vec4(0), vec4(1));
  
   return decayed;
+}
+
+
+fn propagate(uv: vec2<f32>, offset: vec2<f32>, currentColor: vec4<f32>) -> vec4<f32> {
+  let neighbour = textureSample(trailMap, Sampler, uv + offset / state.size);
+  var random = textureSample(noise, noiseSampler, uv + offset / state.size * 0.5).r;
+  let difference = clamp(neighbour - currentColor, vec4(0), vec4(1));
+
+  return vec4(
+    vec3(length(neighbour.rgb) * pow(random, settings.inverseDiffusionRateTrails)),
+    length(neighbour.a) * pow(random, settings.inverseDiffusionRateBrush)
+  ) * difference;
 }

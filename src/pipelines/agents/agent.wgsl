@@ -1,4 +1,7 @@
 struct Settings {
+  center: vec2<f32>,
+  radius: f32,
+
   brushTrailWeight: f32,
   moveRate: f32,
   turnRate: f32,
@@ -10,10 +13,6 @@ struct Settings {
   nextGenerationAggression: f32,
   isNextGenerationOdd: f32,
 
-  center: vec2<f32>,
-  radius: f32,
-
-  turnWhenGoingInTheRightDirection: f32,
   turnWhenLost: f32,
   individualTrailWeight: f32,
   deinfectionProbability: f32,
@@ -47,10 +46,12 @@ fn main(
   let random = textureSampleLevel(
     noise,
     noiseSampler,
-    vec2(f32(id) % 23647 / 2000,
-    state.time % 6294 / 2000),
+    vec2(
+      f32(id) % 23647 / 2000,
+      agent.angle / 10
+    ) + agent.position / state.size,
     0
-  ).a;
+  );
 
   let isFromCurrentGeneration = abs(agent.generation - settings.isNextGenerationOdd);
   let isFromOddGeneration = agent.generation == 1.0;
@@ -59,9 +60,10 @@ fn main(
   let trailLeft = sense(agent.position, agent.angle, settings.sensorOffset, settings.sensorAngle);
   let trailRight = sense(agent.position, agent.angle, settings.sensorOffset, -settings.sensorAngle);
 
-  var weightForward: f32 = isFromCurrentGeneration * trailForward.a * settings.brushTrailWeight;
-  var weightLeft: f32 = isFromCurrentGeneration * trailLeft.a * settings.brushTrailWeight;
-  var weightRight: f32 = isFromCurrentGeneration * trailRight.a * settings.brushTrailWeight;
+  let brushWeight = isFromCurrentGeneration * settings.brushTrailWeight - (1 - isFromCurrentGeneration) * settings.brushTrailWeight;
+  var weightForward: f32 = brushWeight * trailForward.a;
+  var weightLeft: f32 = brushWeight * trailLeft.a;
+  var weightRight: f32 = brushWeight * trailRight.a;
 
   let agression = isFromCurrentGeneration * settings.currentGenerationAggression + (1.0 - isFromCurrentGeneration) * settings.nextGenerationAggression; 
   if (isFromOddGeneration) {
@@ -75,32 +77,34 @@ fn main(
   }
 
   var rotation: f32 = 0;
-  if weightForward > weightLeft && weightForward > weightRight {
-    rotation = (random - 0.5) * settings.turnWhenGoingInTheRightDirection * settings.turnRate * state.deltaTime;
+  if weightForward >= weightLeft && weightForward >= weightRight {
+    rotation = (random.r - 0.5) * 0.0 * settings.turnRate * state.deltaTime;
   } else if weightLeft < weightRight {
-    rotation = -min(settings.sensorAngle, settings.turnRate * state.deltaTime);
+    rotation = -settings.turnRate * state.deltaTime;
   } else if weightRight < weightLeft {
-    rotation = min(settings.sensorAngle, settings.turnRate * state.deltaTime);
+    rotation = settings.turnRate * state.deltaTime;
   } else {
-    rotation = (random - 0.5) * settings.turnWhenLost * settings.turnRate * state.deltaTime;
+    rotation = (random.r - 0.5) * settings.turnWhenLost * settings.turnRate * state.deltaTime;
   }
 
   let direction = vec2(cos(agent.angle), sin(agent.angle));
   var nextPosition = agent.position + direction * settings.moveRate * state.deltaTime;
   nextPosition = clamp(nextPosition, vec2<f32>(0, 0), state.size);
   if nextPosition.x == 0 || nextPosition.x == state.size.x || nextPosition.y == 0 || nextPosition.y == state.size.y {
-    rotation = 3.14159265359 + random - 0.5;
+    rotation = 3.14159265359 + random.a - 0.5;
   }
 
   var trail = vec4<f32>(settings.individualTrailWeight, 0, 0, 0);
   if isFromOddGeneration {
-    trail = vec4(0, settings.individualTrailWeight, 0, 0);
+    trail = vec4<f32>(0, settings.individualTrailWeight, 0, 0);
   }
 
-  var trailBelow = textureLoad(trailMapIn, vec2<i32>(agent.position), 0);
+  agent.position = nextPosition;
+  agent.angle += rotation;
+  var trailBelow = textureLoad(trailMapIn, vec2<i32>(nextPosition), 0);
 
   if settings.radius > 0 && length(settings.center - agent.position) < settings.radius {
-    agents[id].generation = settings.isNextGenerationOdd;
+    agent.generation = settings.isNextGenerationOdd;
     
     // clear trail map below so the agent won't die immediately
     if (settings.isNextGenerationOdd == 1.0) {
@@ -111,25 +115,21 @@ fn main(
       trailBelow.g = 0;
     }
 
-    textureStore(trailMapOut, vec2<i32>(agent.position), trailBelow);
-    return;
-  }
-
-  let next = vec4(trail.rgb + trailBelow.rgb, trailBelow.a);
-  textureStore(trailMapOut, vec2<i32>(nextPosition), next);
-
-  if isFromOddGeneration {
-    if next.g < next.r && (isFromCurrentGeneration == 1.0 || (isFromCurrentGeneration == 0.0 && random < settings.deinfectionProbability)) {
-      agent.generation = 0;
-    }
+    textureStore(trailMapOut, vec2<i32>(nextPosition), trailBelow);
   } else {
-    if next.r < next.g && (isFromCurrentGeneration == 1.0 || (isFromCurrentGeneration == 0.0 && random < settings.deinfectionProbability)) {
-      agent.generation = 1;
+    textureStore(trailMapOut, vec2<i32>(nextPosition), trail + trailBelow);
+
+    if isFromOddGeneration {
+      if trailBelow.g < trailBelow.r && (isFromCurrentGeneration == 1.0 || (isFromCurrentGeneration == 0.0 && random.a < settings.deinfectionProbability)) {
+        agent.generation = 0;
+      }
+    } else {
+      if trailBelow.r < trailBelow.g && (isFromCurrentGeneration == 1.0 || (isFromCurrentGeneration == 0.0 && random.a < settings.deinfectionProbability)) {
+        agent.generation = 1;
+      }
     }
   }
 
-  agent.position = nextPosition;
-  agent.angle += rotation;
   agents[id] = agent;
 }
 

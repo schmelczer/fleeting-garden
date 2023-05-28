@@ -9,20 +9,26 @@ fn main(
     return;
   }
 
+  let clusterId = f32(id % 1000);
+
   let random = textureSampleLevel(
     noise,
     noiseSampler,
     vec2(f32(id % 1999) / 2000, f32(id) / 1999 / 2000),
     0
   );
+  
+  let randomPosition = textureSampleLevel(
+    noise,
+    noiseSampler,
+    vec2(clusterId / 2000, clusterId / 2000),
+    0
+  );
 
-  let position = random.xy * state.size;
-  let center = state.size / 2.0;
-  let direction = position - center;
 
   agents[id] = Agent(
-    state.size / 2.0,
-    atan2(direction.y, direction.x),
+    randomPosition.xz * state.size,
+    random.r * 3.14 * 2,
     0,
   );
 }

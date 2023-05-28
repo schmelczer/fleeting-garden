@@ -20,12 +20,9 @@ export class ResizableTexture {
 
     const newTexture = this.device.createTexture({
       format: 'rgba16float',
-      dimension: '2d',
-      mipLevelCount: 1,
       size: {
         width: size.x,
         height: size.y,
-        depthOrArrayLayers: 1,
       },
       usage:
         GPUTextureUsage.STORAGE_BINDING |

@@ -6,6 +6,8 @@ import { CollapsiblePanelAnimator } from './page/collapsible-panel-animator';
 import { FullScreenHandler } from './page/full-screen-handler';
 import { MenuHider } from './page/menu-hider';
 import { setUpSettingsPage } from './page/set-up-settings-page';
+import { SettingsSlider } from './page/settings-slider';
+import { resetSettings } from './settings';
 import { applyArrayPlugins } from './utils/array';
 import { DeltaTimeCalculator } from './utils/delta-time-calculator';
 import { ErrorHandler, Severity } from './utils/error-handler';
@@ -29,11 +31,13 @@ declare global {
   }
 }
 
-const getElements = () => ({
+const elements = {
   aside: document.querySelector('aside') as HTMLDivElement,
   infoButton: document.querySelector('button.info') as HTMLButtonElement,
   infoElement: document.querySelector('.info-page') as HTMLDivElement,
   settingsPage: document.querySelector('.settings-page') as HTMLDivElement,
+  settingsContent: document.querySelector('.settings-content') as HTMLDivElement,
+  applyDefaults: document.querySelector('#apply-defaults') as HTMLButtonElement,
   minimizeFullScreenButton: document.querySelector(
     'button.minimize-full-screen'
   ) as HTMLButtonElement,
@@ -46,24 +50,22 @@ const getElements = () => ({
   canvasContainer: document.querySelector('main.canvas-container') as HTMLCanvasElement,
   errorContainer: document.querySelector('.errors-container') as HTMLDivElement,
   counters: document.querySelector('.counters > pre') as HTMLPreElement,
-});
+};
 
 const main = async () => {
-  const elements = getElements();
-
-  let shouldStop = false;
-  let game: GameLoop | null = null;
-
-  ErrorHandler.addOnErrorListener((error, _metadata) => {
-    elements.errorContainer.innerHTML += `
-      <pre class="${error.severity}">${error.message}</div>
-    `;
-    game?.destroy();
-    shouldStop = true;
-  });
-
   try {
+    let shouldStop = false;
+    let game: GameLoop | null = null;
+
     applyArrayPlugins();
+
+    ErrorHandler.addOnErrorListener((error, _metadata) => {
+      elements.errorContainer.innerHTML += `
+        <pre class="${error.severity}">${error.message}</div>
+      `;
+      game?.destroy();
+      shouldStop = true;
+    });
 
     const infoPageHandler = new CollapsiblePanelAnimator(
       elements.infoButton,
@@ -98,7 +100,12 @@ const main = async () => {
 
     const deltaTimeCalculator = new DeltaTimeCalculator();
     const gameRules = new GameRules(performance.now() / 1000);
-    let isSettingsPageSetUp = false;
+    let sliders: Array<SettingsSlider<any>> = [];
+
+    elements.applyDefaults.addEventListener('click', () => {
+      resetSettings();
+      sliders.forEach((slider) => slider.updateSliderValueBasedOnSource());
+    });
 
     const updateCounters = () => {
       elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
@@ -110,9 +117,9 @@ next gen: ${formatNumber(game?.aliveAgentCounts.nextGenerationCount ?? 0)}`;
 
     while (!shouldStop) {
       game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
-      if (!isSettingsPageSetUp) {
-        isSettingsPageSetUp = true;
-        setUpSettingsPage(elements.settingsPage, game.maxAgentCount);
+
+      if (sliders.length === 0) {
+        sliders = setUpSettingsPage(elements.settingsContent, game.maxAgentCount);
       }
 
       await game.start();

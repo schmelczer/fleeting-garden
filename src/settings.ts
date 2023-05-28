@@ -5,37 +5,38 @@ import { DiffusionSettings } from './pipelines/diffusion/diffusion-settings';
 import { RenderSettings } from './pipelines/render/render-settings';
 import { persist } from './utils/persist';
 
-export const settings: { [key: string]: number } & GameLoopSettings &
+const initialValues: GameLoopSettings &
   AgentSettings &
   BrushSettings &
   DiffusionSettings &
-  RenderSettings = persist({
-  agentCount: 1_000_000,
+  RenderSettings = {
+  agentCount: 1_001_500,
 
-  currentGenerationAggression: 0.1,
-  nextGenerationAggression: 10,
+  currentGenerationAggression: -5,
+  nextGenerationAggression: 0.5,
 
-  moveSpeed: 70,
-  turnSpeed: 345,
-  sensorOffsetAngle: 32,
-  sensorOffsetDistance: 23,
-  turnWhenGoingInTheRightDirection: 0,
-  turnWhenLost: 0.2,
-  deinfectionProbability: 0.001,
+  moveSpeed: 90,
+  turnSpeed: 78,
+  sensorOffsetAngle: 41,
+  sensorOffsetDistance: 45,
+  turnWhenLost: 0.43,
+  deinfectionProbability: 1,
 
-  brushTrailWeight: 5,
-  individualTrailWeight: 0.5,
-  diffusionRateTrails: 2, // inverse
-  decayRateTrails: 0.9, // inverse
-  diffusionRateBrush: 4, // inverse
-  decayRateBrush: 0.003,
+  brushTrailWeight: 500,
+  individualTrailWeight: 0.2,
 
-  spawnRadius: 5,
-  spawnInterval: 600,
+  diffusionRateTrails: 0.29,
+  decayRateTrails: 21.95,
+  diffusionRateBrush: 0.25,
+  decayRateBrush: 15,
 
-  clarity: 2,
+  spawnRadius: 8,
+  spawnInterval: 8,
+
+  clarity: 0,
   brushSize: 12,
-  brushSizeVariation: 0.5,
+
+  brushSizeVariation: 0.5, // hidden on the UI
 
   startColorHue: 200,
 
@@ -44,4 +45,14 @@ export const settings: { [key: string]: number } & GameLoopSettings &
   // debug options
   renderSpeed: 1,
   simulatedDelayMs: 0,
-});
+};
+
+export const settings: { [key: string]: number } & GameLoopSettings &
+  AgentSettings &
+  BrushSettings &
+  DiffusionSettings &
+  RenderSettings = persist({ ...initialValues });
+
+export const resetSettings = () => {
+  Object.assign(settings, initialValues);
+};

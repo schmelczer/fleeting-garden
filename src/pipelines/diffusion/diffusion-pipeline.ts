@@ -62,10 +62,10 @@ export class DiffusionPipeline {
       this.uniforms,
       0,
       new Float32Array([
-        diffusionRateTrails,
-        decayRateTrails,
-        diffusionRateBrush,
-        decayRateBrush,
+        1 / diffusionRateTrails,
+        decayRateTrails / 1000,
+        1 / diffusionRateBrush,
+        decayRateBrush / 1000,
       ])
     );
   }

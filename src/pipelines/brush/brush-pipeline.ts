@@ -119,11 +119,11 @@ export class BrushPipeline {
     this.linePoints.length = 0;
   }
 
-  public setParameters({ brushWidth, brushWidthVariation }: BrushSettings) {
+  public setParameters({ brushSize, brushSizeVariation }: BrushSettings) {
     this.device.queue.writeBuffer(
       this.uniforms,
       0,
-      new Float32Array([brushWidth / 2, (brushWidth / 2) * brushWidthVariation])
+      new Float32Array([brushSize / 2, Math.floor((brushSize / 2) * brushSizeVariation)])
     );
 
     this.actualPoints = this.linePoints.slice();
@@ -148,7 +148,7 @@ export class BrushPipeline {
         new Array(this.lineCount).fill(0).flatMap((_, i) => {
           const from = this.actualPoints[i];
           const to = this.actualPoints[i + 1];
-          const [a, b, c, d] = this.getSegmentBoundingBox(from, to, brushWidth / 2);
+          const [a, b, c, d] = this.getSegmentBoundingBox(from, to, brushSize / 2);
           return [a, b, c, b, c, d].flatMap((v) => [...v, ...from, ...to]);
         })
       )

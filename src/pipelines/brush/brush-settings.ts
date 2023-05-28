@@ -1,4 +1,4 @@
 export interface BrushSettings {
-  brushWidth: number;
-  brushWidthVariation: number;
+  brushSize: number;
+  brushSizeVariation: number;
 }

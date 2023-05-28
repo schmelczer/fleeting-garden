@@ -1,6 +1,6 @@
 struct Settings {
-  brushWidth: f32,
-  brushWidthVariation: f32
+  brushSize: f32,
+  brushSizeVariation: f32
 };
 
 @group(1) @binding(0) var<uniform> settings: Settings;
@@ -31,9 +31,9 @@ fn fragment(
 ) -> @location(0) vec4<f32> {
     var distance = distanceFromLine(screenPosition, start, end);
     let noise = textureSample(noise, noiseSampler, screenPosition / state.size / 50);
-    distance += noise.r * settings.brushWidthVariation;
+    distance += noise.r * settings.brushSizeVariation;
 
-    if(distance > settings.brushWidth) {
+    if(distance > settings.brushSize) {
       discard;
     }
 

@@ -15,11 +15,11 @@ export const settings: { [key: string]: number } & GameLoopSettings &
   currentGenerationAggression: 0.1,
   nextGenerationAggression: 10,
 
-  moveSpeed: 80,
-  turnSpeed: 550,
-  sensorOffsetAngle: 30,
-  sensorOffsetDistance: 30,
-  turnWhenGoingInTheRightDirection: 0.05,
+  moveSpeed: 70,
+  turnSpeed: 345,
+  sensorOffsetAngle: 32,
+  sensorOffsetDistance: 23,
+  turnWhenGoingInTheRightDirection: 0,
   turnWhenLost: 0.2,
   deinfectionProbability: 0.001,
 
@@ -34,8 +34,8 @@ export const settings: { [key: string]: number } & GameLoopSettings &
   spawnInterval: 600,
 
   clarity: 2,
-  brushWidth: 12,
-  brushWidthVariation: 0.5,
+  brushSize: 12,
+  brushSizeVariation: 0.5,
 
   startColorHue: 200,
 

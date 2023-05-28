@@ -21,7 +21,7 @@ fn main(
   let direction = position - center;
 
   agents[id] = Agent(
-    position,
+    state.size / 2.0,
     atan2(direction.y, direction.x),
     0,
   );

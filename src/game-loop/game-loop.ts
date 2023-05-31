@@ -189,6 +189,9 @@ export default class GameLoop {
       pipeline.setParameters({
         time,
         isNextGenerationOdd: this.gameRules.nextGenerationId % 2,
+        nextGenerationSensorOffsetDistance: this.gameRules.getSensorOffset(),
+        nextGenerationSpeed: this.gameRules.getNextGenerationMoveSpeed(),
+        infectionProbability: this.gameRules.getInfectionProbability(),
         deltaTime,
         canvasSize: this.canvasSize,
         brushColor: GamePresentation.getGenerationColor(

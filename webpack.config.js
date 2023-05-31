@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const InlineSourceWebpackPlugin = require('inline-source-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const DefinePlugin = require('webpack').DefinePlugin;
 
 module.exports = (env, argv) => ({
   devtool: argv.mode === 'development' ? 'inline-source-map' : false,
@@ -26,15 +27,15 @@ module.exports = (env, argv) => ({
       template: './src/index.html',
     }),
     new MiniCssExtractPlugin(),
-    argv.mode === 'production'
-      ? new InlineSourceWebpackPlugin({
-          compress: true,
-        })
-      : null,
-    new (require('webpack').DefinePlugin)({
+    argv.mode === 'production' &&
+      new InlineSourceWebpackPlugin({
+        compress: true,
+      }),
+    new DefinePlugin({
       __CURRENT_DATE__: Date.now(),
+      __IS_PRODUCTION__: argv.mode === 'production',
     }),
-  ].filter(Boolean),
+  ].filter((v) => v),
   module: {
     rules: [
       {

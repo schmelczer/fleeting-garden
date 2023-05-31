@@ -1,3 +1,4 @@
+import { isProduction } from '../constants';
 import { settings } from '../settings';
 import { SettingsSlider, ValueScaling } from './settings-slider';
 
@@ -6,16 +7,17 @@ export const setUpSettingsPage = (
   maxAgentCount: number
 ): Array<SettingsSlider<any>> => {
   const sliders = [
-    new SettingsSlider(settings, 'renderSpeed', {
-      min: 1,
-      max: 10,
-      rounding: Math.round,
-    }),
+    !isProduction &&
+      new SettingsSlider(settings, 'renderSpeed', {
+        min: 1,
+        max: 10,
+        rounding: Math.round,
+      }),
 
     new SettingsSlider(settings, 'agentCount', {
       min: 1,
       max: maxAgentCount,
-      scaling: ValueScaling.Logarithmic,
+      scaling: ValueScaling.Quadratic,
       rounding: Math.round,
     }),
 
@@ -61,12 +63,6 @@ export const setUpSettingsPage = (
       max: 1,
     }),
 
-    new SettingsSlider(settings, 'deinfectionProbability', {
-      min: 0,
-      max: 1,
-      scaling: ValueScaling.Quadratic,
-    }),
-
     new SettingsSlider(settings, 'individualTrailWeight', {
       min: 0,
       max: 1,
@@ -79,7 +75,8 @@ export const setUpSettingsPage = (
 
     new SettingsSlider(settings, 'decayRateTrails', {
       min: 0.1,
-      max: 1000,
+      max: 5000,
+      scaling: ValueScaling.Quadratic,
     }),
 
     new SettingsSlider(settings, 'diffusionRateBrush', {
@@ -92,22 +89,6 @@ export const setUpSettingsPage = (
       max: 100,
     }),
 
-    new SettingsSlider(settings, 'spawnRadius', {
-      min: 0,
-      max: 1000,
-    }),
-
-    new SettingsSlider(settings, 'spawnInterval', {
-      min: 0.1,
-      max: 600,
-      scaling: ValueScaling.Quadratic,
-    }),
-
-    new SettingsSlider(settings, 'clarity', {
-      min: 0,
-      max: 0.5,
-    }),
-
     new SettingsSlider(settings, 'brushSize', {
       min: 1,
       max: 30,
@@ -116,9 +97,11 @@ export const setUpSettingsPage = (
 
   const sliderContainerElement = document.createElement('div');
 
-  sliders.forEach((slider) => {
-    sliderContainerElement.appendChild(slider.element);
-  });
+  sliders
+    .filter((v) => v)
+    .forEach((slider) => {
+      sliderContainerElement.appendChild(slider.element);
+    });
 
   settingsPage.appendChild(sliderContainerElement);
 

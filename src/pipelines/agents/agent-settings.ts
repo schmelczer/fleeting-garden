@@ -6,7 +6,6 @@ export interface AgentSettings {
   sensorOffsetDistance: number;
   turnWhenLost: number;
   individualTrailWeight: number;
-  deinfectionProbability: number;
   currentGenerationAggression: number;
   nextGenerationAggression: number;
 }

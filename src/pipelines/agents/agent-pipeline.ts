@@ -9,7 +9,7 @@ import { vec2 } from 'gl-matrix';
 
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;
-  private static readonly UNIFORM_COUNT = 16;
+  private static readonly UNIFORM_COUNT = 19;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
@@ -44,26 +44,33 @@ export class AgentPipeline {
   }
 
   public setParameters({
+    deltaTime,
+    center,
+    radius,
     brushTrailWeight,
     moveSpeed,
     turnSpeed,
     sensorOffsetAngle,
     sensorOffsetDistance,
+    nextGenerationSensorOffsetDistance,
     currentGenerationAggression,
     nextGenerationAggression,
+    nextGenerationSpeed,
     isNextGenerationOdd,
-    center,
-    radius,
     turnWhenLost,
     individualTrailWeight,
-    deinfectionProbability,
+    infectionProbability,
     agentCount,
   }: AgentSettings & {
+    deltaTime: number;
     currentGenerationAggression: number;
     nextGenerationAggression: number;
+    nextGenerationSensorOffsetDistance: number;
+    nextGenerationSpeed: number;
     isNextGenerationOdd: number;
     center: vec2;
     radius: number;
+    infectionProbability: number;
     agentCount: number;
   }) {
     this.agentCount = agentCount;
@@ -75,19 +82,21 @@ export class AgentPipeline {
         radius,
 
         brushTrailWeight,
-        moveSpeed,
-        turnSpeed,
+        moveSpeed * deltaTime,
+        turnSpeed * deltaTime,
 
         (sensorOffsetAngle * Math.PI) / 180,
         sensorOffsetDistance,
 
         currentGenerationAggression,
         nextGenerationAggression,
+        nextGenerationSensorOffsetDistance,
+        nextGenerationSpeed * deltaTime,
         isNextGenerationOdd,
 
         turnWhenLost,
         individualTrailWeight,
-        deinfectionProbability,
+        infectionProbability,
 
         agentCount,
       ])

@@ -13,28 +13,24 @@ const initialValues: GameLoopSettings &
   agentCount: 1_001_500,
 
   currentGenerationAggression: -5,
-  nextGenerationAggression: 0.5,
+  nextGenerationAggression: 0.2,
 
   moveSpeed: 90,
-  turnSpeed: 78,
-  sensorOffsetAngle: 41,
-  sensorOffsetDistance: 45,
-  turnWhenLost: 0.43,
-  deinfectionProbability: 1,
+  turnSpeed: 53,
+  sensorOffsetAngle: 40,
+  sensorOffsetDistance: 43,
+  turnWhenLost: 0.08,
 
   brushTrailWeight: 500,
-  individualTrailWeight: 0.2,
+  individualTrailWeight: 0.78,
 
-  diffusionRateTrails: 0.29,
-  decayRateTrails: 21.95,
+  diffusionRateTrails: 1.11,
+  decayRateTrails: 718,
   diffusionRateBrush: 0.25,
   decayRateBrush: 15,
 
-  spawnRadius: 8,
-  spawnInterval: 8,
-
   clarity: 0,
-  brushSize: 12,
+  brushSize: 16,
 
   brushSizeVariation: 0.5, // hidden on the UI
 

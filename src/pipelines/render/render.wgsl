@@ -34,5 +34,5 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 }
 
 fn clarity(strength: f32) -> f32 {
-  return pow(strength, 5) - strength * settings.clarity + sign(strength) * settings.clarity;
+  return sign(strength);
 }

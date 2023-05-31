@@ -4,8 +4,5 @@ export interface GameLoopSettings {
   renderSpeed: number;
   simulatedDelayMs: number;
 
-  spawnRadius: number;
-  spawnInterval: number;
-
   startColorHue: number;
 }

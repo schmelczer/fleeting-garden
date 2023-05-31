@@ -28,7 +28,4 @@ fn main(
   } else {
     atomicAdd(&counters.oddGenerationAlive, 1);
   }
-
-  // atomicStore(&counters.evenGenerationAlive, settings.agentCount);
-  // atomicStore(&counters.oddGenerationAlive,  workgroup_count.y);
 }

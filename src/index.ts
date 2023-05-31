@@ -1,4 +1,5 @@
 import '../assets/icons/info.svg';
+import { isProduction, lastEdit } from './constants';
 import GameLoop from './game-loop/game-loop';
 import { GameRules } from './game-loop/game-rules';
 import './index.scss';
@@ -11,7 +12,6 @@ import { resetSettings } from './settings';
 import { applyArrayPlugins } from './utils/array';
 import { DeltaTimeCalculator } from './utils/delta-time-calculator';
 import { ErrorHandler, Severity } from './utils/error-handler';
-import { formatNumber } from './utils/format-number';
 import { initializeGpu } from './utils/graphics/initialize-gpu';
 
 declare global {
@@ -49,7 +49,7 @@ const elements = {
   canvas: document.querySelector('canvas') as HTMLCanvasElement,
   canvasContainer: document.querySelector('main.canvas-container') as HTMLCanvasElement,
   errorContainer: document.querySelector('.errors-container') as HTMLDivElement,
-  counters: document.querySelector('.counters > pre') as HTMLPreElement,
+  // counters: document.querySelector('.counters > pre') as HTMLPreElement,
 };
 
 const main = async () => {
@@ -79,7 +79,10 @@ const main = async () => {
     );
     settingsPageHandler.onOpen = infoPageHandler.close.bind(infoPageHandler);
     infoPageHandler.onOpen = settingsPageHandler.close.bind(settingsPageHandler);
-    infoPageHandler.open();
+
+    if (isProduction) {
+      infoPageHandler.open();
+    }
 
     new MenuHider(
       elements.aside,
@@ -99,7 +102,6 @@ const main = async () => {
     elements.restartButton.addEventListener('click', () => game?.destroy());
 
     const deltaTimeCalculator = new DeltaTimeCalculator();
-    const gameRules = new GameRules(performance.now() / 1000);
     let sliders: Array<SettingsSlider<any>> = [];
 
     elements.applyDefaults.addEventListener('click', () => {
@@ -107,15 +109,18 @@ const main = async () => {
       sliders.forEach((slider) => slider.updateSliderValueBasedOnSource());
     });
 
-    const updateCounters = () => {
-      elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
-current gen: ${formatNumber(game?.aliveAgentCounts.currentGenerationCount ?? 0)}
-next gen: ${formatNumber(game?.aliveAgentCounts.nextGenerationCount ?? 0)}`;
-      window.requestAnimationFrame(updateCounters);
-    };
-    updateCounters();
+    console.log({ lastEdit });
+
+    //     const updateCounters = () => {
+    //       elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
+    // current gen: ${formatNumber(game?.aliveAgentCounts.currentGenerationCount ?? 0)}
+    // next gen: ${formatNumber(game?.aliveAgentCounts.nextGenerationCount ?? 0)}`;
+    //       window.requestAnimationFrame(updateCounters);
+    //     };
+    //     updateCounters();
 
     while (!shouldStop) {
+      const gameRules = new GameRules(performance.now() / 1000);
       game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
 
       if (sliders.length === 0) {

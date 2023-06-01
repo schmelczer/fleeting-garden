@@ -26,7 +26,8 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
       oddGenerationStrength * settings.oddGenerationColor,
       oddGenerationStrength / (evenGenerationStrength + oddGenerationStrength + 0.000001)
     ),
-    brushStrength * settings.brushColor);
+    brushStrength * settings.brushColor
+  );
 
   let strength = max(evenGenerationStrength, max(oddGenerationStrength, brushStrength));
 
@@ -34,5 +35,5 @@ fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 }
 
 fn clarity(strength: f32) -> f32 {
-  return sign(strength);
+  return pow(strength, settings.clarity);
 }

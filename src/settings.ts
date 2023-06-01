@@ -15,22 +15,22 @@ const initialValues: GameLoopSettings &
   currentGenerationAggression: -5,
   nextGenerationAggression: 0.2,
 
-  moveSpeed: 90,
-  turnSpeed: 53,
-  sensorOffsetAngle: 40,
+  moveSpeed: 74,
+  turnSpeed: 45,
+  sensorOffsetAngle: 31,
   sensorOffsetDistance: 43,
-  turnWhenLost: 0.08,
+  turnWhenLost: 0.01,
 
   brushTrailWeight: 500,
-  individualTrailWeight: 0.78,
+  individualTrailWeight: 0.05,
 
-  diffusionRateTrails: 1.11,
-  decayRateTrails: 718,
-  diffusionRateBrush: 0.25,
-  decayRateBrush: 15,
+  diffusionRateTrails: 0,
+  decayRateTrails: 944,
+  diffusionRateBrush: 0.35,
+  decayRateBrush: 18,
 
-  clarity: 0,
-  brushSize: 16,
+  clarity: 0.7,
+  brushSize: 12,
 
   brushSizeVariation: 0.5, // hidden on the UI
 

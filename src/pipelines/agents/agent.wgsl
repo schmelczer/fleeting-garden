@@ -112,10 +112,10 @@ fn main(
     // trailBelow.g = settings.isNextGenerationOdd * (trailBelow.r + trailBelow.g);
   } else {
     let relativeWeight = mix(trailBelow.g - trailBelow.r, trailBelow.r - trailBelow.g, isFromOddGeneration);
-    if relativeWeight > 0 && (
+    if (relativeWeight > 0 && (
         (isFromCurrentGeneration == 1.0 && trailBelow.a == 0 && random.b < settings.infectionProbability)
      || (isFromCurrentGeneration == 0.0 && trailBelow.a > 0)
-    ) {
+    )) || (trailBelow.a > 0 && isFromCurrentGeneration == 0.0){
       // trailBelow.r = isFromOddGeneration * (trailBelow.r + trailBelow.g);
       // trailBelow.g = (1 - isFromOddGeneration) * (trailBelow.r + trailBelow.g);
       agent.generation = (agent.generation + 1) % 2;

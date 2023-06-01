@@ -28,7 +28,7 @@ export class GameRules {
     nextGenerationCount: number;
   } = {
     currentGenerationCount: 0,
-    nextGenerationCount: 0,
+    nextGenerationCount: 1,
   };
 
   public constructor(startingTimeInSeconds: number) {
@@ -94,7 +94,9 @@ export class GameRules {
     const currentGenerationCount =
       this.nextGenerationId % 2 === 1 ? evenGenerationCount : oddGenerationCount;
 
-    if (currentGenerationCount <= 100) {
+    const q = currentGenerationCount / settings.agentCount;
+
+    if (currentGenerationCount <= 100 && q < 0.05) {
       this.nextGenerationId++;
       this.lastGenerationChangeTimeInSeconds = performance.now() / 1000;
     }

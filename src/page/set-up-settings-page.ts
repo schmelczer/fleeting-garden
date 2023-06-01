@@ -93,6 +93,11 @@ export const setUpSettingsPage = (
       min: 1,
       max: 30,
     }),
+
+    new SettingsSlider(settings, 'clarity', {
+      min: 0.00001,
+      max: 1,
+    }),
   ];
 
   const sliderContainerElement = document.createElement('div');

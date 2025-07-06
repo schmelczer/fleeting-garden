@@ -15,7 +15,7 @@
       "dom"
     ],
     "module": "commonjs",
-    "declaration": true,
+    "declaration": false,
     "noImplicitAny": false,
     "removeComments": false,
     "emitDecoratorMetadata": true,
@@ -27,7 +27,11 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["definitions.d.ts", "src/**/*", "node_modules/@webgpu/types/**/*"],
+  "include": [
+    "definitions.d.ts",
+    "src/**/*",
+    "node_modules/@webgpu/types/**/*"
+  ],
   "compileOnSave": false,
   "buildOnSave": false
 }

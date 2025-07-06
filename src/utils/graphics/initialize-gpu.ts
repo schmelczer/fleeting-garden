@@ -14,7 +14,6 @@ export const initializeGpu = async (): Promise<GPUDevice> => {
     throw new Error('Could not request adatper');
   }
 
-  ErrorHandler.addMetadata('adapter', await adapter.requestAdapterInfo());
   ErrorHandler.addMetadata('features', adapter.features);
   ErrorHandler.addMetadata('limits', adapter.limits);
 

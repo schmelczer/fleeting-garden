@@ -1,3 +1,5 @@
+import { vec2 } from 'gl-matrix';
+
 import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
 import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
 import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
@@ -12,8 +14,6 @@ import { ResizableTexture } from '../utils/graphics/resizable-texture';
 import { sleep } from '../utils/sleep';
 import { GamePresentation } from './game-presentation';
 import { GameRules } from './game-rules';
-
-import { vec2 } from 'gl-matrix';
 
 export default class GameLoop {
   private readonly trailMapA: ResizableTexture;
@@ -170,7 +170,7 @@ export default class GameLoop {
     );
     document.documentElement.style.setProperty(
       '--accent-color',
-      `rgb(${accentColor.map((v: number) => v * 255).join(',')})`
+      `rgb(${accentColor[0] * 255},${accentColor[1] * 255},${accentColor[2] * 255})`
     );
 
     const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);

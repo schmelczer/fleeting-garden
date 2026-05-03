@@ -1,11 +1,11 @@
+import { vec2 } from 'gl-matrix';
+
 import { getWorkgroupCounts } from '../../utils/graphics/get-workgroup-counts';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
-import agentSchme from './agent-generation/agent-schema.wgsl';
+import agentSchme from './agent-generation/agent-schema.wgsl?raw';
 import { AgentSettings } from './agent-settings';
-import shader from './agent.wgsl';
-
-import { vec2 } from 'gl-matrix';
+import shader from './agent.wgsl?raw';
 
 export class AgentPipeline {
   private static readonly WORKGROUP_SIZE = 64;

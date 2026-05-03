@@ -1,9 +1,9 @@
+import { vec3 } from 'gl-matrix';
+
 import { settings } from '../settings';
 import { hsl } from '../utils/hsl';
 import { last } from '../utils/last';
 import { Random } from '../utils/random';
-
-import { vec3 } from 'gl-matrix';
 
 const hues = [settings.startColorHue];
 

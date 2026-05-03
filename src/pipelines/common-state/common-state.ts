@@ -1,6 +1,6 @@
-import { generateNoise } from '../../utils/graphics/noise';
-
 import { vec2 } from 'gl-matrix';
+
+import { generateNoise } from '../../utils/graphics/noise';
 
 export class CommonState {
   private static readonly UNIFORM_COUNT = 4;

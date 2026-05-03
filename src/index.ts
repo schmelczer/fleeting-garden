@@ -1,35 +1,18 @@
-import '../assets/icons/info.svg';
 import { isProduction, lastEdit } from './constants';
 import GameLoop from './game-loop/game-loop';
 import { GameRules } from './game-loop/game-rules';
+
 import './index.scss';
+
 import { CollapsiblePanelAnimator } from './page/collapsible-panel-animator';
 import { FullScreenHandler } from './page/full-screen-handler';
 import { MenuHider } from './page/menu-hider';
 import { setUpSettingsPage } from './page/set-up-settings-page';
 import { SettingsSlider } from './page/settings-slider';
 import { resetSettings } from './settings';
-import { applyArrayPlugins } from './utils/array';
 import { DeltaTimeCalculator } from './utils/delta-time-calculator';
 import { ErrorHandler, Severity } from './utils/error-handler';
 import { initializeGpu } from './utils/graphics/initialize-gpu';
-
-declare global {
-  interface Array<T> {
-    x: T;
-    y: T;
-  }
-
-  interface ReadonlyArray<T> {
-    x: T;
-    y: T;
-  }
-
-  interface Float32Array {
-    x: number;
-    y: number;
-  }
-}
 
 const elements = {
   aside: document.querySelector('aside') as HTMLDivElement,
@@ -56,8 +39,6 @@ const main = async () => {
   try {
     let shouldStop = false;
     let game: GameLoop | null = null;
-
-    applyArrayPlugins();
 
     ErrorHandler.addOnErrorListener((error, _metadata) => {
       elements.errorContainer.innerHTML += `

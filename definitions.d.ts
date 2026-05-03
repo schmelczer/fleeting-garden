@@ -1,14 +1,6 @@
-declare module '*.wgsl' {
+declare module '*.wgsl?raw' {
   const content: string;
   export default content;
 }
 
-declare module '*.svg' {
-  const content: string;
-  export default content;
-}
-
-declare module '*.html' {
-  const content: string;
-  export default content;
-}
+declare const __BUILD_DATE__: number;

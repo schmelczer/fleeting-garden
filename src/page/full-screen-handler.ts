@@ -16,14 +16,16 @@ export class FullScreenHandler {
       // on full screen request, only apply it to the target
       if (e.key === 'F11') {
         e.preventDefault();
-        FullScreenHandler.isInFullScreenMode()
-          ? document.exitFullscreen()
-          : target.requestFullscreen();
+        if (FullScreenHandler.isInFullScreenMode()) {
+          document.exitFullscreen();
+        } else {
+          target.requestFullscreen();
+        }
       }
     });
     addEventListener('fullscreenchange', this.updateButtons.bind(this));
-    maximizeButton.addEventListener('click', target.requestFullscreen.bind(target));
-    minimizeButton.addEventListener('click', document.exitFullscreen.bind(document));
+    maximizeButton.addEventListener('click', () => target.requestFullscreen());
+    minimizeButton.addEventListener('click', () => document.exitFullscreen());
   }
 
   public static isInFullScreenMode(): boolean {

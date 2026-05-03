@@ -2,9 +2,9 @@ import { getWorkgroupCounts } from '../../../utils/graphics/get-workgroup-counts
 import { smartCompile } from '../../../utils/graphics/smart-compile';
 import { CommonState } from '../../common-state/common-state';
 import { AGENT_SIZE_IN_BYTES } from './agent';
-import countingShader from './agent-counting.wgsl';
-import firstGenerationShader from './agent-first-generation.wgsl';
-import agentSchema from './agent-schema.wgsl';
+import countingShader from './agent-counting.wgsl?raw';
+import firstGenerationShader from './agent-first-generation.wgsl?raw';
+import agentSchema from './agent-schema.wgsl?raw';
 import { GenerationCounts } from './generation-counts';
 
 export class AgentGenerationPipeline {

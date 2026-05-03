@@ -4,7 +4,7 @@
   "tabWidth": 2,
   "singleQuote": true,
   "endOfLine": "lf",
-  "importOrder": ["^[./]", ".*", ".scss$"],
-  "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true
+  "plugins": ["@ianvs/prettier-plugin-sort-imports"],
+  "importOrder": ["<BUILTIN_MODULES>", "<THIRD_PARTY_MODULES>", "", "^[./]"],
+  "importOrderTypeScriptVersion": "5.0.0"
 }

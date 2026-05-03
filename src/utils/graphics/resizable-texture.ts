@@ -1,6 +1,6 @@
-import { CopyPipeline } from '../../pipelines/copy/copy-pipeline';
-
 import { vec2 } from 'gl-matrix';
+
+import { CopyPipeline } from '../../pipelines/copy/copy-pipeline';
 
 export class ResizableTexture {
   private texture: GPUTexture;
@@ -8,7 +8,10 @@ export class ResizableTexture {
   private readonly copyPipeline: CopyPipeline;
   private size: vec2 | null = null;
 
-  public constructor(private readonly device: GPUDevice, size: vec2) {
+  public constructor(
+    private readonly device: GPUDevice,
+    size: vec2
+  ) {
     this.copyPipeline = new CopyPipeline(this.device);
     this.resize(size);
   }
@@ -21,8 +24,8 @@ export class ResizableTexture {
     const newTexture = this.device.createTexture({
       format: 'rgba16float',
       size: {
-        width: size.x,
-        height: size.y,
+        width: size[0],
+        height: size[1],
       },
       usage:
         GPUTextureUsage.STORAGE_BINDING |

@@ -1,10 +1,10 @@
+import { vec2 } from 'gl-matrix';
+
 import { GenerationCounts } from '../pipelines/agents/agent-generation/generation-counts';
 import { settings } from '../settings';
 import { clamp, clamp01 } from '../utils/clamp';
 import { mix } from '../utils/mix';
 import { Random } from '../utils/random';
-
-import { vec2 } from 'gl-matrix';
 
 export interface SpawnAction {
   generation: number;
@@ -76,8 +76,8 @@ export class GameRules {
     this.lastSpawnAction = {
       generation: this.nextGenerationId,
       position: vec2.fromValues(
-        Random.randomBetween(0, canvasSize.x),
-        Random.randomBetween(0, canvasSize.y)
+        Random.randomBetween(0, canvasSize[0]),
+        Random.randomBetween(0, canvasSize[1])
       ),
       radius: this.currentSpawnRadius,
     };

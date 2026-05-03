@@ -2,7 +2,7 @@ export const persist = <T extends Record<string, number>>(wrapee: T): T => {
   const keys = Object.keys(wrapee);
   keys.sort();
 
-  const keysToShortKeys = Object.fromEntries(keys.map((key, i) => [key, key]));
+  const keysToShortKeys = Object.fromEntries(keys.map((key) => [key, key]));
 
   const params = new URLSearchParams(window.location.search);
   const newParams = new URLSearchParams();

@@ -1,7 +1,7 @@
-import { smartCompile } from '../../utils/graphics/smart-compile';
-import shader from './copy.wgsl';
-
 import { vec2 } from 'gl-matrix';
+
+import { smartCompile } from '../../utils/graphics/smart-compile';
+import shader from './copy.wgsl?raw';
 
 export class CopyPipeline {
   private static readonly UNIFORM_COUNT = 2;

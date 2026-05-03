@@ -16,7 +16,9 @@ html > body {
       height: 100%;
       width: 100%;
 
-      cursor: url('../assets/icons/brush.svg') 0 24, auto;
+      cursor:
+        url('../assets/icons/brush.svg') 0 24,
+        auto;
     }
 
     > .errors-container {
@@ -107,7 +109,8 @@ html > body {
           @include on-large-screen {
             width: 0;
             border-radius: 0 var(--border-radius) var(--border-radius) 0;
-            transition: background-color var(--transition-time),
+            transition:
+              background-color var(--transition-time),
               width var(--transition-time);
             left: calc(-1 * var(--small-margin));
             height: 140%;
@@ -118,7 +121,8 @@ html > body {
           @include on-small-screen {
             height: 0;
             border-radius: 0 0 var(--border-radius) var(--border-radius);
-            transition: background-color var(--transition-time),
+            transition:
+              background-color var(--transition-time),
               height var(--transition-time);
             top: calc(-1 * var(--small-margin));
             width: 140%;
@@ -130,7 +134,8 @@ html > body {
         &::after {
           background-color: var(--accent-color);
 
-          transition: transform var(--transition-time),
+          transition:
+            transform var(--transition-time),
             background-color var(--transition-time);
 
           -webkit-mask-repeat: no-repeat;
@@ -201,7 +206,9 @@ html > body {
 
       &,
       > * {
-        transition: width var(--transition-time-long), height var(--transition-time-long);
+        transition:
+          width var(--transition-time-long),
+          height var(--transition-time-long);
 
         @include on-large-screen {
           width: max(500px, 10vw);

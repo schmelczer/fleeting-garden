@@ -1,4 +1,2 @@
-// @ts-ignore: injected by webpack
-export const isProduction: boolean = __IS_PRODUCTION__;
-// @ts-ignore: injected by webpack
-export const lastEdit = new Date(__CURRENT_DATE__);
+export const isProduction: boolean = import.meta.env.PROD;
+export const lastEdit = new Date(__BUILD_DATE__);

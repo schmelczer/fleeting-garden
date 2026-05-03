@@ -1,6 +1,6 @@
-import { rgb } from './rgb';
-
 import { vec3 } from 'gl-matrix';
+
+import { rgb } from './rgb';
 
 export const hsl = (hue: number, saturation: number, lightness: number): vec3 => {
   hue /= 360;

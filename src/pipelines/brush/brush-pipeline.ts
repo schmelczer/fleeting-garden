@@ -2,7 +2,6 @@ import { vec2 } from 'gl-matrix';
 
 import { clamp } from '../../utils/clamp';
 import { smartCompile } from '../../utils/graphics/smart-compile';
-import { last } from '../../utils/last';
 import { CommonState } from '../common-state/common-state';
 import { BrushSettings } from './brush-settings';
 import shader from './brush.wgsl?raw';
@@ -188,7 +187,7 @@ export class BrushPipeline {
       result.push(position);
     }
 
-    result.push(last(points)!);
+    result.push(points[points.length - 1]);
 
     return result;
   }

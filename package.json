@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "lint": "eslint --fix \"src/**/*.ts\" && prettier --write \"src/**/*.{ts,scss,json,html}\"",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate-icons": "pwa-assets-generator",
     "update": "ncu"
   },
   "engines": {
@@ -34,6 +37,7 @@
     "@eslint/js": "^10.0.1",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@types/node": "^25.6.0",
+    "@vite-pwa/assets-generator": "^1.0.2",
     "@webgpu/types": "^0.1.69",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
@@ -46,6 +50,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.1",
     "vite": "^8.0.10",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^4.1.5"
   }
 }

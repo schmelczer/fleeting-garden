@@ -28,10 +28,7 @@ export default class GameLoop {
   private readonly diffusionPipeline: DiffusionPipeline;
 
   private hasFinished = false;
-  private readonly hasFinishedPromise: Promise<void> = new Promise(
-    (resolve) => (this.resolveHasFinished = resolve)
-  );
-  private resolveHasFinished!: () => void;
+  private readonly finished = Promise.withResolvers<void>();
 
   private activePointerId: number | null = null;
 
@@ -120,7 +117,7 @@ export default class GameLoop {
   public async start(): Promise<void> {
     requestAnimationFrame(this.render.bind(this));
     requestAnimationFrame(this.updateCounts.bind(this));
-    return this.hasFinishedPromise;
+    return this.finished.promise;
   }
 
   private async updateCounts(): Promise<void> {
@@ -152,7 +149,7 @@ export default class GameLoop {
 
   private async render(time: DOMHighResTimeStamp) {
     if (this.hasFinished) {
-      this.resolveHasFinished();
+      this.finished.resolve();
       return;
     }
 
@@ -245,7 +242,7 @@ export default class GameLoop {
 
   public async destroy() {
     this.hasFinished = true;
-    await this.hasFinishedPromise;
+    await this.finished.promise;
 
     this.copyPipeline?.destroy();
     this.agentGenerationPipeline?.destroy();

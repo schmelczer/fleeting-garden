@@ -49,14 +49,6 @@ $breakpoint-width: 600px !default;
 @mixin blurred-background($color: transparent) {
   background-color: color.adjust($color, $alpha: -0.66);
   backdrop-filter: blur(var(--blur-radius));
-  -webkit-backdrop-filter: blur(var(--blur-radius));
-
-  @supports not (
-    (backdrop-filter: blur(var(--blur-radius))) or
-      (-webkit-backdrop-filter: blur(var(--blur-radius)))
-  ) {
-    background-color: $color;
-  }
 }
 
 @mixin square($size) {

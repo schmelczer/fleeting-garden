@@ -138,7 +138,6 @@ html > body {
             transform var(--transition-time),
             background-color var(--transition-time);
 
-          -webkit-mask-repeat: no-repeat;
           mask-repeat: no-repeat;
 
           @include square(var(--icon-size));

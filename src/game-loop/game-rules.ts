@@ -13,8 +13,8 @@ export interface SpawnAction {
 }
 
 export class GameRules {
-  private static readonly DEAFULT_SPAWN_INTERVAL = 8;
-  private static readonly DEAFULT_SPAWN_TIME_LENGTH = 2;
+  private static readonly DEFAULT_SPAWN_INTERVAL = 8;
+  private static readonly DEFAULT_SPAWN_TIME_LENGTH = 2;
   private static readonly DEFAULT_SPAWN_RADIUS = 20;
 
   private lastSpawnTimeInSeconds = 0;
@@ -41,14 +41,14 @@ export class GameRules {
   public getSpawnAction(timeInSeconds: number, canvasSize: vec2): SpawnAction {
     if (
       this.lastSpawnAction &&
-      timeInSeconds - this.lastSpawnTimeInSeconds < GameRules.DEAFULT_SPAWN_TIME_LENGTH
+      timeInSeconds - this.lastSpawnTimeInSeconds < GameRules.DEFAULT_SPAWN_TIME_LENGTH
     ) {
       return this.lastSpawnAction;
     }
 
     this.currentSpawnInterval = mix(
-      GameRules.DEAFULT_SPAWN_INTERVAL,
-      GameRules.DEAFULT_SPAWN_INTERVAL / 5,
+      GameRules.DEFAULT_SPAWN_INTERVAL,
+      GameRules.DEFAULT_SPAWN_INTERVAL / 5,
       clamp01((timeInSeconds - this.lastGenerationChangeTimeInSeconds) / 120)
     );
 

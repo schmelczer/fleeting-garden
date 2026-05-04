@@ -1,4 +1,4 @@
-import { isProduction, lastEdit } from './constants';
+import { isProduction } from './constants';
 import GameLoop from './game-loop/game-loop';
 import { GameRules } from './game-loop/game-rules';
 
@@ -30,9 +30,7 @@ const elements = {
   settingsButton: document.querySelector('button.settings') as HTMLButtonElement,
   restartButton: document.querySelector('button.restart') as HTMLButtonElement,
   canvas: document.querySelector('canvas') as HTMLCanvasElement,
-  canvasContainer: document.querySelector('main.canvas-container') as HTMLCanvasElement,
   errorContainer: document.querySelector('.errors-container') as HTMLDivElement,
-  // counters: document.querySelector('.counters > pre') as HTMLPreElement,
 };
 
 const main = async () => {
@@ -90,16 +88,6 @@ const main = async () => {
       sliders.forEach((slider) => slider.updateSliderValueBasedOnSource());
     });
 
-    console.log({ lastEdit });
-
-    //     const updateCounters = () => {
-    //       elements.counters.innerHTML = `FPS: ${deltaTimeCalculator.fps.toFixed(2)}
-    // current gen: ${formatNumber(game?.aliveAgentCounts.currentGenerationCount ?? 0)}
-    // next gen: ${formatNumber(game?.aliveAgentCounts.nextGenerationCount ?? 0)}`;
-    //       window.requestAnimationFrame(updateCounters);
-    //     };
-    //     updateCounters();
-
     while (!shouldStop) {
       const gameRules = new GameRules(performance.now() / 1000);
       game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
@@ -111,7 +99,8 @@ const main = async () => {
       await game.start();
     }
   } catch (e) {
-    ErrorHandler.addError(Severity.ERROR, e.stack);
+    const message = e instanceof Error ? (e.stack ?? e.message) : String(e);
+    ErrorHandler.addError(Severity.ERROR, message);
     console.error(e);
   }
 };

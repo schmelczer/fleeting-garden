@@ -1,0 +1,22 @@
+{
+  "name": "Just a bunch of blobs",
+  "short_name": "Blobs",
+  "description": "A WebGPU agent simulation: a million blobs leave trails, infect each other across generations, and react to your brush.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#b7455e",
+  "theme_color": "#b7455e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "graphics"],
+  "lang": "en"
+}

@@ -31,7 +31,9 @@ p {
 
 html {
   height: 100%;
-  -webkit-font-smooth: antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .large-button {

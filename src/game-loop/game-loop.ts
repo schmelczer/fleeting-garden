@@ -31,9 +31,9 @@ export default class GameLoop {
   private readonly hasFinishedPromise: Promise<void> = new Promise(
     (resolve) => (this.resolveHasFinished = resolve)
   );
-  private resolveHasFinished: () => void;
+  private resolveHasFinished!: () => void;
 
-  private isSwipeActive = false;
+  private activePointerId: number | null = null;
 
   public constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -73,38 +73,48 @@ export default class GameLoop {
     this.renderPipeline = new RenderPipeline(context, this.device, this.commonState);
 
     window.addEventListener('resize', this.resize.bind(this));
-    canvas.addEventListener('mousemove', this.onSwipe.bind(this));
-    canvas.addEventListener('touchmove', this.onSwipe.bind(this));
-    canvas.addEventListener('mousedown', (e) => {
-      if (!this.isSwipeActive) {
-        this.brushPipeline.clearSwipes();
-        this.isSwipeActive = true;
-      }
-      this.onSwipe(e);
-    });
+    canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
+    canvas.addEventListener('pointermove', this.onPointerMove.bind(this));
+    canvas.addEventListener('pointerup', this.onPointerUp.bind(this));
+    canvas.addEventListener('pointercancel', this.onPointerUp.bind(this));
+  }
 
-    canvas.addEventListener('touchstart', (e) => {
-      if (!this.isSwipeActive) {
-        this.brushPipeline.clearSwipes();
-        this.isSwipeActive = true;
-      }
-      this.onSwipe(e);
-    });
+  private onPointerDown(event: PointerEvent) {
+    if (this.activePointerId !== null) {
+      return;
+    }
+    this.activePointerId = event.pointerId;
+    this.canvas.setPointerCapture(event.pointerId);
+    this.brushPipeline.clearSwipes();
+    this.addSwipeAt(event);
+  }
 
-    window.addEventListener('mouseup', (e) => {
-      this.onSwipe(e);
-      this.isSwipeActive = false;
-    });
+  private onPointerMove(event: PointerEvent) {
+    if (event.pointerId !== this.activePointerId) {
+      return;
+    }
+    this.addSwipeAt(event);
+  }
 
-    window.addEventListener('touchend', (e) => {
-      this.onSwipe(e);
-      this.isSwipeActive = false;
-    });
+  private onPointerUp(event: PointerEvent) {
+    if (event.pointerId !== this.activePointerId) {
+      return;
+    }
+    this.addSwipeAt(event);
+    this.canvas.releasePointerCapture(event.pointerId);
+    this.activePointerId = null;
+  }
 
-    window.addEventListener('touchcancel', (e) => {
-      this.onSwipe(e);
-      this.isSwipeActive = false;
-    });
+  private addSwipeAt(event: PointerEvent) {
+    const position = vec2.fromValues(
+      event.clientX * this.devicePixelRatio,
+      this.canvas.height - event.clientY * this.devicePixelRatio
+    );
+    this.brushPipeline.addSwipe(position);
+  }
+
+  private get isSwipeActive(): boolean {
+    return this.activePointerId !== null;
   }
 
   public async start(): Promise<void> {
@@ -133,25 +143,6 @@ export default class GameLoop {
 
   public get maxAgentCount(): number {
     return this.agentGenerationPipeline.maxAgentCount;
-  }
-
-  private onSwipe(event: MouseEvent | TouchEvent) {
-    if (!this.isSwipeActive || !event) {
-      return;
-    }
-
-    if (event instanceof TouchEvent && event.touches.length === 0) {
-      return;
-    }
-
-    const x = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
-    const y = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
-
-    const position = vec2.fromValues(
-      x * this.devicePixelRatio,
-      this.canvas.height - y * this.devicePixelRatio
-    );
-    this.brushPipeline.addSwipe(position);
   }
 
   private resize() {

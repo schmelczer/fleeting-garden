@@ -83,5 +83,5 @@ export const generateNoise = ({
     textureCache.set(cacheKey, colorTexture);
   }
 
-  return textureCache.get(cacheKey).createView();
+  return textureCache.get(cacheKey)!.createView();
 };

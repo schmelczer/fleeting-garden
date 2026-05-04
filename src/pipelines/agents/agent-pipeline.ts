@@ -3,7 +3,7 @@ import { vec2 } from 'gl-matrix';
 import { getWorkgroupCounts } from '../../utils/graphics/get-workgroup-counts';
 import { smartCompile } from '../../utils/graphics/smart-compile';
 import { CommonState } from '../common-state/common-state';
-import agentSchme from './agent-generation/agent-schema.wgsl?raw';
+import agentSchema from './agent-generation/agent-schema.wgsl?raw';
 import { AgentSettings } from './agent-settings';
 import shader from './agent.wgsl?raw';
 
@@ -32,7 +32,7 @@ export class AgentPipeline {
         bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
       }),
       compute: {
-        module: smartCompile(device, CommonState.shaderCode, agentSchme, shader),
+        module: smartCompile(device, CommonState.shaderCode, agentSchema, shader),
         entryPoint: 'main',
       },
     });

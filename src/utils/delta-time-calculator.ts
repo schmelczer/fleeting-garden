@@ -41,6 +41,6 @@ export class DeltaTimeCalculator {
   }
 
   public get fps() {
-    return 1 / this.deltaTimeAccumulator;
+    return this.deltaTimeAccumulator ? 1 / this.deltaTimeAccumulator : 0;
   }
 }

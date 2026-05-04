@@ -15,7 +15,7 @@ html > body {
     > canvas {
       height: 100%;
       width: 100%;
-
+      touch-action: none;
       cursor:
         url('../assets/icons/brush.svg') 0 24,
         auto;
@@ -165,27 +165,18 @@ html > body {
         }
 
         &.info::after {
-          -webkit-mask-image: url('../assets/icons/info.svg');
           mask-image: url('../assets/icons/info.svg');
         }
-
         &.maximize-full-screen::after {
-          -webkit-mask-image: url('../assets/icons/maximize.svg');
           mask-image: url('../assets/icons/maximize.svg');
         }
-
         &.minimize-full-screen::after {
-          -webkit-mask-image: url('../assets/icons/minimize.svg');
           mask-image: url('../assets/icons/minimize.svg');
         }
-
         &.settings::after {
-          -webkit-mask-image: url('../assets/icons/settings.svg');
           mask-image: url('../assets/icons/settings.svg');
         }
-
         &.restart::after {
-          -webkit-mask-image: url('../assets/icons/restart.svg');
           mask-image: url('../assets/icons/restart.svg');
         }
       }
@@ -194,6 +185,8 @@ html > body {
     > main.pages {
       overflow-x: hidden;
       overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--main-color) transparent;
       &::-webkit-scrollbar-track,
       &::-webkit-scrollbar {
         background-color: transparent;

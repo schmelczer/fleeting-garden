@@ -6,13 +6,16 @@ export const setUpSettingsPage = (
   settingsPage: HTMLDivElement,
   maxAgentCount: number
 ): Array<SettingsSlider<any>> => {
-  const sliders = [
-    !isProduction &&
-      new SettingsSlider(settings, 'renderSpeed', {
-        min: 1,
-        max: 10,
-        rounding: Math.round,
-      }),
+  const sliders: Array<SettingsSlider<any>> = [
+    ...(isProduction
+      ? []
+      : [
+          new SettingsSlider(settings, 'renderSpeed', {
+            min: 1,
+            max: 10,
+            rounding: Math.round,
+          }),
+        ]),
 
     new SettingsSlider(settings, 'agentCount', {
       min: 1,
@@ -102,11 +105,9 @@ export const setUpSettingsPage = (
 
   const sliderContainerElement = document.createElement('div');
 
-  sliders
-    .filter((v) => v)
-    .forEach((slider) => {
-      sliderContainerElement.appendChild(slider.element);
-    });
+  sliders.forEach((slider) => {
+    sliderContainerElement.appendChild(slider.element);
+  });
 
   settingsPage.appendChild(sliderContainerElement);
 

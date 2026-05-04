@@ -3,9 +3,6 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 
 export default defineConfig({
   plugins: [viteSingleFile()],
-  define: {
-    __BUILD_DATE__: Date.now(),
-  },
   build: {
     target: 'es2022',
     cssCodeSplit: false,

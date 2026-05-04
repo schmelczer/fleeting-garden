@@ -188,7 +188,7 @@ export class BrushPipeline {
       result.push(position);
     }
 
-    result.push(last(points));
+    result.push(last(points)!);
 
     return result;
   }

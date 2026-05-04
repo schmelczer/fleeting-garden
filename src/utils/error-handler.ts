@@ -30,7 +30,7 @@ export class ErrorHandler {
   }
 
   public static addMetadata(key: string, value: any) {
-    const serialized = {};
+    const serialized: Record<string, any> = {};
     for (const k in value) {
       serialized[k] = value[k];
     }

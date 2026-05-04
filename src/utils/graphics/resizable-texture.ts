@@ -3,8 +3,8 @@ import { vec2 } from 'gl-matrix';
 import { CopyPipeline } from '../../pipelines/copy/copy-pipeline';
 
 export class ResizableTexture {
-  private texture: GPUTexture;
-  private textureView: GPUTextureView;
+  private texture!: GPUTexture;
+  private textureView!: GPUTextureView;
   private readonly copyPipeline: CopyPipeline;
   private size: vec2 | null = null;
 
@@ -35,7 +35,7 @@ export class ResizableTexture {
 
     const newTextureView = newTexture.createView();
 
-    if (this.textureView) {
+    if (this.size) {
       const commandEncoder = this.device.createCommandEncoder();
       this.copyPipeline.execute(
         commandEncoder,

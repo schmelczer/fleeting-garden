@@ -11,7 +11,6 @@ export class DiffusionPipeline {
   private readonly pipeline: GPURenderPipeline;
   private readonly uniforms: GPUBuffer;
   private readonly vertexBuffer: GPUBuffer;
-  private readonly noise: GPUTextureView;
 
   private bindGroup?: GPUBindGroup;
   private previousTrailMapIn?: GPUTextureView;

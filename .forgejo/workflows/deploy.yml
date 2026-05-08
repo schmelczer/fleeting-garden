@@ -39,5 +39,6 @@ jobs:
       - name: Copy build to host pages mount
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
+          apt update && apt install -y rsync
           mkdir -p /pages
           rsync -a --delete dist/ /pages/

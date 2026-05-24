@@ -121,12 +121,15 @@ html > body {
       position: absolute;
       top: 0;
       left: 0;
+      max-width: calc(100% - var(--normal-margin) * 2);
       margin: var(--normal-margin);
       z-index: 5;
 
       pre {
         font-size: 20px;
         color: red;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
     }
   }

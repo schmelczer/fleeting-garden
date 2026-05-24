@@ -1,0 +1,161 @@
+@use 'shared' as *;
+
+.buttons {
+  grid-area: buttons;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+
+  > button,
+  > .audio-control > button {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex: 1 1 44px;
+    max-width: 54px;
+    min-width: 0;
+    @include toolbar-control-surface(transparent, rgb(255 255 255 / 9%));
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 20px;
+      height: 20px;
+      margin: auto;
+      background-color: rgb(245 250 244 / 76%);
+      mask-position: center;
+      mask-repeat: no-repeat;
+      mask-size: contain;
+      transition:
+        background-color var(--transition-time),
+        transform var(--transition-time);
+    }
+
+    &:hover::after {
+      transform: scale(1.08);
+    }
+
+    &.active {
+      border-color: color-mix(in srgb, var(--accent-color) 55%, white 15%);
+      background: color-mix(in srgb, var(--accent-color) 30%, transparent);
+    }
+
+    &.active::after {
+      background-color: white;
+    }
+
+    @each $class, $icon in $toolbar-icons {
+      &.#{$class}::after {
+        mask-image: url('../../../assets/icons/#{$icon}.svg');
+      }
+    }
+
+    &.full-screen-toggle.active::after {
+      mask-image: url('../../../assets/icons/minimize.svg');
+    }
+
+    &.sound.muted::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 2px;
+      height: 28px;
+      margin: auto;
+      border-radius: 999px;
+      background: white;
+      transform: rotate(-45deg);
+      transform-origin: center;
+    }
+
+    &.sound.muted::after {
+      background-color: rgb(255 255 255 / 46%);
+    }
+  }
+
+  > .audio-control {
+    display: flex;
+    align-items: center;
+    width: 132px;
+    height: 44px;
+    flex: 2 1 132px;
+    max-width: 150px;
+    min-width: 0;
+    padding-right: 10px;
+    @include toolbar-control-surface(rgb(255 255 255 / 4%), rgb(255 255 255 / 7%));
+
+    > button {
+      flex: 0 0 42px;
+      min-width: 42px;
+      border-color: transparent;
+
+      &:focus-visible {
+        outline-offset: -4px;
+      }
+    }
+
+    > .volume-control {
+      --range-progress: var(--volume-progress, 42%);
+      --range-track-height: 4px;
+      --range-fill: color-mix(in srgb, var(--accent-color) 62%, white 8%);
+      --range-empty: rgb(255 255 255 / 18%);
+      --range-track-shadow:
+        inset 0 1px 1px rgb(0 0 0 / 24%), 0 1px 0 rgb(255 255 255 / 8%);
+      --range-thumb-width: 12px;
+      --range-thumb-height: 12px;
+      --range-thumb-border: 2px solid rgb(13 18 24);
+      --range-thumb-radius: 50%;
+      --range-thumb-background: rgb(245 250 244);
+      --range-thumb-shadow: 0 0 0 1px rgb(255 255 255 / 46%), 0 3px 8px rgb(0 0 0 / 28%);
+      --range-thumb-hover-shadow:
+        0 0 0 1px rgb(255 255 255 / 56%),
+        0 0 0 5px color-mix(in srgb, var(--accent-color) 25%, transparent),
+        0 4px 10px rgb(0 0 0 / 34%);
+      --range-thumb-hover-transform: scale(1.08);
+      --range-focus-outline-offset: -4px;
+
+      position: relative;
+      display: grid;
+      align-items: center;
+      height: 44px;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-left: 3px;
+      cursor: ew-resize;
+      opacity: 0.96;
+      transition: opacity var(--transition-time);
+
+      &.muted {
+        opacity: 0.56;
+      }
+    }
+
+    > .volume-control input[type='range'] {
+      @include toolbar-range-input();
+    }
+  }
+
+  > .export-status {
+    flex: 0 1 140px;
+    min-height: 20px;
+    max-width: 140px;
+    overflow: hidden;
+    color: rgb(255 255 255 / 82%);
+    font-size: 13px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:empty {
+      display: none;
+    }
+  }
+}

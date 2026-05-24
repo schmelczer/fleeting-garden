@@ -1,0 +1,126 @@
+@use 'mixins' as *;
+
+html > body > .canvas-container > .garden-prompt {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+
+  &:empty {
+    display: none;
+  }
+
+  &.draw-hint {
+    display: flex;
+    align-items: center;
+    top: calc(1.25rem + env(safe-area-inset-top));
+    gap: 16px;
+    width: max-content;
+    min-height: 78px;
+    max-width: min(88vw, 460px);
+    padding: 12px 18px 12px 14px;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 8px;
+    background: rgb(10 12 16 / 50%);
+    box-shadow:
+      0 14px 42px rgb(0 0 0 / 28%),
+      inset 0 0 0 1px rgb(255 255 255 / 5%);
+    backdrop-filter: blur(12px);
+    color: rgb(255 255 255 / 94%);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.2;
+    text-shadow: 0 1px 12px rgb(0 0 0 / 58%);
+  }
+
+  .draw-hint-mark {
+    width: 128px;
+    height: 72px;
+    flex: 0 0 128px;
+    overflow: visible;
+  }
+
+  .draw-hint-shadow,
+  .draw-hint-stroke {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .draw-hint-shadow {
+    stroke: rgb(0 0 0 / 42%);
+    stroke-width: 10px;
+  }
+
+  .draw-hint-stroke {
+    stroke: color-mix(in srgb, var(--accent-color) 74%, white);
+    stroke-width: 5px;
+    stroke-dasharray: 154;
+    animation: draw-hint-stroke 2.4s ease-in-out infinite;
+    filter: drop-shadow(
+      0 0 12px color-mix(in srgb, var(--accent-color) 60%, transparent)
+    );
+  }
+
+  .draw-hint-start {
+    fill: rgb(255 255 255 / 64%);
+  }
+
+  .draw-hint-end {
+    fill: white;
+    stroke: color-mix(in srgb, var(--accent-color) 72%, transparent);
+    stroke-width: 5px;
+    transform-origin: 116px 42px;
+    animation: draw-hint-tap 2.4s ease-in-out infinite;
+  }
+
+  @include on-small-screen {
+    &.draw-hint {
+      top: calc(0.75rem + env(safe-area-inset-top));
+      gap: 10px;
+      min-height: 58px;
+      max-width: min(92vw, 340px);
+      padding: 9px 12px 9px 10px;
+      font-size: 16px;
+    }
+
+    .draw-hint-mark {
+      width: 96px;
+      height: 54px;
+      flex-basis: 96px;
+    }
+  }
+}
+
+@keyframes draw-hint-stroke {
+  0%,
+  18% {
+    stroke-dashoffset: 154;
+  }
+
+  58%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes draw-hint-tap {
+  0%,
+  16% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  36%,
+  74% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0.76;
+    transform: scale(0.88);
+  }
+}

@@ -1,6 +1,5 @@
 @use 'vars';
 @use 'fonts';
-@use 'mixins' as *;
 
 *,
 *::before,
@@ -9,41 +8,34 @@
   padding: 0;
   box-sizing: border-box;
 
-  @media (prefers-reduced-motion) {
+  @media (prefers-reduced-motion: reduce) {
     transition: none !important;
     animation: none !important;
   }
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Comfortaa', sans-serif;
-  margin-bottom: var(--small-margin);
-}
-
-p {
-  font-family: 'Open Sans', sans-serif;
-}
-
 html {
   height: 100%;
+  touch-action: manipulation;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-.large-button {
-  border: none;
-  background-color: var(--accent-color);
-  cursor: pointer;
-  border-radius: var(--border-radius);
-  padding: calc(var(--small-margin) / 2) var(--small-margin);
-  margin: var(--small-margin) auto;
-  align-self: flex-end;
-  @include main-font();
-  color: white;
+body {
+  font-family: 'Open Sans', sans-serif;
+  touch-action: manipulation;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }

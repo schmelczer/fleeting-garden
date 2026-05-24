@@ -1,0 +1,157 @@
+@use '../mixins' as *;
+
+.toolbar-row {
+  @include on-small-screen {
+    --toolbar-divider-space: 4px;
+    --toolbar-top-max-width: 329px;
+    --vibe-button-hit-size: 44px;
+
+    grid-template-areas:
+      'previous controls next'
+      '. divider .'
+      'buttons buttons buttons';
+    width: 100%;
+    padding-inline: 4px;
+    column-gap: 0;
+    row-gap: 0;
+
+    > .vibe-button {
+      --vibe-button-surface-inset-block: 5px;
+      --vibe-button-surface-inset-inline: 3px;
+      --vibe-chevron-size: 17px;
+      --vibe-chevron-stroke: 3px;
+
+      width: var(--vibe-button-hit-size);
+      min-height: 44px;
+    }
+
+    > .toolbar-shell {
+      padding: 4px;
+    }
+
+    > nav.buttons {
+      justify-self: stretch;
+      justify-content: space-between;
+      gap: clamp(1px, 0.55vw, 2px);
+      width: auto;
+      max-width: none;
+      margin-inline: -4px;
+
+      > button {
+        width: auto;
+        height: 38px;
+        flex: 1 1 clamp(28px, 8vw, 38px);
+        max-width: 38px;
+        min-height: 38px;
+
+        &::after {
+          width: 17px;
+          height: 17px;
+        }
+      }
+
+      > .audio-control {
+        width: auto;
+        height: 38px;
+        flex: 2 1 clamp(58px, 18vw, 118px);
+        max-width: 118px;
+        padding-right: clamp(4px, 1.8vw, 9px);
+
+        > button {
+          width: auto;
+          flex: 1 1 clamp(28px, 8vw, 38px);
+          min-width: 0;
+        }
+
+        > .volume-control {
+          height: 38px;
+        }
+      }
+
+      > .export-status {
+        flex-basis: 0;
+        max-width: 0;
+        text-align: center;
+      }
+    }
+
+    > .toolbar-shell > .garden-controls {
+      padding: 2px 4px;
+
+      > .swatches {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        justify-items: center;
+        justify-content: stretch;
+        width: 100%;
+        min-width: 0;
+        min-height: 48px;
+        flex: 1 1 100%;
+        padding: 3px 5px;
+        column-gap: 6px;
+        row-gap: 6px;
+
+        > .color-swatch {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          min-height: 38px;
+
+          grid-column: span 2;
+        }
+
+        > .eraser-size-control,
+        > .mirror-segment-control {
+          justify-self: stretch;
+          width: 100%;
+          min-width: 0;
+          height: 38px;
+          padding: 0 7px;
+        }
+
+        > .eraser-size-control {
+          grid-column: 1 / span 3;
+        }
+
+        > .mirror-segment-control {
+          --control-thumb-height: 34px;
+          --control-thumb-width: 34px;
+
+          grid-column: 4 / span 3;
+        }
+      }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-row {
+    > .vibe-button.previous-vibe:hover,
+    > .vibe-button.next-vibe:hover,
+    > .toolbar-shell > .garden-controls > .swatches > .color-swatch:hover,
+    > .toolbar-shell > .garden-controls > .swatches > .eraser-size-control:hover,
+    > .toolbar-shell > .garden-controls > .swatches > .mirror-segment-control:hover {
+      transform: none;
+    }
+
+    > nav.buttons > button:hover::after,
+    > nav.buttons > .audio-control > button:hover::after {
+      transform: none;
+    }
+
+    > nav.buttons > .audio-control > .volume-control input[type='range'] {
+      &::-webkit-slider-thumb:hover {
+        transform: none;
+      }
+    }
+
+    > .toolbar-shell > .garden-controls > .swatches {
+      > .eraser-size-control input[type='range'],
+      > .mirror-segment-control input[type='range'] {
+        &::-webkit-slider-thumb:hover {
+          transform: var(--range-thumb-transform, none);
+        }
+      }
+    }
+  }
+}

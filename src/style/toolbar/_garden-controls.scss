@@ -1,0 +1,148 @@
+@use 'shared' as *;
+
+.garden-controls {
+  grid-area: swatches;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 4px;
+
+  > .swatches {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 6px 10px;
+
+    > .color-swatch {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border: 2px solid rgb(255 255 255 / 54%);
+      border-radius: 50%;
+      box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 16%),
+        0 3px 10px rgb(0 0 0 / 22%);
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      &.active {
+        outline: 2px solid rgb(255 255 255 / 96%);
+        outline-offset: 3px;
+        box-shadow:
+          inset 0 0 0 1px rgb(0 0 0 / 14%),
+          0 0 0 7px color-mix(in srgb, var(--accent-color) 52%, transparent),
+          0 7px 18px rgb(0 0 0 / 26%);
+      }
+    }
+
+    > .eraser-size-control,
+    > .mirror-segment-control {
+      --control-thumb-hover-transform: scale(1.03);
+      --control-thumb-radius: 50%;
+      --control-thumb-transform: none;
+      --range-progress: var(--control-progress);
+      --range-track-height: 7px;
+      --range-fill: rgb(var(--control-rgb) / 72%);
+      --range-empty: rgb(255 255 255 / 24%);
+      --range-track-shadow: inset 0 1px 2px rgb(0 0 0 / 24%);
+      --range-thumb-width: var(--control-thumb-width);
+      --range-thumb-height: var(--control-thumb-height);
+      --range-thumb-border: 2px solid rgb(255 255 255 / 92%);
+      --range-thumb-radius: var(--control-thumb-radius);
+      --range-thumb-background: var(--control-thumb-background);
+      --range-thumb-shadow:
+        inset 0 1px 2px rgb(255 255 255 / 22%), 0 4px 12px rgb(0 0 0 / 30%);
+      --range-thumb-hover-shadow:
+        inset 0 1px 2px rgb(255 255 255 / 22%), 0 0 0 4px rgb(var(--control-rgb) / 22%),
+        0 5px 14px rgb(0 0 0 / 34%);
+      --range-thumb-hover-transform: var(--control-thumb-hover-transform);
+      --range-thumb-transform: var(--control-thumb-transform);
+      --range-thumb-transition:
+        box-shadow var(--transition-time), height var(--transition-time),
+        margin-top var(--transition-time), transform var(--transition-time),
+        width var(--transition-time);
+
+      position: relative;
+      display: grid;
+      align-items: center;
+      width: 184px;
+      height: 46px;
+      flex: 0 0 184px;
+      padding: 0 12px;
+      overflow: hidden;
+      border: 1px solid rgb(255 255 255 / 14%);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 4%));
+      box-shadow:
+        inset 0 0 0 1px rgb(255 255 255 / 6%),
+        0 3px 10px rgb(0 0 0 / 18%);
+      cursor: ew-resize;
+      transition:
+        border-color var(--transition-time),
+        background-color var(--transition-time),
+        box-shadow var(--transition-time),
+        transform var(--transition-time);
+
+      &:hover {
+        border-color: rgb(255 255 255 / 24%);
+        transform: translateY(-2px);
+      }
+
+      &.active {
+        border-color: rgb(var(--control-rgb) / 72%);
+        background-color: rgb(var(--control-rgb) / 11%);
+        box-shadow:
+          inset 0 0 0 1px rgb(255 255 255 / 10%),
+          0 0 0 5px rgb(var(--control-rgb) / 28%),
+          0 6px 15px rgb(0 0 0 / 22%);
+      }
+
+      input[type='range'] {
+        @include toolbar-range-input();
+      }
+    }
+
+    > .eraser-size-control {
+      --control-progress: var(--eraser-progress, 33%);
+      --control-rgb: 255 140 117;
+      --control-thumb-background:
+        linear-gradient(
+          110deg,
+          transparent 0 12%,
+          rgb(255 255 255 / 44%) 13% 20%,
+          transparent 21% 100%
+        ),
+        linear-gradient(
+          90deg,
+          #ff8fa3 0 52%,
+          rgb(54 46 51 / 78%) 53% 56%,
+          #f5eee5 57% 100%
+        );
+      --control-thumb-height: calc(21px * var(--eraser-control-scale, 1));
+      --control-thumb-hover-transform: rotate(-10deg) scale(1.03);
+      --control-thumb-radius: calc(6px * var(--eraser-control-scale, 1));
+      --control-thumb-transform: rotate(-10deg);
+      --control-thumb-width: calc(34px * var(--eraser-control-scale, 1));
+    }
+
+    > .mirror-segment-control {
+      --control-progress: var(--mirror-progress, 0%);
+      --control-rgb: 148 233 203;
+      --control-thumb-background:
+        radial-gradient(circle, white 0 3px, rgb(9 20 18 / 78%) 3.5px 8px),
+        repeating-conic-gradient(
+          from -90deg,
+          rgb(218 255 241) 0 8deg,
+          rgb(8 22 19 / 94%) 8deg var(--mirror-angle, 360deg)
+        );
+      --control-thumb-height: 44px;
+      --control-thumb-width: 44px;
+    }
+  }
+}

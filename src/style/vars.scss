@@ -1,33 +1,8 @@
-@use 'mixins' as *;
-
 :root {
   --transition-time: 200ms;
   --transition-time-long: 350ms;
-  --line-width: 4px;
-  --line-height: 1.125rem;
-  --accent-color: rgb(6.39851188659668, 70.28645324707031, 102.23043060302734);
-  --very-light-text-color: #ffffff;
+  --accent-color: rgb(255 93 162);
   --main-color: #aaa;
-  --normal-text-color: #31343f;
-  --blurred-card-color: transparent;
-  --blur-radius: 12px;
-  --special-text-color: var(--accent-color);
-  --border-radius: 0.6rem;
-
-  --large-margin: 4.6rem;
   --normal-margin: 2rem;
   --small-margin: 1rem;
-  --shadow: 0 0 5px 2px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.2);
-  --icon-size: 2.5rem;
-  --large-icon-size: 3.75rem;
-  --body-width: min(80%, 60rem);
-}
-
-@include on-small-screen {
-  :root {
-    --body-width: 90%;
-    --large-margin: 2.8rem;
-    --normal-margin: 2rem;
-    --icon-size: 2rem;
-  }
 }

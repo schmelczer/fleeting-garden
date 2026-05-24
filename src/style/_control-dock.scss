@@ -1,0 +1,39 @@
+html > body > aside.control-dock {
+  --dock-hidden-translate-y: calc(100% + env(safe-area-inset-bottom, 0px) + 16px);
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 4;
+  width: min(calc(100vw - 1rem), 980px);
+  margin: 0 auto;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: none;
+  transition:
+    opacity var(--transition-time-long),
+    transform var(--transition-time-long),
+    visibility 0s;
+
+  > .toolbar-row,
+  > .info-page {
+    pointer-events: auto;
+  }
+
+  &.menu-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(var(--dock-hidden-translate-y));
+    pointer-events: none;
+    transition:
+      opacity var(--transition-time-long),
+      transform var(--transition-time-long),
+      visibility 0s var(--transition-time-long);
+
+    > .toolbar-row,
+    > .info-page {
+      pointer-events: none;
+    }
+  }
+}

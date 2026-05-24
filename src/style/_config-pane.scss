@@ -1,0 +1,309 @@
+@use 'mixins' as *;
+
+.config-pane-container {
+  --config-pane-available-height: calc(
+    100vh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  z-index: 20;
+  width: min(
+    420px,
+    calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
+  );
+  max-height: var(--config-pane-available-height);
+  pointer-events: none;
+
+  @supports (height: 100dvh) {
+    --config-pane-available-height: calc(
+      100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
+.config-pane-container--open {
+  pointer-events: auto;
+}
+
+.config-pane {
+  --tp-blade-value-width: min(260px, 64%);
+
+  width: 100%;
+  max-height: calc(var(--config-pane-available-height) - 36px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+
+  // Tweakpane v4 internal classes — re-verify on upgrade.
+  // No public theming hook exists for label padding or the slider/number
+  // flex ratio; if a fourth override appears here, switch to a custom plugin.
+  .tp-lblv_l {
+    padding-right: 10px;
+  }
+
+  .tp-sldtxtv_s {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tp-sldtxtv_t {
+    flex: 0 0 54px;
+  }
+}
+
+.config-pane-close {
+  position: relative;
+  justify-self: end;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: rgb(235 238 245 / 82%);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0;
+  pointer-events: auto;
+  transition:
+    background-color var(--transition-time),
+    color var(--transition-time);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  &::before {
+    transform: rotate(45deg);
+  }
+
+  &::after {
+    transform: rotate(-45deg);
+  }
+
+  &:hover {
+    background: rgb(255 255 255 / 10%);
+    color: white;
+  }
+
+  &:focus-visible {
+    outline: 2px solid white;
+    outline-offset: -2px;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+@mixin mobile-config-pane() {
+  .config-pane-container {
+    --config-pane-available-height: min(
+      64vh,
+      calc(
+        100vh - 112px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+      )
+    );
+
+    top: max(8px, env(safe-area-inset-top, 0px));
+    right: auto;
+    left: 50%;
+    width: min(80vw, 420px);
+    transform: translateX(-50%);
+
+    @supports (height: 100dvh) {
+      --config-pane-available-height: min(
+        64dvh,
+        calc(
+          100dvh -
+            112px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+        )
+      );
+    }
+  }
+
+  .config-pane {
+    --tp-blade-value-width: min(210px, 62%);
+    --tp-container-unit-size: 18px;
+
+    padding-bottom: 10px;
+    font-size: 11px;
+
+    // Tweakpane v4 internal class — re-verify on upgrade.
+    .tp-sldtxtv_t {
+      flex-basis: 48px;
+    }
+  }
+
+  .config-pane-close {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@include on-mobile-input {
+  @include mobile-config-pane;
+}
+
+.color-reaction-matrix-blade {
+  padding: 6px 8px 8px;
+}
+
+.color-reaction-matrix {
+  display: grid;
+  grid-template-columns: 28px repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  align-items: stretch;
+}
+
+.color-reaction-matrix__corner,
+.color-reaction-matrix__header {
+  display: flex;
+  min-width: 0;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 76%);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.color-reaction-matrix__header {
+  gap: 0;
+}
+
+.color-reaction-matrix__corner {
+  justify-content: flex-start;
+  padding-left: 2px;
+  color: rgb(255 255 255 / 62%);
+}
+
+.color-reaction-matrix__swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 18%);
+}
+
+.color-reaction-matrix__cell {
+  min-width: 0;
+  display: grid;
+}
+
+.color-reaction-matrix__button {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 4px;
+  padding: 0 4px;
+  background: rgb(255 255 255 / 8%);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-time),
+    border-color var(--transition-time),
+    color var(--transition-time),
+    transform var(--transition-time);
+}
+
+.color-reaction-matrix__button:hover {
+  transform: translateY(-1px);
+}
+
+.color-reaction-matrix__button:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 72%);
+  outline-offset: 1px;
+}
+
+.color-reaction-matrix__button[data-reaction='follow'] {
+  border-color: rgb(115 235 160 / 44%);
+  background: rgb(53 165 96 / 20%);
+  color: rgb(157 255 195 / 94%);
+}
+
+.color-reaction-matrix__button[data-reaction='ignore'] {
+  border-color: rgb(255 255 255 / 18%);
+  background: rgb(255 255 255 / 7%);
+  color: rgb(235 238 245 / 72%);
+}
+
+.color-reaction-matrix__button[data-reaction='avoid'] {
+  border-color: rgb(255 145 120 / 46%);
+  background: rgb(215 74 54 / 19%);
+  color: rgb(255 171 148 / 94%);
+}
+
+.color-reaction-matrix__icon {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.color-reaction-matrix__icon::before,
+.color-reaction-matrix__icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 999px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.color-reaction-matrix__button[data-reaction='follow']
+  > .color-reaction-matrix__icon::before,
+.color-reaction-matrix__button[data-reaction='avoid']
+  > .color-reaction-matrix__icon::before {
+  width: 14px;
+  height: 2px;
+}
+
+.color-reaction-matrix__button[data-reaction='follow']
+  > .color-reaction-matrix__icon::after {
+  width: 2px;
+  height: 14px;
+}
+
+.color-reaction-matrix__button[data-reaction='avoid']
+  > .color-reaction-matrix__icon::after {
+  display: none;
+}
+
+.color-reaction-matrix__button[data-reaction='ignore'] > .color-reaction-matrix__icon {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  opacity: 0.82;
+}
+
+.color-reaction-matrix__button[data-reaction='ignore']
+  > .color-reaction-matrix__icon::before,
+.color-reaction-matrix__button[data-reaction='ignore']
+  > .color-reaction-matrix__icon::after {
+  display: none;
+}

@@ -67,7 +67,7 @@ export const runtimeControls: GardenAppConfig['runtimeSettings']['controls'] = {
     folder: 'Movement',
     label: 'Travel Speed',
     min: 10,
-    max: 500,
+    max: 250,
     step: 1,
   },
   turnSpeed: {
@@ -116,6 +116,7 @@ export const runtimeControls: GardenAppConfig['runtimeSettings']['controls'] = {
 
   clarity: {
     folder: 'Look',
+    inverted: true,
     label: 'Sharpness',
     min: 0.00001,
     max: 1,

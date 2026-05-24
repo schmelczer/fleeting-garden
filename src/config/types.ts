@@ -12,6 +12,7 @@ export interface NumberControlConfig {
   format?: (value: number) => string;
   folder: string;
   integer?: boolean;
+  inverted?: boolean;
   label?: string;
   max?: number;
   min?: number;

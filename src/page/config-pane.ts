@@ -81,6 +81,16 @@ const getNumberBindingParams = (config: NumberControlConfig): BindingParams => {
   return params;
 };
 
+const getInvertedNumberControlValue = (
+  value: number,
+  config: NumberControlConfig
+): number => {
+  if (!config.inverted || config.min === undefined || config.max === undefined) {
+    return value;
+  }
+  return config.min + config.max - value;
+};
+
 export class ConfigPane {
   private readonly container: HTMLDivElement;
   private readonly closeButton: HTMLButtonElement;
@@ -264,9 +274,10 @@ export class ConfigPane {
     }
 
     settings[key] = normalizeNumberControlValue(settings[key], config);
+    const bindingTarget = this.getRuntimeBindingTarget(key, config);
 
     container
-      .addBinding(settings, key, getNumberBindingParams(config))
+      .addBinding(bindingTarget, key, getNumberBindingParams(config))
       .on('change', () => {
         const nextValue = normalizeNumberControlValue(settings[key], config);
         if (nextValue !== settings[key]) {
@@ -275,6 +286,25 @@ export class ConfigPane {
         }
         this.options.onRuntimeChange();
       });
+  }
+
+  private getRuntimeBindingTarget(
+    key: RuntimeControlKey,
+    config: NumberControlConfig
+  ): typeof settings | Record<RuntimeControlKey, number> {
+    if (!config.inverted) {
+      return settings;
+    }
+
+    const bindingTarget = {} as Record<RuntimeControlKey, number>;
+    Object.defineProperty(bindingTarget, key, {
+      enumerable: true,
+      get: () => getInvertedNumberControlValue(settings[key], config),
+      set: (value: number) => {
+        settings[key] = getInvertedNumberControlValue(value, config);
+      },
+    });
+    return bindingTarget;
   }
 
   private getRuntimeControlConfig(

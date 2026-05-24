@@ -1,107 +1,251 @@
-import { isProduction } from './constants';
 import GameLoop from './game-loop/game-loop';
-import { GameRules } from './game-loop/game-rules';
 
 import './index.scss';
 
+import { initAnalytics, trackExport, trackStart, trackVibeChange } from './analytics';
+import { preloadPianoSamples } from './audio/piano-samples';
+import { AudioControl } from './page/audio-control';
 import { CollapsiblePanelAnimator } from './page/collapsible-panel-animator';
+import { ConfigPane } from './page/config-pane';
+import { EraserSizeControl } from './page/eraser-size-control';
+import { ErrorPresenter } from './page/error-presenter';
 import { FullScreenHandler } from './page/full-screen-handler';
 import { MenuHider } from './page/menu-hider';
-import { setUpSettingsPage } from './page/set-up-settings-page';
-import { SettingsSlider } from './page/settings-slider';
-import { resetSettings } from './settings';
+import { MirrorSegmentControl } from './page/mirror-segment-control';
+import { PaletteControl } from './page/palette-control';
+import { SplashScreen } from './page/splash-screen';
+import { VibeNavigator } from './page/vibe-navigator';
+import { getMaxSupportedAgentCount } from './pipelines/agents/agent-limits';
+import { activeVibe } from './settings';
 import { DeltaTimeCalculator } from './utils/delta-time-calculator';
+import { queryRequiredElement } from './utils/dom';
 import { ErrorHandler, Severity } from './utils/error-handler';
 import { initializeGpu } from './utils/graphics/initialize-gpu';
 
-const elements = {
-  aside: document.querySelector('aside') as HTMLDivElement,
-  infoButton: document.querySelector('button.info') as HTMLButtonElement,
-  infoElement: document.querySelector('.info-page') as HTMLDivElement,
-  settingsPage: document.querySelector('.settings-page') as HTMLDivElement,
-  settingsContent: document.querySelector('.settings-content') as HTMLDivElement,
-  applyDefaults: document.querySelector('#apply-defaults') as HTMLButtonElement,
-  minimizeFullScreenButton: document.querySelector(
-    'button.minimize-full-screen'
-  ) as HTMLButtonElement,
-  maximizeFullScreenButton: document.querySelector(
-    'button.maximize-full-screen'
-  ) as HTMLButtonElement,
-  settingsButton: document.querySelector('button.settings') as HTMLButtonElement,
-  restartButton: document.querySelector('button.restart') as HTMLButtonElement,
-  canvas: document.querySelector('canvas') as HTMLCanvasElement,
-  errorContainer: document.querySelector('.errors-container') as HTMLDivElement,
-};
-
 const main = async () => {
+  let hasRuntimeErrorListener = false;
   try {
+    initAnalytics();
+
     let shouldStop = false;
+    let hasStarted = false;
     let game: GameLoop | null = null;
-
-    ErrorHandler.addOnErrorListener((error, _metadata) => {
-      elements.errorContainer.innerHTML += `
-        <pre class="${error.severity}">${error.message}</div>
-      `;
-      game?.destroy();
-      shouldStop = true;
-    });
-
-    const infoPageHandler = new CollapsiblePanelAnimator(
-      elements.infoButton,
-      elements.infoElement,
-      elements.aside
-    );
-    const settingsPageHandler = new CollapsiblePanelAnimator(
-      elements.settingsButton,
-      elements.settingsPage,
-      elements.aside
-    );
-    settingsPageHandler.onOpen = infoPageHandler.close.bind(infoPageHandler);
-    infoPageHandler.onOpen = settingsPageHandler.close.bind(settingsPageHandler);
-
-    if (isProduction) {
-      infoPageHandler.open();
-    }
-
-    new MenuHider(
-      elements.aside,
-      () =>
-        FullScreenHandler.isInFullScreenMode() &&
-        !settingsPageHandler.isOpen &&
-        !infoPageHandler.isOpen
-    );
-    new FullScreenHandler(
-      elements.minimizeFullScreenButton,
-      elements.maximizeFullScreenButton,
-      document.body
-    );
-
-    const gpu = await initializeGpu();
-
-    elements.restartButton.addEventListener('click', () => game?.destroy());
-
-    const deltaTimeCalculator = new DeltaTimeCalculator();
-    let sliders: Array<SettingsSlider<any>> = [];
-
-    elements.applyDefaults.addEventListener('click', () => {
-      resetSettings();
-      sliders.forEach((slider) => slider.updateSliderValueBasedOnSource());
-    });
-
-    while (!shouldStop) {
-      const gameRules = new GameRules(performance.now() / 1000);
-      game = new GameLoop(elements.canvas, gpu, deltaTimeCalculator, gameRules);
-
-      if (sliders.length === 0) {
-        sliders = setUpSettingsPage(elements.settingsContent, game.maxAgentCount);
+    let configPane: ConfigPane | null = null;
+    const getGame = () => game;
+    const destroyCurrentGame = async () => {
+      const currentGame = game;
+      if (!currentGame) {
+        return;
       }
 
-      await game.start();
+      game = null;
+      await currentGame.destroy();
+    };
+
+    const errorPresenter = new ErrorPresenter(
+      queryRequiredElement('.errors-container', HTMLElement)
+    );
+    ErrorHandler.addOnErrorListener((error) => {
+      errorPresenter.render(error);
+      if (error.severity === Severity.ERROR) {
+        document.body.classList.remove('is-loading');
+        void destroyCurrentGame();
+        shouldStop = true;
+      }
+    });
+    hasRuntimeErrorListener = true;
+
+    const aside = queryRequiredElement('aside', HTMLElement);
+    const canvas = queryRequiredElement('canvas', HTMLCanvasElement);
+    const toolbarRow = queryRequiredElement('.toolbar-row', HTMLElement);
+    const eraserPreview = queryRequiredElement('.eraser-preview', HTMLDivElement);
+    const grainOverlay = queryRequiredElement('.garden-grain', HTMLDivElement);
+    const promptElement = queryRequiredElement('.garden-prompt', HTMLDivElement);
+    const exportStatus = queryRequiredElement('.export-status', HTMLSpanElement);
+    const settingsButton = queryRequiredElement(
+      '[data-control="settings"]',
+      HTMLButtonElement
+    );
+    const restartButton = queryRequiredElement(
+      '[data-control="restart"]',
+      HTMLButtonElement
+    );
+    const infoButton = queryRequiredElement('[data-control="info"]', HTMLButtonElement);
+    const infoElement = queryRequiredElement('.info-page', HTMLElement);
+    const fullScreenButton = queryRequiredElement(
+      '[data-control="full-screen"]',
+      HTMLButtonElement
+    );
+    const export4kButton = queryRequiredElement(
+      '[data-control="export"]',
+      HTMLButtonElement
+    );
+
+    const splash = new SplashScreen();
+    let eraserSizeControl: EraserSizeControl | null = null;
+    const paletteControl = new PaletteControl({
+      getGame,
+      onChange: () => configPane?.refresh(),
+      onModeChange: (isEraserActive) => eraserSizeControl?.setActive(isEraserActive),
+    });
+    eraserSizeControl = new EraserSizeControl({
+      getGame,
+      onActivate: () => paletteControl.setEraserActive(true),
+      onChange: () => configPane?.refresh(),
+    });
+    const mirrorSegmentControl = new MirrorSegmentControl({
+      onChange: () => {
+        paletteControl.setEraserActive(false);
+        configPane?.refresh();
+      },
+    });
+    const audioControl = new AudioControl({
+      getGame,
+      hasStarted: () => hasStarted,
+      startButton: splash.startButton,
+    });
+
+    const syncRuntimeUi = () => {
+      eraserSizeControl?.render();
+      eraserSizeControl?.setActive(paletteControl.isEraserActive);
+      mirrorSegmentControl.render();
+      paletteControl.render();
+    };
+
+    const infoPageHandler = new CollapsiblePanelAnimator(infoButton, infoElement, aside);
+    new MenuHider(
+      aside,
+      () =>
+        FullScreenHandler.isInFullScreenMode() &&
+        !configPane?.isOpen &&
+        !infoPageHandler.isOpen
+    );
+    new FullScreenHandler(fullScreenButton, document.documentElement);
+
+    new VibeNavigator({
+      onChange: ({ vibeId, vibeName, source, userGesture }) => {
+        trackVibeChange({ vibeId, vibeName, source });
+        game?.onVibeChanged();
+        syncRuntimeUi();
+        configPane?.refresh();
+        game?.playVibeChangeAudio(userGesture);
+      },
+    });
+
+    restartButton.addEventListener('click', () => void destroyCurrentGame());
+
+    export4kButton.addEventListener('click', async () => {
+      const currentGame = game;
+      if (!currentGame || export4kButton.disabled) {
+        return;
+      }
+
+      export4kButton.disabled = true;
+      try {
+        await currentGame.exportSnapshot();
+        trackExport({ vibeId: activeVibe.id });
+      } catch (error) {
+        ErrorHandler.addException(error, { severity: Severity.WARNING });
+      } finally {
+        export4kButton.disabled = false;
+      }
+    });
+
+    // Samples load before Start is enabled so the first audible piano note
+    // always uses the sampler. The Start tap still unlocks the AudioContext.
+    splash.showLoadingBar();
+    const fontsReady = document.fonts.ready.catch((error) => {
+      ErrorHandler.addException(error, {
+        fallbackMessage: 'Could not load fonts.',
+        severity: Severity.WARNING,
+      });
+    });
+    const gpuPromise = initializeGpu();
+
+    const preloadPromise = preloadPianoSamples(({ loadedCount, totalCount }) => {
+      const ratio = totalCount > 0 ? loadedCount / totalCount : 0;
+      splash.setLoadingStage(
+        `Loading piano samples ${loadedCount}/${totalCount}…`,
+        ratio
+      );
+    }).then(
+      () => {
+        splash.setLoadingStage('Ready', 1);
+      },
+      (error: unknown) => {
+        splash.setLoadingStage('Piano unavailable', 1);
+        ErrorHandler.addException(error, {
+          fallbackMessage: 'Could not preload piano samples.',
+          severity: Severity.WARNING,
+        });
+      }
+    );
+
+    const gpu = await gpuPromise;
+    const gpuNavigator = navigator.gpu;
+    if (!gpuNavigator) {
+      throw new Error('WebGPU is no longer available after initialization.');
+    }
+    const canvasFormat = gpuNavigator.getPreferredCanvasFormat();
+    configPane = new ConfigPane({
+      maxSupportedAgentCount: getMaxSupportedAgentCount(gpu),
+      settingsButton,
+      onOpen: () => infoPageHandler.close(),
+      onConfigChange: () => {
+        game?.onVibeChanged();
+        syncRuntimeUi();
+      },
+      onRuntimeChange: syncRuntimeUi,
+    });
+    infoPageHandler.onOpen = configPane.close.bind(configPane);
+    await fontsReady;
+    await preloadPromise;
+    splash.hideLoadingBar();
+
+    const deltaTimeCalculator = new DeltaTimeCalculator();
+
+    let isFirstStart = true;
+    while (!shouldStop) {
+      const loop = new GameLoop(canvas, gpu, canvasFormat, deltaTimeCalculator, {
+        toolbar: toolbarRow,
+        prompt: promptElement,
+        eraserPreview,
+        grainOverlay,
+        exportStatus,
+      });
+      game = loop;
+      syncRuntimeUi();
+      audioControl.render();
+
+      if (isFirstStart) {
+        isFirstStart = false;
+
+        // Splash is in the DOM by default; enable the button now that the
+        // audio system (GameLoop) is constructed and ready to be unlocked.
+        await splash.awaitStart(() => {
+          hasStarted = true;
+          game?.startAudio(true);
+          trackStart();
+        });
+
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => document.body.classList.remove('is-loading'))
+        );
+      }
+      loop.attachPointerInput();
+      await loop.start();
+      if (game === loop) {
+        game = null;
+      }
     }
   } catch (e) {
-    const message = e instanceof Error ? (e.stack ?? e.message) : String(e);
-    ErrorHandler.addError(Severity.ERROR, message);
-    console.error(e);
+    document.body.classList.remove('is-loading');
+    if (hasRuntimeErrorListener) {
+      ErrorHandler.addException(e);
+    } else {
+      ErrorPresenter.renderStartup(e);
+      ErrorHandler.addException(e);
+    }
   }
 };
 

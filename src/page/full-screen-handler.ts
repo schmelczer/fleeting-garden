@@ -1,43 +1,46 @@
 export class FullScreenHandler {
+  private readonly abortController = new AbortController();
+
   public constructor(
-    private readonly minimizeButton: HTMLElement,
-    private readonly maximizeButton: HTMLElement,
+    private readonly toggleButton: HTMLElement,
     target: HTMLElement
   ) {
-    if (!document.fullscreenEnabled) {
-      minimizeButton.style.display = 'none';
-      maximizeButton.style.display = 'none';
+    if (!document.fullscreenEnabled || typeof target.requestFullscreen !== 'function') {
+      toggleButton.hidden = true;
       return;
     }
 
     this.updateButtons();
 
-    addEventListener('keydown', (e) => {
-      // on full screen request, only apply it to the target
-      if (e.key === 'F11') {
-        e.preventDefault();
+    const { signal } = this.abortController;
+    addEventListener('fullscreenchange', this.updateButtons, { signal });
+    toggleButton.addEventListener(
+      'click',
+      () => {
         if (FullScreenHandler.isInFullScreenMode()) {
-          document.exitFullscreen();
-        } else {
-          target.requestFullscreen();
+          void document.exitFullscreen();
+          return;
         }
-      }
-    });
-    addEventListener('fullscreenchange', this.updateButtons.bind(this));
-    maximizeButton.addEventListener('click', () => target.requestFullscreen());
-    minimizeButton.addEventListener('click', () => document.exitFullscreen());
+
+        void target.requestFullscreen().catch(() => undefined);
+      },
+      { signal }
+    );
   }
 
   public static isInFullScreenMode(): boolean {
     return document.fullscreenElement !== null;
   }
 
-  private updateButtons() {
-    this.minimizeButton.style.display = FullScreenHandler.isInFullScreenMode()
-      ? 'block'
-      : 'none';
-    this.maximizeButton.style.display = FullScreenHandler.isInFullScreenMode()
-      ? 'none'
-      : 'block';
+  public destroy(): void {
+    this.abortController.abort();
   }
+
+  private readonly updateButtons = (): void => {
+    const isInFullScreenMode = FullScreenHandler.isInFullScreenMode();
+    const label = isInFullScreenMode ? 'Exit fullscreen' : 'Enter fullscreen';
+    this.toggleButton.classList.toggle('active', isInFullScreenMode);
+    this.toggleButton.setAttribute('aria-label', label);
+    this.toggleButton.title = label;
+  };
 }

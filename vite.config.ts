@@ -1,12 +1,15 @@
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import browserslist from 'browserslist';
+import browserslistToEsbuild from 'browserslist-to-esbuild';
 import { browserslistToTargets } from 'lightningcss';
-import { defineConfig } from 'vitest/config';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { defineConfig } from 'vitest/config';
 
 const cssTargets = browserslistToTargets(browserslist());
+const esbuildTargets = browserslistToEsbuild();
 
-export default defineConfig({
-  plugins: [viteSingleFile()],
+export default defineConfig(({ command }) => ({
+  plugins: [viteSingleFile(), ...(command === 'serve' ? [basicSsl()] : [])],
   css: {
     transformer: 'lightningcss',
     lightningcss: {
@@ -14,16 +17,14 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'es2022',
-    cssCodeSplit: false,
+    target: esbuildTargets,
     cssMinify: 'lightningcss',
-    assetsInlineLimit: Number.MAX_SAFE_INTEGER,
   },
   server: {
-    open: true,
+    host: true,
   },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
-});
+}));

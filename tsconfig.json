@@ -9,14 +9,13 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
 
     "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src/**/*", "definitions.d.ts", "vite.config.ts"]
+  "include": ["src/**/*", "pwa-assets.config.ts", "vite.config.ts"]
 }

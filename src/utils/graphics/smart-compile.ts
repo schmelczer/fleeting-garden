@@ -10,20 +10,25 @@ export const smartCompile = (
     code: concatenated,
   });
 
-  module.getCompilationInfo().then((info) =>
-    info.messages.forEach((message) =>
+  module.getCompilationInfo().then((info) => {
+    if (info.messages.length === 0) {
+      return;
+    }
+
+    const lines = concatenated.split('\n');
+    info.messages.forEach((message) => {
+      const sourceLine = lines[message.lineNum - 1] ?? '';
+      const fullSource = import.meta.env.DEV ? `\n\nCode:\n${concatenated}\n` : '';
       ErrorHandler.addError(
         {
           info: Severity.INFO,
           warning: Severity.WARNING,
           error: Severity.ERROR,
         }[message.type],
-        `${message.message}\n${
-          concatenated.split('\n')[message.lineNum - 1]
-        }\n\nCode:\n${concatenated}\n`
-      )
-    )
-  );
+        `${message.message}\n${sourceLine}${fullSource}`
+      );
+    });
+  });
 
   return module;
 };

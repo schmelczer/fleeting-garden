@@ -1,47 +1,109 @@
-import { setUpFullScreenQuad } from '../../utils/graphics/full-screen-quad';
+import { vec2 } from 'gl-matrix';
+
+import { appConfig } from '../../config';
+import { createBindGroupCache } from '../../utils/graphics/bind-group-cache';
+import {
+  createCachedBufferWrite,
+  writeBufferIfChanged,
+} from '../../utils/graphics/cached-buffer-write';
 import { smartCompile } from '../../utils/graphics/smart-compile';
-import { CommonState } from '../common-state/common-state';
+import { TRAIL_SOURCE_TEXTURE_FORMAT } from '../texture-formats';
 import shader from './diffuse.wgsl?raw';
-import { DiffusionSettings } from './diffusion-settings';
+
+export interface DiffusionSettings {
+  diffusionRateTrails: number;
+  decayRateTrails: number;
+  decayRateBrush: number;
+  diffusionDecayRateDivisor: number;
+  diffusionNeighborDivisor: number;
+  brushDecayAlphaOffset: number;
+}
+
+type DiffusionUniformSettings = Pick<
+  DiffusionSettings,
+  | 'diffusionRateTrails'
+  | 'decayRateTrails'
+  | 'decayRateBrush'
+  | 'diffusionDecayRateDivisor'
+  | 'diffusionNeighborDivisor'
+  | 'brushDecayAlphaOffset'
+>;
+
+const getSafeInverseDiffusionRate = (diffusionRate: number): number =>
+  1 /
+  (Number.isFinite(diffusionRate) &&
+  diffusionRate > appConfig.pipelines.diffusion.minDiffusionRate
+    ? diffusionRate
+    : appConfig.pipelines.diffusion.minDiffusionRate);
+
+const setDiffusionUniformValues = (
+  target: Float32Array,
+  {
+    diffusionRateTrails,
+    decayRateTrails,
+    decayRateBrush,
+    diffusionDecayRateDivisor,
+    diffusionNeighborDivisor,
+    brushDecayAlphaOffset,
+  }: DiffusionUniformSettings
+): void => {
+  const decayDivisor = Math.max(Number.EPSILON, diffusionDecayRateDivisor);
+  const brushDecayRate = decayRateBrush / decayDivisor;
+  const neighborDivisor = Number.isFinite(diffusionNeighborDivisor)
+    ? Math.max(1, diffusionNeighborDivisor)
+    : 1;
+  target[0] = getSafeInverseDiffusionRate(diffusionRateTrails);
+  target[1] = decayRateTrails / decayDivisor;
+  target[2] = 1 / neighborDivisor;
+  target[3] = 1 + brushDecayRate;
+  target[4] = brushDecayAlphaOffset * brushDecayRate;
+  target[5] = 0;
+  target[6] = 0;
+  target[7] = 0;
+};
 
 export class DiffusionPipeline {
-  private static readonly UNIFORM_COUNT = 4;
+  private static readonly WORKGROUP_SIZE = 16;
+  private static readonly UNIFORM_COUNT = 8;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
-  private readonly pipeline: GPURenderPipeline;
+  private readonly pipeline: GPUComputePipeline;
   private readonly uniforms: GPUBuffer;
-  private readonly vertexBuffer: GPUBuffer;
+  // 1x1 zero texture used as the depositMap binding when callers don't supply
+  // one (e.g. source-map diffusion). WebGPU's textureLoad returns zero for
+  // out-of-bounds coordinates, so the diffusion shader sums in zeros.
+  private readonly emptyDepositTexture: GPUTexture;
+  private readonly emptyDepositTextureView: GPUTextureView;
+  private readonly uniformValues = new Float32Array(DiffusionPipeline.UNIFORM_COUNT);
+  private readonly uniformCache = createCachedBufferWrite(
+    DiffusionPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT
+  );
+  private readonly getBindGroup = createBindGroupCache<
+    [GPUTextureView, GPUTextureView, GPUTextureView]
+  >((trailMapIn, trailMapOut, depositMap) =>
+    this.device.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.uniforms } },
+        { binding: 1, resource: trailMapIn },
+        { binding: 2, resource: trailMapOut },
+        { binding: 3, resource: depositMap },
+      ],
+    })
+  );
 
-  private bindGroup?: GPUBindGroup;
-  private previousTrailMapIn?: GPUTextureView;
-
-  public constructor(
-    private readonly device: GPUDevice,
-    private readonly commonState: CommonState
-  ) {
+  public constructor(private readonly device: GPUDevice) {
     this.bindGroupLayout = device.createBindGroupLayout(
       DiffusionPipeline.bindGroupLayout
     );
 
-    const { buffer, vertex } = setUpFullScreenQuad(device);
-    this.vertexBuffer = buffer;
-
-    this.pipeline = device.createRenderPipeline({
+    this.pipeline = device.createComputePipeline({
       layout: device.createPipelineLayout({
-        bindGroupLayouts: [commonState.bindGroupLayout, this.bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
-      vertex,
-      fragment: {
-        module: smartCompile(device, CommonState.shaderCode, shader),
-        entryPoint: 'fragment',
-        targets: [
-          {
-            format: 'rgba16float',
-          },
-        ],
-      },
-      primitive: {
-        topology: 'triangle-strip',
+      compute: {
+        module: smartCompile(device, this.shaderCode),
+        entryPoint: 'main',
       },
     });
 
@@ -49,85 +111,81 @@ export class DiffusionPipeline {
       size: DiffusionPipeline.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
+    this.emptyDepositTexture = device.createTexture({
+      format: TRAIL_SOURCE_TEXTURE_FORMAT,
+      size: { width: 1, height: 1 },
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    this.emptyDepositTextureView = this.emptyDepositTexture.createView();
+    const clearEncoder = device.createCommandEncoder();
+    const clearPass = clearEncoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: this.emptyDepositTextureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        },
+      ],
+    });
+    clearPass.end();
+    device.queue.submit([clearEncoder.finish()]);
   }
 
   public setParameters({
     diffusionRateTrails,
     decayRateTrails,
-    diffusionRateBrush,
     decayRateBrush,
+    diffusionDecayRateDivisor,
+    diffusionNeighborDivisor,
+    brushDecayAlphaOffset,
   }: DiffusionSettings) {
-    this.device.queue.writeBuffer(
+    setDiffusionUniformValues(this.uniformValues, {
+      diffusionRateTrails,
+      decayRateTrails,
+      decayRateBrush,
+      diffusionDecayRateDivisor,
+      diffusionNeighborDivisor,
+      brushDecayAlphaOffset,
+    });
+    writeBufferIfChanged(
+      this.device,
       this.uniforms,
-      0,
-      new Float32Array([
-        1 / diffusionRateTrails,
-        decayRateTrails / 1000,
-        1 / diffusionRateBrush,
-        decayRateBrush / 1000,
-      ])
+      this.uniformValues,
+      this.uniformCache
     );
   }
 
   public execute(
     commandEncoder: GPUCommandEncoder,
     trailMapIn: GPUTextureView,
-    trailMapOut: GPUTextureView
+    trailMapOut: GPUTextureView,
+    size: vec2,
+    depositMap: GPUTextureView | null,
+    timestampWrites?: GPUComputePassTimestampWrites
   ) {
-    this.ensureBindGroupExists(trailMapIn);
+    const bindGroup = this.getBindGroup(
+      trailMapIn,
+      trailMapOut,
+      depositMap ?? this.emptyDepositTextureView
+    );
 
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: trailMapOut,
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
-          loadOp: 'clear',
-          storeOp: 'store',
-        },
-      ],
-    };
-
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    const passEncoder = commandEncoder.beginComputePass(
+      timestampWrites ? { timestampWrites } : undefined
+    );
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setVertexBuffer(0, this.vertexBuffer);
-    this.commonState.execute(passEncoder);
-    passEncoder.setBindGroup(1, this.bindGroup);
-    passEncoder.draw(4, 1);
+    passEncoder.setBindGroup(0, bindGroup);
+    passEncoder.dispatchWorkgroups(
+      Math.ceil(size[0] / DiffusionPipeline.WORKGROUP_SIZE),
+      Math.ceil(size[1] / DiffusionPipeline.WORKGROUP_SIZE)
+    );
     passEncoder.end();
   }
 
-  private ensureBindGroupExists(trailMapIn: GPUTextureView) {
-    if (this.previousTrailMapIn !== trailMapIn) {
-      this.bindGroup = this.device.createBindGroup({
-        layout: this.bindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: this.uniforms,
-            },
-          },
-          {
-            binding: 1,
-            resource: this.device.createSampler({
-              magFilter: 'linear',
-              minFilter: 'linear',
-            }),
-          },
-          {
-            binding: 2,
-            resource: trailMapIn,
-          },
-        ],
-      });
-
-      this.previousTrailMapIn = trailMapIn;
-    }
-  }
-
   public destroy() {
-    this.vertexBuffer.destroy();
     this.uniforms.destroy();
+    this.emptyDepositTexture.destroy();
   }
 
   private static get bindGroupLayout(): GPUBindGroupLayoutDescriptor {
@@ -135,26 +193,41 @@ export class DiffusionPipeline {
       entries: [
         {
           binding: 0,
-          visibility: GPUShaderStage.FRAGMENT,
+          visibility: GPUShaderStage.COMPUTE,
           buffer: {
             type: 'uniform',
           },
         },
         {
           binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'filtering',
+          visibility: GPUShaderStage.COMPUTE,
+          texture: {
+            sampleType: 'float',
           },
         },
         {
           binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
+          visibility: GPUShaderStage.COMPUTE,
+          storageTexture: {
+            access: 'write-only',
+            format: TRAIL_SOURCE_TEXTURE_FORMAT,
+          },
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
           texture: {
             sampleType: 'float',
           },
         },
       ],
     };
+  }
+
+  private get shaderCode(): string {
+    return shader.replaceAll(
+      '__WORKGROUP_SIZE__',
+      DiffusionPipeline.WORKGROUP_SIZE.toString()
+    );
   }
 }

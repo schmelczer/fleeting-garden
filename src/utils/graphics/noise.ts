@@ -1,7 +1,11 @@
+import { appConfig } from '../../config';
 import { setUpFullScreenQuad } from './full-screen-quad';
 import { smartCompile } from './smart-compile';
 
-const textureCache = new Map<string, GPUTexture>();
+export interface GeneratedNoiseTexture {
+  texture: GPUTexture;
+  view: GPUTextureView;
+}
 
 export const generateNoise = ({
   device,
@@ -11,15 +15,8 @@ export const generateNoise = ({
   device: GPUDevice;
   width: number;
   height: number;
-}): GPUTextureView => {
-  const cacheKey = `${width}x${height}`;
-  const cached = textureCache.get(cacheKey);
-  if (cached) {
-    return cached.createView();
-  }
-
-  const { buffer, vertex } = setUpFullScreenQuad(device);
-  const vertexBuffer = buffer;
+}): GeneratedNoiseTexture => {
+  const vertex = setUpFullScreenQuad(device);
 
   const pipeline = device.createRenderPipeline({
     layout: 'auto',
@@ -29,28 +26,34 @@ export const generateNoise = ({
         device,
         /* wgsl */ `
         fn random_with_seed(uv: vec2<f32>, seed: f32) -> f32 {
-          return fract(sin(dot(uv, vec2(12.9898 + seed, 78.233 + seed)))* 43758.5453123 + seed);
+          return fract(sin(dot(
+            uv,
+            vec2(
+              ${appConfig.pipelines.common.noiseHashX} + seed,
+              ${appConfig.pipelines.common.noiseHashY} + seed
+            )
+          )) * ${appConfig.pipelines.common.noiseHashMultiplier} + seed);
         }
 
         @fragment
         fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
           return vec4(
-            random_with_seed(uv, 0),
-            random_with_seed(uv, 1),
-            random_with_seed(uv, 2),
-            random_with_seed(uv, 3),
+            random_with_seed(uv, ${appConfig.pipelines.common.noiseChannelSeeds[0]}),
+            0.0,
+            0.0,
+            1.0,
           );
         }`
       ),
       entryPoint: 'fragment',
       targets: [
         {
-          format: 'rgba16float',
+          format: appConfig.pipelines.common.noiseTextureFormat,
         },
       ],
     },
     primitive: {
-      topology: 'triangle-strip',
+      topology: 'triangle-list',
     },
   });
 
@@ -60,7 +63,7 @@ export const generateNoise = ({
       height,
       depthOrArrayLayers: 1,
     },
-    format: 'rgba16float',
+    format: appConfig.pipelines.common.noiseTextureFormat,
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
@@ -68,7 +71,7 @@ export const generateNoise = ({
     colorAttachments: [
       {
         view: colorTexture.createView(),
-        clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+        clearValue: appConfig.pipelines.common.noiseClearValue,
         loadOp: 'clear',
         storeOp: 'store',
       },
@@ -79,11 +82,15 @@ export const generateNoise = ({
 
   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
   passEncoder.setPipeline(pipeline);
-  passEncoder.setVertexBuffer(0, vertexBuffer);
-  passEncoder.draw(4, 1);
+  passEncoder.draw(
+    appConfig.pipelines.common.noiseDrawVertexCount,
+    appConfig.pipelines.common.noiseDrawInstanceCount
+  );
   passEncoder.end();
 
   device.queue.submit([commandEncoder.finish()]);
-  textureCache.set(cacheKey, colorTexture);
-  return colorTexture.createView();
+  return {
+    texture: colorTexture,
+    view: colorTexture.createView(),
+  };
 };

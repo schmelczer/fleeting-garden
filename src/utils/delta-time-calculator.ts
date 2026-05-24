@@ -1,37 +1,26 @@
-import { clamp } from './clamp';
-import { exponentialDecay } from './exponential-decay';
+import { appConfig } from '../config';
+import { clamp } from './math';
 
 export class DeltaTimeCalculator {
-  private static FPS_EXPONENTIAL_DECAY_STRENGTH = 0.01;
-
   private previousTime: DOMHighResTimeStamp | null = null;
-  private deltaTimeAccumulator: number | null = null;
+  private readonly visibilityChangeListener = () => this.handleVisibilityChange();
 
-  constructor(
-    private readonly maxDeltaTimeInSeconds: number = 1 / 30,
-    private readonly minDeltaTimeInSeconds: number = 1 / 240
-  ) {
-    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+  constructor() {
+    document.addEventListener('visibilitychange', this.visibilityChangeListener);
   }
 
-  public calculateDeltaTimeInSeconds(
-    currentTime: DOMHighResTimeStamp
-  ): DOMHighResTimeStamp {
+  public calculateDeltaTimeInSeconds(currentTime: DOMHighResTimeStamp): number {
     if (this.previousTime === null) {
       this.previousTime = currentTime;
     }
 
     const delta = currentTime - this.previousTime;
     this.previousTime = currentTime;
-    const deltaInSeconds = delta / 1000;
-
-    this.deltaTimeAccumulator = exponentialDecay({
-      accumulator: this.deltaTimeAccumulator ?? deltaInSeconds,
-      nextValue: deltaInSeconds,
-      biasOfNextValue: DeltaTimeCalculator.FPS_EXPONENTIAL_DECAY_STRENGTH,
-    });
-
-    return clamp(delta / 1000, this.minDeltaTimeInSeconds, this.maxDeltaTimeInSeconds);
+    return clamp(
+      delta / 1000,
+      appConfig.deltaTime.minDeltaTimeSeconds,
+      appConfig.deltaTime.maxDeltaTimeSeconds
+    );
   }
 
   private handleVisibilityChange() {
@@ -40,7 +29,7 @@ export class DeltaTimeCalculator {
     }
   }
 
-  public get fps() {
-    return this.deltaTimeAccumulator ? 1 / this.deltaTimeAccumulator : 0;
+  public destroy(): void {
+    document.removeEventListener('visibilitychange', this.visibilityChangeListener);
   }
 }

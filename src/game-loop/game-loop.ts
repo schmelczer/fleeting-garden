@@ -1,265 +1,364 @@
 import { vec2 } from 'gl-matrix';
 
-import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
-import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
-import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
-import { CommonState } from '../pipelines/common-state/common-state';
-import { CopyPipeline } from '../pipelines/copy/copy-pipeline';
-import { DiffusionPipeline } from '../pipelines/diffusion/diffusion-pipeline';
-import { RenderPipeline } from '../pipelines/render/render-pipeline';
-import { settings } from '../settings';
+import { GardenAudio } from '../audio/garden-audio';
+import { appConfig } from '../config';
+import { activeVibe, settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
-import { initializeContext } from '../utils/graphics/initialize-context';
-import { ResizableTexture } from '../utils/graphics/resizable-texture';
-import { sleep } from '../utils/sleep';
-import { GamePresentation } from './game-presentation';
-import { GameRules } from './game-rules';
+import { rgbColorToCss, type RgbColor } from '../utils/rgb-color';
+import { AgentPopulation } from './agent-population';
+import { EraserPreview } from './eraser-preview';
+import { ExportSnapshotRenderer } from './export-snapshot-renderer';
+import { FramePerformance } from './frame-performance';
+import { GameLoopResources } from './game-loop-resources';
+import { GardenUi } from './game-loop-types';
+import { getInternalRenderSize } from './internal-render-size';
+import { IntroPrompt } from './intro-prompt';
+import { PerfStatsOverlay } from './perf-stats-overlay';
+import { GardenPointerInput } from './pointer-input';
+import { PipelineStrokeOutput } from './stroke-output';
+import { ToolbarContrastMonitor } from './toolbar-contrast-monitor';
 
 export default class GameLoop {
-  private readonly trailMapA: ResizableTexture;
-  private readonly trailMapB: ResizableTexture;
+  private readonly resources: GameLoopResources;
+  private readonly audio = new GardenAudio(appConfig.audio);
+  private readonly introPrompt: IntroPrompt;
+  private readonly eraserPreview: EraserPreview;
+  private readonly pointerInput: GardenPointerInput;
+  private readonly agentPopulation: AgentPopulation;
+  private readonly exportSnapshotRenderer: ExportSnapshotRenderer;
+  private readonly framePerformance = new FramePerformance();
+  private perfStatsOverlay: PerfStatsOverlay | null = null;
+  private readonly toolbarContrastMonitor: ToolbarContrastMonitor;
+  private readonly seedValue = Math.floor(Math.random() * 0xffffffff);
+  private readonly seed = this.seedValue.toString(16);
+  private readonly _canvasSize: vec2 = vec2.create();
 
-  private readonly commonState: CommonState;
-  private readonly copyPipeline: CopyPipeline;
-  private readonly agentGenerationPipeline: AgentGenerationPipeline;
-  private readonly agentPipeline: AgentPipeline;
-  private readonly renderPipeline: RenderPipeline;
-  private readonly brushPipeline: BrushPipeline;
-  private readonly diffusionPipeline: DiffusionPipeline;
-
+  private pendingIntroResizeAt: DOMHighResTimeStamp | null = null;
+  private previousAccentColor = '';
+  private previousGrainStrength = Number.NaN;
   private hasFinished = false;
+  private animationFrameId: number | null = null;
+  private destroyPromise: Promise<void> | null = null;
   private readonly finished = Promise.withResolvers<void>();
-
-  private activePointerId: number | null = null;
 
   public constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly device: GPUDevice,
+    private readonly canvasFormat: GPUTextureFormat,
     private readonly deltaTimeCalculator: DeltaTimeCalculator,
-    private readonly gameRules: GameRules
+    private readonly ui: GardenUi
   ) {
-    const context = initializeContext({ device, canvas });
-
-    this.trailMapA = new ResizableTexture(this.device, this.canvasSize);
-    this.trailMapB = new ResizableTexture(this.device, this.canvasSize);
     this.resize();
-
-    this.copyPipeline = new CopyPipeline(this.device);
-
-    this.commonState = new CommonState(this.device);
-    this.commonState.setParameters({
-      canvasSize: this.canvasSize,
-      time: 0,
-      deltaTime: 0,
+    this.resources = new GameLoopResources(
+      canvas,
+      device,
+      this.canvasFormat,
+      this.canvasSize,
+      this.framePerformance.adaptiveCapInitial,
+      settings.maxAgentCount
+    );
+    this.introPrompt = new IntroPrompt(ui.prompt);
+    this.toolbarContrastMonitor = new ToolbarContrastMonitor(
+      canvas,
+      ui.toolbar,
+      device,
+      this.canvasFormat
+    );
+    this.agentPopulation = new AgentPopulation(
+      this.resources.agentGenerationPipeline,
+      this.seedValue,
+      () => this.canvasPixelRatio,
+      this.framePerformance
+    );
+    this.agentPopulation.initializeIntroAgents(this.canvasSize);
+    this.pointerInput = new GardenPointerInput({
+      canvas,
+      audio: this.audio,
+      strokeOutput: new PipelineStrokeOutput(
+        this.resources.brushPipeline,
+        this.resources.eraserAgentPipeline,
+        this.resources.eraserTexturePipeline
+      ),
+      getCanvasPixelRatio: () => this.canvasPixelRatio,
+      getMirrorSegmentCount: () => this.mirrorSegmentCount,
+      onStartDrawing: () => {
+        this.introPrompt.markStartedDrawing();
+        this.agentPopulation.beginStroke();
+      },
+      onEraseGestureEnded: () => this.agentPopulation.requestCompactionAfterErase(),
+      spawnStrokeAgents: (from, to) => this.agentPopulation.spawnStrokeAgents(from, to),
+    });
+    this.eraserPreview = new EraserPreview(
+      canvas,
+      ui.eraserPreview,
+      () => this.pointerInput.isSwipeActive
+    );
+    this.exportSnapshotRenderer = new ExportSnapshotRenderer({
+      device,
+      renderPipeline: this.resources.renderPipeline,
+      canvasFormat: this.canvasFormat,
+      statusElement: ui.exportStatus,
+      seed: this.seed,
+      getSourceSize: () => {
+        const size = this.resources.textures.trailMapA.getSize();
+        return {
+          width: size[0],
+          height: size[1],
+        };
+      },
+      getColorTextureView: () => this.resources.textures.trailMapA.getTextureView(),
+      getSourceTextureView: () => this.resources.textures.sourceMapA.getTextureView(),
+      getSourceActive: () => this.resources.isSourceMapActive,
+      getVibeId: () => activeVibe.id,
     });
 
-    this.agentGenerationPipeline = new AgentGenerationPipeline(
-      this.device,
-      this.commonState,
-      settings.maxAgentCountUpperLimit
-    );
-    this.agentGenerationPipeline.spawnFirstGeneration();
-
-    this.agentPipeline = new AgentPipeline(
-      this.device,
-      this.commonState,
-      this.agentGenerationPipeline.agentsBuffer
-    );
-    this.brushPipeline = new BrushPipeline(this.device, this.commonState);
-    this.diffusionPipeline = new DiffusionPipeline(this.device, this.commonState);
-    this.renderPipeline = new RenderPipeline(context, this.device, this.commonState);
-
-    window.addEventListener('resize', this.resize.bind(this));
-    canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
-    canvas.addEventListener('pointermove', this.onPointerMove.bind(this));
-    canvas.addEventListener('pointerup', this.onPointerUp.bind(this));
-    canvas.addEventListener('pointercancel', this.onPointerUp.bind(this));
+    this.syncPerfStatsOverlay();
   }
 
-  private onPointerDown(event: PointerEvent) {
-    if (this.activePointerId !== null) {
-      return;
-    }
-    this.activePointerId = event.pointerId;
-    this.canvas.setPointerCapture(event.pointerId);
-    this.brushPipeline.clearSwipes();
-    this.addSwipeAt(event);
+  public attachPointerInput(): void {
+    this.pointerInput.attach();
+    this.eraserPreview.attach();
   }
 
-  private onPointerMove(event: PointerEvent) {
-    if (event.pointerId !== this.activePointerId) {
-      return;
-    }
-    this.addSwipeAt(event);
+  public setEraseMode(isErasing: boolean): void {
+    this.pointerInput.setEraseMode(isErasing);
+    this.eraserPreview.setEraseMode(isErasing);
   }
 
-  private onPointerUp(event: PointerEvent) {
-    if (event.pointerId !== this.activePointerId) {
-      return;
-    }
-    this.addSwipeAt(event);
-    this.canvas.releasePointerCapture(event.pointerId);
-    this.activePointerId = null;
+  public updateEraserPreview(event?: PointerEvent): void {
+    this.eraserPreview.update(event);
   }
 
-  private addSwipeAt(event: PointerEvent) {
-    const position = vec2.fromValues(
-      event.clientX * this.devicePixelRatio,
-      this.canvas.height - event.clientY * this.devicePixelRatio
-    );
-    this.brushPipeline.addSwipe(position);
+  public onVibeChanged(): void {
+    this.agentPopulation.onVibeChanged();
+    this.syncPerfStatsOverlay();
   }
 
-  private get isSwipeActive(): boolean {
-    return this.activePointerId !== null;
+  public setAudioMuted(isMuted: boolean): void {
+    this.audio.setMuted(isMuted);
+  }
+
+  public setAudioVolume(volume: number): void {
+    this.audio.setMasterVolume(volume);
+  }
+
+  public startAudio(userGesture = false): void {
+    this.audio.start(activeVibe, { userGesture });
+  }
+
+  public playVibeChangeAudio(userGesture = false): void {
+    this.audio.changeVibe(activeVibe, { userGesture });
   }
 
   public async start(): Promise<void> {
-    requestAnimationFrame(this.render.bind(this));
-    requestAnimationFrame(this.updateCounts.bind(this));
+    if (this.animationFrameId === null && !this.hasFinished) {
+      this.animationFrameId = requestAnimationFrame(this.render);
+    }
     return this.finished.promise;
   }
 
-  private async updateCounts(): Promise<void> {
-    if (this.hasFinished) {
-      return;
+  public async exportSnapshot(): Promise<void> {
+    return this.exportSnapshotRenderer.export();
+  }
+
+  public async destroy(): Promise<void> {
+    this.destroyPromise ??= this.dispose();
+    return this.destroyPromise;
+  }
+
+  private async dispose(): Promise<void> {
+    this.hasFinished = true;
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
-    const generationCounts = await this.agentGenerationPipeline.countAgents(
-      settings.agentCount
-    );
-    this.gameRules.updateGenerationCounts(generationCounts);
-    requestAnimationFrame(this.updateCounts.bind(this));
+    this.pointerInput.detach();
+    this.eraserPreview.detach();
+    this.perfStatsOverlay?.destroy();
+    this.perfStatsOverlay = null;
+    this.toolbarContrastMonitor.destroy();
+    this.introPrompt.destroy();
+    await this.agentPopulation.waitForCompaction();
+    this.resources.destroy();
+    await this.audio.destroy();
+    this.finished.resolve();
   }
 
-  public get aliveAgentCounts(): {
-    currentGenerationCount: number;
-    nextGenerationCount: number;
-  } {
-    return this.gameRules.generationCounts;
-  }
-
-  public get maxAgentCount(): number {
-    return this.agentGenerationPipeline.maxAgentCount;
-  }
-
-  private resize() {
-    this.canvas.width = this.canvas.clientWidth * this.devicePixelRatio;
-    this.canvas.height = this.canvas.clientHeight * this.devicePixelRatio;
-  }
-
-  private async render(time: DOMHighResTimeStamp) {
+  private readonly render = (time: DOMHighResTimeStamp) => {
+    this.animationFrameId = null;
     if (this.hasFinished) {
       this.finished.resolve();
       return;
     }
 
-    const accentColor = GamePresentation.getGenerationColor(
-      this.gameRules.nextGenerationId - 1
-    );
-    document.documentElement.style.setProperty(
-      '--accent-color',
-      `rgb(${accentColor[0] * 255},${accentColor[1] * 255},${accentColor[2] * 255})`
-    );
-
     const deltaTime = this.deltaTimeCalculator.calculateDeltaTimeInSeconds(time);
+    this.framePerformance.update(time);
+    this.agentPopulation.updateAdaptiveCap();
+    this.introPrompt.update(this.pendingIntroResizeAt === null ? deltaTime : 0);
+    this.resize();
+    this.resizeSimulationToCanvas(time);
+    this.regenerateIntroAfterSettledResize(time);
 
-    time *= settings.renderSpeed;
-    const timeInSeconds = time / 1000;
-    const spawnAction = this.gameRules.getSpawnAction(timeInSeconds, this.canvasSize);
+    const channelColors = activeVibe.colors;
+    const backgroundColor = activeVibe.backgroundColor;
+    const runtimeSettings = { ...settings };
+    const introProgress = this.introPrompt.progress;
+    const canvasPixelRatio = this.canvasPixelRatio;
+    const eraserPixelSize = runtimeSettings.eraserSize * canvasPixelRatio;
+    const isErasing = this.pointerInput.isEraseMode;
+    const accentColor =
+      channelColors[runtimeSettings.selectedColorIndex] ?? channelColors[0];
+    this.updateAccentColor(accentColor);
+    this.updateGrainOverlay(runtimeSettings.backgroundGrainStrength);
+    this.audio.update({
+      vibe: activeVibe,
+      isErasing,
+    });
 
-    [
-      this.commonState,
-      this.agentPipeline,
-      this.brushPipeline,
-      this.diffusionPipeline,
-      this.renderPipeline,
-    ].forEach((pipeline) =>
-      pipeline.setParameters({
-        time,
-        isNextGenerationOdd: this.gameRules.nextGenerationId % 2,
-        nextGenerationSensorOffsetDistance: this.gameRules.getSensorOffset(),
-        nextGenerationSpeed: this.gameRules.getNextGenerationMoveSpeed(),
-        infectionProbability: this.gameRules.getInfectionProbability(),
-        deltaTime,
-        canvasSize: this.canvasSize,
-        brushColor: GamePresentation.getGenerationColor(
-          this.gameRules.nextGenerationId - 1
-        ),
-        evenGenerationColor: GamePresentation.getGenerationColor(
-          this.gameRules.nextGenerationId % 2 == 0
-            ? this.gameRules.nextGenerationId
-            : this.gameRules.nextGenerationId - 1
-        ),
-        oddGenerationColor: GamePresentation.getGenerationColor(
-          this.gameRules.nextGenerationId % 2 == 1
-            ? this.gameRules.nextGenerationId
-            : this.gameRules.nextGenerationId - 1
-        ),
-        ...settings,
-        center: spawnAction.position,
-        radius: spawnAction.radius,
-      })
+    this.resources.setFrameParameters({
+      time,
+      deltaTime,
+      canvasSize: this.canvasSize,
+      activeAgentCount: this.agentPopulation.activeAgentCount,
+      canvasPixelRatio,
+      introProgress,
+      selectedColorIndex: runtimeSettings.selectedColorIndex,
+      channelColors,
+      backgroundColor,
+      eraserPixelSize,
+      runtimeSettings,
+    });
+
+    this.resources.executeFrame(
+      isErasing,
+      this.toolbarContrastMonitor.takeReadbackRequest(time)
     );
 
-    for (let i = 0; i < settings.renderSpeed; i++) {
-      const commandEncoder = this.device.createCommandEncoder();
+    this.pointerInput.clearSwipesIfIdle();
+    this.agentPopulation.compactAfterErase(this.pointerInput.isSwipeActive);
+    this.perfStatsOverlay?.update({
+      time,
+      fps: this.framePerformance.measuredFps,
+      agentCount: this.agentPopulation.activeAgentCount,
+      frameTimeMs: this.framePerformance.measuredFrameTimeMs,
+      gpuPassTimeMs: this.resources.gpuPassTimeMs,
+      renderWidth: this.canvas.width,
+      renderHeight: this.canvas.height,
+    });
 
-      this.copyPipeline.execute(
-        commandEncoder,
-        this.trailMapA.getTextureView(),
-        this.trailMapB.getTextureView()
-      );
-      this.brushPipeline.execute(commandEncoder, this.trailMapB.getTextureView());
-      this.agentPipeline.execute(
-        commandEncoder,
-        this.trailMapA.getTextureView(),
-        this.trailMapB.getTextureView()
-      );
-      this.diffusionPipeline.execute(
-        commandEncoder,
-        this.trailMapB.getTextureView(),
-        this.trailMapA.getTextureView()
-      );
-      this.renderPipeline.execute(commandEncoder, this.trailMapA.getTextureView());
+    this.animationFrameId = requestAnimationFrame(this.render);
+  };
 
-      this.device.queue.submit([commandEncoder.finish()]);
+  private syncPerfStatsOverlay(): void {
+    if (appConfig.tuningPane.showFpsOverlay) {
+      this.perfStatsOverlay ??= new PerfStatsOverlay(
+        this.canvas.parentElement ?? document.body
+      );
+      return;
     }
 
-    if (!this.isSwipeActive) {
-      this.brushPipeline.clearSwipes();
-    }
-
-    if (settings.simulatedDelayMs > 0) {
-      await sleep(settings.simulatedDelayMs);
-    }
-
-    // avoid resizing during rendering
-    this.trailMapA.resize(this.canvasSize);
-    this.trailMapB.resize(this.canvasSize);
-
-    requestAnimationFrame(this.render.bind(this));
+    this.perfStatsOverlay?.destroy();
+    this.perfStatsOverlay = null;
   }
 
-  public async destroy() {
-    this.hasFinished = true;
-    await this.finished.promise;
+  private updateAccentColor(color: RgbColor): void {
+    const accentColor = rgbColorToCss(color);
+    if (this.previousAccentColor === accentColor) {
+      return;
+    }
 
-    this.copyPipeline?.destroy();
-    this.agentGenerationPipeline?.destroy();
-    this.agentPipeline?.destroy();
-    this.brushPipeline?.destroy();
-    this.diffusionPipeline?.destroy();
-    this.renderPipeline?.destroy();
-    this.commonState?.destroy();
-    this.trailMapA?.destroy();
-    this.trailMapB?.destroy();
+    this.previousAccentColor = accentColor;
+    document.documentElement.style.setProperty('--accent-color', accentColor);
+  }
+
+  private updateGrainOverlay(strength: number): void {
+    const safeStrength = Number.isFinite(strength) ? Math.max(0, strength) : 0;
+    if (Object.is(this.previousGrainStrength, safeStrength)) {
+      return;
+    }
+
+    this.previousGrainStrength = safeStrength;
+    this.grainOverlay.hidden = safeStrength <= 0;
+    this.grainOverlay.style.setProperty('--garden-grain-strength', String(safeStrength));
+  }
+
+  private resize(): void {
+    const rect = this.canvas.getBoundingClientRect();
+    const { width, height } = getInternalRenderSize({
+      clientHeight: rect.height || this.canvas.clientHeight,
+      clientWidth: rect.width || this.canvas.clientWidth,
+      maxTextureDimension: this.device.limits.maxTextureDimension2D,
+      targetAreaMegapixels: settings.internalRenderAreaMegapixels,
+    });
+
+    if (this.canvas.width === width && this.canvas.height === height) {
+      return;
+    }
+
+    this.canvas.width = width;
+    this.canvas.height = height;
+  }
+
+  private resizeSimulationToCanvas(time: DOMHighResTimeStamp): void {
+    const scale = this.resources.resizeSimulationTo(this.canvasSize);
+    if (!scale) {
+      return;
+    }
+
+    this.agentPopulation.resizeAgents(scale);
+    this.pointerInput.scaleLastPointerPosition(scale);
+
+    if (this.introPrompt.shouldRegenerateTitleOnResize) {
+      this.pendingIntroResizeAt = time;
+    }
+  }
+
+  private regenerateIntroAfterSettledResize(time: DOMHighResTimeStamp): void {
+    if (this.pendingIntroResizeAt === null) {
+      return;
+    }
+
+    if (!this.introPrompt.shouldRegenerateTitleOnResize) {
+      this.pendingIntroResizeAt = null;
+      return;
+    }
+
+    if (time - this.pendingIntroResizeAt < appConfig.simulation.intro.resizeSettleMs) {
+      return;
+    }
+
+    this.introPrompt.rewindToLeaveRemainingTime(
+      appConfig.simulation.intro.resizeMinimumRemainingSeconds
+    );
+    this.resources.clearSimulation();
+    this.agentPopulation.replaceIntroAgents(this.canvasSize, this.introPrompt.progress);
+    this.pendingIntroResizeAt = null;
   }
 
   private get canvasSize(): vec2 {
-    return vec2.fromValues(this.canvas.width, this.canvas.height);
+    vec2.set(this._canvasSize, this.canvas.width, this.canvas.height);
+    return this._canvasSize;
   }
 
-  private get devicePixelRatio(): number {
-    return window.devicePixelRatio || 1;
+  private get canvasPixelRatio(): number {
+    const rect = this.canvas.getBoundingClientRect();
+    const xScale = rect.width > 0 ? this.canvas.width / rect.width : 1;
+    const yScale = rect.height > 0 ? this.canvas.height / rect.height : xScale;
+    const ratio = (xScale + yScale) / 2;
+    return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+  }
+
+  private get mirrorSegmentCount(): number {
+    const count = Number.isFinite(settings.mirrorSegmentCount)
+      ? settings.mirrorSegmentCount
+      : appConfig.toolbar.mirror.min;
+    return Math.min(
+      appConfig.toolbar.mirror.max,
+      Math.max(appConfig.toolbar.mirror.min, Math.round(count))
+    );
+  }
+
+  private get grainOverlay(): HTMLElement {
+    return this.ui.grainOverlay;
   }
 }

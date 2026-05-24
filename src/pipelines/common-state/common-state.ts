@@ -1,12 +1,21 @@
 import { vec2 } from 'gl-matrix';
 
+import { appConfig } from '../../config';
+import {
+  createCachedBufferWrite,
+  writeBufferIfChanged,
+} from '../../utils/graphics/cached-buffer-write';
 import { generateNoise } from '../../utils/graphics/noise';
 
 export class CommonState {
   private static readonly UNIFORM_COUNT = 4;
 
   private readonly uniforms: GPUBuffer;
-  private readonly noise: GPUTextureView;
+  private readonly uniformValues = new Float32Array(CommonState.UNIFORM_COUNT);
+  private readonly uniformCache = createCachedBufferWrite(
+    CommonState.UNIFORM_COUNT * Float32Array.BYTES_PER_ELEMENT
+  );
+  private readonly noise: GPUTexture;
   private readonly bindGroup: GPUBindGroup;
 
   public readonly bindGroupLayout: GPUBindGroupLayout;
@@ -14,10 +23,9 @@ export class CommonState {
   public static readonly shaderCode = /* wgsl */ `
     struct State {
       size: vec2<f32>,
-      deltaTime: f32, 
-      time: f32,
+      _padding: vec2<f32>,
     };
-    
+
     @group(0) @binding(0) var<uniform> state: State;
     @group(0) @binding(1) var noiseSampler: sampler;
     @group(0) @binding(2) var noise: texture_2d<f32>;
@@ -29,11 +37,12 @@ export class CommonState {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    this.noise = generateNoise({
+    const noise = generateNoise({
       device,
-      width: 2048,
-      height: 2048,
+      width: appConfig.pipelines.common.noiseTextureSize,
+      height: appConfig.pipelines.common.noiseTextureSize,
     });
+    this.noise = noise.texture;
 
     this.bindGroupLayout = device.createBindGroupLayout({
       entries: [
@@ -74,31 +83,28 @@ export class CommonState {
         {
           binding: 1,
           resource: this.device.createSampler({
+            addressModeU: 'repeat',
+            addressModeV: 'repeat',
             magFilter: 'linear',
             minFilter: 'linear',
           }),
         },
         {
           binding: 2,
-          resource: this.noise,
+          resource: noise.view,
         },
       ],
     });
   }
 
-  public setParameters({
-    canvasSize,
-    deltaTime,
-    time,
-  }: {
-    canvasSize: vec2;
-    deltaTime: number;
-    time: number;
-  }) {
-    this.device.queue.writeBuffer(
+  public setParameters({ canvasSize }: { canvasSize: vec2 }) {
+    this.uniformValues[0] = canvasSize[0];
+    this.uniformValues[1] = canvasSize[1];
+    writeBufferIfChanged(
+      this.device,
       this.uniforms,
-      0,
-      new Float32Array([...canvasSize, deltaTime, time])
+      this.uniformValues,
+      this.uniformCache
     );
   }
 
@@ -108,5 +114,6 @@ export class CommonState {
 
   public destroy() {
     this.uniforms.destroy();
+    this.noise.destroy();
   }
 }

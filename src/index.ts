@@ -71,6 +71,10 @@ const main = async () => {
       HTMLButtonElement
     );
     const infoButton = queryRequiredElement('[data-control="info"]', HTMLButtonElement);
+    const infoCloseButton = queryRequiredElement(
+      '[data-control="info-close"]',
+      HTMLButtonElement
+    );
     const infoElement = queryRequiredElement('.info-page', HTMLElement);
     const fullScreenButton = queryRequiredElement(
       '[data-control="full-screen"]',
@@ -113,6 +117,7 @@ const main = async () => {
     };
 
     const infoPageHandler = new CollapsiblePanelAnimator(infoButton, infoElement, aside);
+    infoCloseButton.addEventListener('click', () => infoPageHandler.close());
     new MenuHider(
       aside,
       () =>

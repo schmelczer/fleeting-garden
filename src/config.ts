@@ -22,7 +22,7 @@ export const appConfig = {
   audio: createGardenAudioConfig(),
   analytics: {
     autoCapturePageviews: true,
-    domain: 'fleeting.garden',
+    domain: 'schmelczer.dev/fleeting',
     endpoint: 'https://stats.schmelczer.dev/status',
     logging: import.meta.env.DEV,
   },

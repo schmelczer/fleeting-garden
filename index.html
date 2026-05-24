@@ -11,7 +11,7 @@
     <meta name="author" content="Andras Schmelczer" />
     <meta
       name="description"
-      content="Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser."
+      content="Plant colour, fold gestures with mirrors, and watch small agents turn each brushstroke into a shifting WebGPU garden."
     />
 
     <link rel="canonical" href="https://schmelczer.dev/fleeting/" />
@@ -22,7 +22,7 @@
     <meta property="og:locale" content="en_US" />
     <meta
       property="og:description"
-      content="Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser."
+      content="Plant colour, fold gestures with mirrors, and watch small agents turn each brushstroke into a shifting WebGPU garden."
     />
     <meta property="og:url" content="https://schmelczer.dev/fleeting/" />
     <meta property="og:image" content="https://schmelczer.dev/fleeting/og-image.jpg" />
@@ -35,7 +35,7 @@
     <meta name="twitter:title" content="Fleeting Garden" />
     <meta
       name="twitter:description"
-      content="Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser."
+      content="Plant colour, fold gestures with mirrors, and watch small agents turn each brushstroke into a shifting WebGPU garden."
     />
     <meta name="twitter:image" content="https://schmelczer.dev/fleeting/og-image.jpg" />
     <meta name="twitter:image:alt" content="Fleeting Garden social preview image." />
@@ -46,7 +46,7 @@
         "@type": "WebApplication",
         "name": "Fleeting Garden",
         "url": "https://schmelczer.dev/fleeting/",
-        "description": "Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser.",
+        "description": "Plant colour, fold gestures with mirrors, and watch small agents turn each brushstroke into a shifting WebGPU garden.",
         "image": "https://schmelczer.dev/fleeting/og-image.jpg",
         "applicationCategory": "DesignApplication",
         "operatingSystem": "Any",
@@ -118,35 +118,47 @@
         id="info-panel"
         class="hidden info-page"
         role="region"
-        aria-label="About panel"
+        aria-labelledby="info-panel-title"
         aria-hidden="true"
         tabindex="-1"
         inert
       >
-        <section>
-          <h1>Fleeting Garden</h1>
-          <p>
+        <div class="info-page__content">
+          <header class="info-page__header">
+            <span class="info-page__mark" aria-hidden="true"></span>
+            <div class="info-page__heading">
+              <p class="info-page__eyebrow">About</p>
+              <h2 id="info-panel-title">Fleeting Garden</h2>
+            </div>
+            <button
+              class="info-page__close"
+              data-control="info-close"
+              type="button"
+              aria-label="Close about panel"
+              title="Close"
+            ></button>
+          </header>
+
+          <p class="info-page__lede">
             A garden is what we tend; the wild is what we get the moment we look away.
             Both happen here at once. Your strokes plant colour, small agents follow them,
             branch off, and slowly rewrite the patch you laid down into something you
             didn't quite plan.
           </p>
-          <p>
-            Three swatches plant the line. The eraser carves a clearing. The mirror folds
-            one gesture into many, like footpaths around a hidden well.
-          </p>
-          <p>
-            Switch vibes to change the season; your shapes stay, the light moves. Add or
-            quiet the piano. Restart when you want a fresh field. Take a snapshot if you
-            want to keep one particular instant of weather.
-          </p>
-          <p>
+
+          <ul class="info-page__notes">
+            <li>Three swatches plant the line; the eraser carves a clearing.</li>
+            <li>The mirror folds one gesture into many.</li>
+            <li>The arrows change the season.</li>
+          </ul>
+
+          <p class="info-page__meta">
             Built with WebGPU, running locally in your browser. More of my work at
             <a href="https://schmelczer.dev" target="_blank" rel="noopener"
               >schmelczer.dev</a
             >.
           </p>
-        </section>
+        </div>
       </section>
 
       <div class="toolbar-row" role="toolbar" aria-label="Garden toolbar">

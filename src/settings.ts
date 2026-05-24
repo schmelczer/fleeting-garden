@@ -1,54 +1,77 @@
-import { GameLoopSettings } from './game-loop/game-loop-settings';
-import { AgentSettings } from './pipelines/agents/agent-settings';
-import { BrushSettings } from './pipelines/brush/brush-settings';
-import { DiffusionSettings } from './pipelines/diffusion/diffusion-settings';
-import { RenderSettings } from './pipelines/render/render-settings';
-import { persist } from './utils/persist';
+import {
+  appConfig,
+  normalizeRuntimeSettings,
+  type GardenRuntimeSettings,
+} from './config';
+import { writeBrowserStorage } from './utils/browser-storage';
+import { getInitialVibe, type VibePreset } from './vibes';
 
-const initialValues: GameLoopSettings &
-  AgentSettings &
-  BrushSettings &
-  DiffusionSettings &
-  RenderSettings = {
-  agentCount: 1_001_500,
+const preservedRuntimeSettingKeys = [
+  'eraserSize',
+  'adaptiveCapInitial',
+  'adaptiveCapMin',
+  'internalRenderAreaMegapixels',
+  'maxAgentCount',
+  'mirrorSegmentCount',
+] satisfies ReadonlyArray<keyof GardenRuntimeSettings>;
 
-  currentGenerationAggression: -5,
-  nextGenerationAggression: 0.2,
+const cloneRgbColor = <T extends [number, number, number]>(color: T): T =>
+  [...color] as T;
 
-  moveSpeed: 74,
-  turnSpeed: 45,
-  sensorOffsetAngle: 31,
-  sensorOffsetDistance: 43,
-  turnWhenLost: 0.01,
+const cloneVibeAudio = (audio: VibePreset['audio']): VibePreset['audio'] => ({
+  ...audio,
+  ...(audio.scale ? { scale: [...audio.scale] } : {}),
+  ...(audio.progression
+    ? { progression: audio.progression.map((chord) => ({ ...chord })) }
+    : {}),
+});
 
-  brushTrailWeight: 500,
-  individualTrailWeight: 0.05,
+const cloneVibePreset = (vibe: VibePreset): VibePreset => ({
+  ...vibe,
+  colors: vibe.colors.map(cloneRgbColor) as VibePreset['colors'],
+  backgroundColor: cloneRgbColor(vibe.backgroundColor),
+  settings: { ...vibe.settings },
+  audio: cloneVibeAudio(vibe.audio),
+});
 
-  diffusionRateTrails: 0,
-  decayRateTrails: 944,
-  diffusionRateBrush: 0.35,
-  decayRateBrush: 18,
+const buildSettings = (vibe: VibePreset): GardenRuntimeSettings =>
+  normalizeRuntimeSettings(
+    {
+      ...appConfig.defaultSettings,
+      eraserSize: appConfig.toolbar.eraser.default,
+      mirrorSegmentCount: appConfig.toolbar.mirror.default,
+      ...vibe.settings,
+    },
+    appConfig.runtimeSettings.controls
+  );
 
-  clarity: 0.7,
-  brushSize: 12,
+export let activeVibe = cloneVibePreset(getInitialVibe());
 
-  brushSizeVariation: 0.5, // hidden on the UI
-
-  startColorHue: 200,
-
-  maxAgentCountUpperLimit: Number.POSITIVE_INFINITY, // requires restart
-
-  // debug options
-  renderSpeed: 1,
-  simulatedDelayMs: 0,
+export const settings: GardenRuntimeSettings = {
+  ...buildSettings(activeVibe),
 };
 
-export const settings: { [key: string]: number } & GameLoopSettings &
-  AgentSettings &
-  BrushSettings &
-  DiffusionSettings &
-  RenderSettings = persist({ ...initialValues });
+export const rememberActiveVibeSelection = (): void => {
+  writeBrowserStorage(appConfig.storage.vibeKey, activeVibe.id);
+};
 
-export const resetSettings = () => {
-  Object.assign(settings, initialValues);
+export const applyVibeSettings = (vibe: VibePreset) => {
+  activeVibe = cloneVibePreset(vibe);
+  const nextSettings = buildSettings(activeVibe);
+  preservedRuntimeSettingKeys.forEach((key) => {
+    nextSettings[key] = settings[key];
+  });
+  nextSettings.selectedColorIndex = Math.min(
+    settings.selectedColorIndex,
+    activeVibe.colors.length - 1
+  );
+
+  Object.assign(
+    settings,
+    normalizeRuntimeSettings(nextSettings, appConfig.runtimeSettings.controls)
+  );
+
+  rememberActiveVibeSelection();
+
+  return activeVibe;
 };

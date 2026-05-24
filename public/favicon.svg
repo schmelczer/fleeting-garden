@@ -1,6 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#b7455e" />
-  <circle cx="22" cy="26" r="9" fill="#fff" opacity="0.95" />
-  <circle cx="42" cy="32" r="11" fill="#fff" opacity="0.85" />
-  <circle cx="28" cy="44" r="7" fill="#fff" opacity="0.75" />
+  <defs>
+    <clipPath id="icon-clip">
+      <rect width="64" height="64" rx="14" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#icon-clip)">
+    <rect width="64" height="64" fill="#10151f" />
+    <path d="M0 64a32 32 0 0 1 64 0Z" fill="#40d6c8" />
+    <path
+      d="M32 34c1.2-7.2 4.8-12.3 10-16"
+      fill="none"
+      stroke="#10151f"
+      stroke-linecap="round"
+      stroke-width="8"
+    />
+    <path
+      d="M32 34c1.2-7.2 4.8-12.3 10-16"
+      fill="none"
+      stroke="#ff5da2"
+      stroke-linecap="round"
+      stroke-width="4"
+    />
+    <ellipse cx="42" cy="11.5" rx="4.2" ry="6.4" fill="#ff5da2" />
+    <ellipse cx="48.5" cy="18" rx="6.4" ry="4.2" fill="#ff5da2" />
+    <ellipse cx="42" cy="24.5" rx="4.2" ry="6.4" fill="#ff5da2" />
+    <ellipse cx="35.5" cy="18" rx="6.4" ry="4.2" fill="#ff5da2" />
+    <circle cx="42" cy="18" r="3.2" fill="#10151f" />
+  </g>
 </svg>

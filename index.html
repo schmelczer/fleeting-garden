@@ -6,76 +6,243 @@
       name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
-    <meta name="theme-color" content="#b7455e" />
+    <meta name="theme-color" content="#10151f" />
+    <meta name="robots" content="index,follow" />
+    <meta name="author" content="Andras Schmelczer" />
     <meta
       name="description"
-      content="A WebGPU agent simulation: a million blobs leave trails, infect each other across generations, and react to your brush."
+      content="Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser."
     />
 
-    <meta property="og:title" content="Just a bunch of blobs" />
+    <link rel="canonical" href="https://schmelczer.dev/fleeting/" />
+
+    <meta property="og:title" content="Fleeting Garden" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Fleeting Garden" />
+    <meta property="og:locale" content="en_US" />
     <meta
       property="og:description"
-      content="A WebGPU agent simulation: a million blobs leave trails, infect each other across generations, and react to your brush."
+      content="Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser."
     />
-    <meta property="og:url" content="https://schmelczer.dev" />
-    <meta property="og:image" content="https://schmelczer.dev/og-image.jpg" />
-    <meta property="og:image:width" content="1920" />
-    <meta property="og:image:height" content="1920" />
+    <meta property="og:url" content="https://schmelczer.dev/fleeting/" />
+    <meta property="og:image" content="https://schmelczer.dev/fleeting/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Fleeting Garden social preview image." />
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fleeting Garden" />
+    <meta
+      name="twitter:description"
+      content="Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser."
+    />
+    <meta name="twitter:image" content="https://schmelczer.dev/fleeting/og-image.jpg" />
+    <meta name="twitter:image:alt" content="Fleeting Garden social preview image." />
 
-    <title>Just a bunch of blobs</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Fleeting Garden",
+        "url": "https://schmelczer.dev/fleeting/",
+        "description": "Tend it while you can. The garden returns to weather either way. A WebGPU drawing toy in your browser.",
+        "image": "https://schmelczer.dev/fleeting/og-image.jpg",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires a browser with WebGPU support.",
+        "author": {
+          "@type": "Person",
+          "name": "Andras Schmelczer"
+        },
+        "sameAs": "https://github.com/schmelczer/webgpu"
+      }
+    </script>
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Fleeting Garden" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <title>Fleeting Garden</title>
   </head>
-  <body>
+  <body class="is-loading">
     <main class="canvas-container">
-      <canvas></canvas>
+      <canvas
+        role="img"
+        aria-label="Interactive generative garden canvas"
+        aria-describedby="canvas-description"
+      >
+        Your browser cannot display the interactive WebGPU garden canvas. Use a browser
+        with WebGPU support to draw coloured paths and watch the garden grow.
+      </canvas>
+      <p id="canvas-description" class="visually-hidden">
+        Fleeting Garden is a pointer-driven WebGPU drawing canvas. Drag or touch the scene
+        to paint coloured paths, then use the toolbar to change colours, erase, export,
+        adjust the config overlay, restart, or open more information.
+      </p>
+      <div class="garden-grain" aria-hidden="true"></div>
+      <div class="eraser-preview" aria-hidden="true"></div>
+      <div class="garden-prompt" aria-live="polite"></div>
+
+      <div class="loading-indicator" role="status">
+        <div class="splash" data-visible="true">
+          <h1 class="splash-title">Fleeting Garden</h1>
+          <p class="splash-description">
+            Tend it while you can. The garden returns to weather either way.
+          </p>
+          <button class="start-button" type="button" disabled>Start</button>
+        </div>
+        <div class="loading-bar" data-visible="false" aria-hidden="true" inert>
+          <div class="loading-status">Starting up&hellip;</div>
+          <div
+            class="loading-progress"
+            role="progressbar"
+            aria-label="Loading Fleeting Garden"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          ></div>
+        </div>
+      </div>
 
       <section class="errors-container">
         <noscript>JavaScript is required for this website.</noscript>
       </section>
     </main>
 
-    <aside>
-      <nav class="buttons">
-        <button class="info" aria-label="About"></button>
-        <button class="maximize-full-screen" aria-label="Enter fullscreen"></button>
-        <button class="minimize-full-screen" aria-label="Exit fullscreen"></button>
-        <button class="settings" aria-label="Settings"></button>
-        <button class="restart" aria-label="Restart simulation"></button>
-      </nav>
-
-      <main class="pages hidden info-page">
+    <aside class="control-dock">
+      <section
+        id="info-panel"
+        class="hidden info-page"
+        role="region"
+        aria-label="About panel"
+        aria-hidden="true"
+        tabindex="-1"
+        inert
+      >
         <section>
-          <h1>Just a bunch of blobs</h1>
+          <h1>Fleeting Garden</h1>
           <p>
-            A million autonomous agents wander a 2D field. Each one lays down a faint
-            trail and follows trails it senses ahead. Two generations are competing for
-            territory: the older one fades, the newer one spreads.
+            A garden is what we tend; the wild is what we get the moment we look away.
+            Both happen here at once. Your strokes plant colour, small agents follow them,
+            branch off, and slowly rewrite the patch you laid down into something you
+            didn't quite plan.
           </p>
           <p>
-            Drag your finger or mouse anywhere on the canvas to paint a wall. Walls slow
-            the new generation down and let the old one breathe a little longer. Open
-            <em>Settings</em> to retune sensors, decay rates and aggression.
+            Three swatches plant the line. The eraser carves a clearing. The mirror folds
+            one gesture into many, like footpaths around a hidden well.
           </p>
           <p>
-            Runs entirely on your GPU via WebGPU compute shaders &mdash; no servers, no
-            tracking, no analytics. Source on
-            <a href="https://github.com/schmelczer/webgpu" target="_blank" rel="noopener"
-              >GitHub</a
+            Switch vibes to change the season; your shapes stay, the light moves. Add or
+            quiet the piano. Restart when you want a fresh field. Take a snapshot if you
+            want to keep one particular instant of weather.
+          </p>
+          <p>
+            Built with WebGPU, running locally in your browser. More of my work at
+            <a href="https://schmelczer.dev" target="_blank" rel="noopener"
+              >schmelczer.dev</a
             >.
           </p>
         </section>
-      </main>
+      </section>
 
-      <main class="pages hidden settings-page">
-        <section>
-          <div class="settings-content"></div>
-          <button id="apply-defaults" class="large-button">Apply defaults</button>
-        </section>
-      </main>
+      <div class="toolbar-row" role="toolbar" aria-label="Garden toolbar">
+        <button
+          class="previous-vibe vibe-button"
+          aria-label="Previous vibe"
+          title="Previous vibe"
+        >
+          &lsaquo;
+        </button>
+
+        <div class="toolbar-shell">
+          <section class="garden-controls" aria-label="Garden controls">
+            <div class="swatches" role="group" aria-label="Drawing colours">
+              <button
+                class="color-swatch"
+                aria-label="Draw colour 1"
+                title="Draw colour 1"
+              ></button>
+              <button
+                class="color-swatch"
+                aria-label="Draw colour 2"
+                title="Draw colour 2"
+              ></button>
+              <button
+                class="color-swatch"
+                aria-label="Draw colour 3"
+                title="Draw colour 3"
+              ></button>
+              <label class="eraser-size-control" title="Erase and resize">
+                <input class="eraser-size-slider" type="range" aria-label="Eraser size" />
+              </label>
+              <label class="mirror-segment-control" title="Mirror off">
+                <input
+                  class="mirror-segment-slider"
+                  type="range"
+                  aria-label="Mirror segments"
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <nav class="buttons" aria-label="App controls">
+          <button
+            class="info"
+            data-control="info"
+            aria-label="About"
+            aria-controls="info-panel"
+            aria-expanded="false"
+            title="About"
+          ></button>
+          <button
+            class="full-screen-toggle"
+            data-control="full-screen"
+            aria-label="Enter fullscreen"
+            title="Enter fullscreen"
+          ></button>
+          <button
+            class="settings"
+            data-control="settings"
+            aria-label="Show config overlay"
+            aria-expanded="false"
+            title="Show config overlay"
+          ></button>
+          <div class="audio-control">
+            <button
+              class="sound"
+              data-control="sound"
+              aria-label="Mute audio"
+              aria-pressed="false"
+              title="Mute audio"
+            ></button>
+            <label class="volume-control" title="Master volume">
+              <input class="volume-slider" type="range" aria-label="Master volume" />
+            </label>
+          </div>
+          <button
+            class="export-4k"
+            data-control="export"
+            aria-label="Download internal buffer snapshot"
+            title="Download internal buffer snapshot"
+          ></button>
+          <span class="export-status" aria-live="polite"></span>
+          <button
+            class="restart"
+            data-control="restart"
+            aria-label="Restart simulation"
+            title="Restart simulation"
+          ></button>
+        </nav>
+
+        <button class="next-vibe vibe-button" aria-label="Next vibe" title="Next vibe">
+          &rsaquo;
+        </button>
+      </div>
     </aside>
     <script type="module" src="/src/index.ts"></script>
   </body>

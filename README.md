@@ -1,15 +1,14 @@
-# Just a bunch of blobs
+# Fleeting Garden
 
-[![Deploy to GitHub Pages](https://github.com/schmelczer/webgpu/actions/workflows/deploy.yml/badge.svg)](https://github.com/schmelczer/webgpu/actions/workflows/deploy.yml)
+Fleeting Garden is a single-player WebGPU drawing garden. Pick a vibe palette,
+draw persistent coloured paths, spawn agents from those strokes, erase locally,
+and export the scene as an internal render buffer snapshot.
 
-## todo
+Check out the [agent logic](./src/pipelines/agents/agent.wgsl).
 
-- add info page description
-- add share link
-- settings page
-  add reset link
-- shareable settings
-- graceful error messages when no support
-- fix up generation id automatically
+## Testing
 
-Check out the [agent's logic](./src/pipelines/agents/agent.wgsl).
+- `npm test` runs the Vitest unit suite.
+- `npm run test:e2e` runs the Playwright Chromium smoke test. The Playwright
+  config builds the production bundle before serving it.
+- `npx playwright install chromium` installs the local browser binary when needed.

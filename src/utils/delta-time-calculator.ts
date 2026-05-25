@@ -1,5 +1,8 @@
-import { appConfig } from '../config';
 import { clamp } from './math';
+
+export const MIN_DELTA_TIME_SECONDS = 1 / 240;
+
+const MAX_DELTA_TIME_SECONDS = 1 / 30;
 
 export class DeltaTimeCalculator {
   private previousTime: DOMHighResTimeStamp | null = null;
@@ -16,11 +19,7 @@ export class DeltaTimeCalculator {
 
     const delta = currentTime - this.previousTime;
     this.previousTime = currentTime;
-    return clamp(
-      delta / 1000,
-      appConfig.deltaTime.minDeltaTimeSeconds,
-      appConfig.deltaTime.maxDeltaTimeSeconds
-    );
+    return clamp(delta / 1000, MIN_DELTA_TIME_SECONDS, MAX_DELTA_TIME_SECONDS);
   }
 
   private handleVisibilityChange() {

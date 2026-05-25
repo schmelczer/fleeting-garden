@@ -1,6 +1,16 @@
-import { appConfig } from '../../config';
 import { setUpFullScreenQuad } from './full-screen-quad';
 import { smartCompile } from './smart-compile';
+
+export const NOISE_TEXTURE_SIZE = 2048;
+
+const NOISE_CHANNEL_SEEDS = [0, 1, 2, 3] as const;
+const NOISE_CLEAR_VALUE = { r: 1, g: 1, b: 1, a: 1 };
+const NOISE_DRAW_INSTANCE_COUNT = 1;
+const NOISE_DRAW_VERTEX_COUNT = 3;
+const NOISE_HASH_MULTIPLIER = 43758.5453123;
+const NOISE_HASH_X = 12.9898;
+const NOISE_HASH_Y = 78.233;
+const NOISE_TEXTURE_FORMAT = 'r8unorm';
 
 export interface GeneratedNoiseTexture {
   texture: GPUTexture;
@@ -29,16 +39,16 @@ export const generateNoise = ({
           return fract(sin(dot(
             uv,
             vec2(
-              ${appConfig.pipelines.common.noiseHashX} + seed,
-              ${appConfig.pipelines.common.noiseHashY} + seed
+              ${NOISE_HASH_X} + seed,
+              ${NOISE_HASH_Y} + seed
             )
-          )) * ${appConfig.pipelines.common.noiseHashMultiplier} + seed);
+          )) * ${NOISE_HASH_MULTIPLIER} + seed);
         }
 
         @fragment
         fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
           return vec4(
-            random_with_seed(uv, ${appConfig.pipelines.common.noiseChannelSeeds[0]}),
+            random_with_seed(uv, ${NOISE_CHANNEL_SEEDS[0]}),
             0.0,
             0.0,
             1.0,
@@ -48,7 +58,7 @@ export const generateNoise = ({
       entryPoint: 'fragment',
       targets: [
         {
-          format: appConfig.pipelines.common.noiseTextureFormat,
+          format: NOISE_TEXTURE_FORMAT,
         },
       ],
     },
@@ -63,7 +73,7 @@ export const generateNoise = ({
       height,
       depthOrArrayLayers: 1,
     },
-    format: appConfig.pipelines.common.noiseTextureFormat,
+    format: NOISE_TEXTURE_FORMAT,
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
@@ -71,7 +81,7 @@ export const generateNoise = ({
     colorAttachments: [
       {
         view: colorTexture.createView(),
-        clearValue: appConfig.pipelines.common.noiseClearValue,
+        clearValue: NOISE_CLEAR_VALUE,
         loadOp: 'clear',
         storeOp: 'store',
       },
@@ -82,10 +92,7 @@ export const generateNoise = ({
 
   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
   passEncoder.setPipeline(pipeline);
-  passEncoder.draw(
-    appConfig.pipelines.common.noiseDrawVertexCount,
-    appConfig.pipelines.common.noiseDrawInstanceCount
-  );
+  passEncoder.draw(NOISE_DRAW_VERTEX_COUNT, NOISE_DRAW_INSTANCE_COUNT);
   passEncoder.end();
 
   device.queue.submit([commandEncoder.finish()]);

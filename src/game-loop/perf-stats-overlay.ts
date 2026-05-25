@@ -4,6 +4,10 @@ const ZERO_STAT_TEXT = '0';
 const ZERO_FRAME_TIME_TEXT = '0ms';
 const ZERO_RESOLUTION_TEXT = '0x0';
 
+export const perfStatsOverlayState = {
+  isVisible: import.meta.env.DEV,
+};
+
 interface PerfStatsSnapshot {
   time: DOMHighResTimeStamp;
   fps: number;

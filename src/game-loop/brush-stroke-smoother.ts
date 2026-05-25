@@ -1,6 +1,6 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../config';
+import { defaultSettings } from '../config';
 import { getRenderQualityBrushSize } from '../config/brush-size';
 import { getSafePixelRatio } from '../pipelines/brush/brush-pipeline';
 import { settings } from '../settings';
@@ -143,13 +143,13 @@ const getQuadraticPoint = (start: vec2, control: vec2, end: vec2, t: number): ve
 const getBrushCurveResolution = (): number => {
   const resolution = Number.isFinite(settings.brushCurveResolution)
     ? settings.brushCurveResolution
-    : appConfig.defaultSettings.brushCurveResolution;
+    : defaultSettings.brushCurveResolution;
   return Math.max(1, Math.floor(resolution));
 };
 
 const getBrushSmoothingDistanceSquared = (pixelRatio?: number): number => {
   const distance = Number.isFinite(settings.brushSmoothingMinSampleDistance)
     ? settings.brushSmoothingMinSampleDistance
-    : appConfig.defaultSettings.brushSmoothingMinSampleDistance;
+    : defaultSettings.brushSmoothingMinSampleDistance;
   return Math.max(0, distance * getSafePixelRatio(pixelRatio)) ** 2;
 };

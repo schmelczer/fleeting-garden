@@ -1,4 +1,3 @@
-import { appConfig } from '../config';
 import { clamp01 } from '../utils/math';
 import type { CanvasReadbackRequest } from './game-loop-types';
 
@@ -24,21 +23,41 @@ interface ToolbarContrastMetrics {
 
 const TOOLBAR_BACKGROUND_OPACITY_PROPERTY = '--toolbar-background-opacity';
 const TOOLBAR_BACKGROUND_STRENGTH_PROPERTY = '--toolbar-background-strength';
+const BACKGROUND_OPACITY_MAX = 0.82;
+const BRIGHT_LUMINANCE_THRESHOLD = 0.32;
+const BRIGHT_WEIGHT = 0.65;
+const BYTES_PER_SAMPLE = 4;
+const CONTRAST_OFFSET = 0.05;
 const GPU_COPY_BYTES_PER_ROW_ALIGNMENT = 256;
+const LINEAR_CHANNEL_BREAKPOINT = 0.03928;
+const LINEAR_CHANNEL_DIVISOR = 12.92;
+const LINEAR_CHANNEL_GAMMA = 2.4;
+const LINEAR_CHANNEL_OFFSET = 0.055;
+const LINEAR_CHANNEL_SCALE = 1.055;
+const LOW_CONTRAST_THRESHOLD = 3;
+const LOW_CONTRAST_WEIGHT = 1.8;
+const LUMINANCE_BASE = 0.11;
+const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const LUMINANCE_GREEN_WEIGHT = 0.7152;
+const LUMINANCE_RANGE = 0.28;
+const LUMINANCE_RED_WEIGHT = 0.2126;
+const SAMPLE_COLUMNS = 13;
+const SAMPLE_INTERVAL_MS = 300;
+const SAMPLE_ROWS = 7;
+const WHITE_CONTRAST_NUMERATOR = 1.05;
 
 const getLinearChannel = (channel: number): number => {
   const normalized = channel / 255;
-  return normalized <= appConfig.toolbar.contrast.linearChannelBreakpoint
-    ? normalized / appConfig.toolbar.contrast.linearChannelDivisor
-    : ((normalized + appConfig.toolbar.contrast.linearChannelOffset) /
-        appConfig.toolbar.contrast.linearChannelScale) **
-        appConfig.toolbar.contrast.linearChannelGamma;
+  return normalized <= LINEAR_CHANNEL_BREAKPOINT
+    ? normalized / LINEAR_CHANNEL_DIVISOR
+    : ((normalized + LINEAR_CHANNEL_OFFSET) / LINEAR_CHANNEL_SCALE) **
+        LINEAR_CHANNEL_GAMMA;
 };
 
 const getRelativeLuminance = (red: number, green: number, blue: number): number =>
-  appConfig.toolbar.contrast.luminanceRedWeight * getLinearChannel(red) +
-  appConfig.toolbar.contrast.luminanceGreenWeight * getLinearChannel(green) +
-  appConfig.toolbar.contrast.luminanceBlueWeight * getLinearChannel(blue);
+  LUMINANCE_RED_WEIGHT * getLinearChannel(red) +
+  LUMINANCE_GREEN_WEIGHT * getLinearChannel(green) +
+  LUMINANCE_BLUE_WEIGHT * getLinearChannel(blue);
 
 const getToolbarContrastMetrics = (
   pixels: Uint8Array,
@@ -46,8 +65,7 @@ const getToolbarContrastMetrics = (
   isBgra: boolean
 ): ToolbarContrastMetrics => {
   const count = sampleOffsets.filter(
-    (offset) =>
-      offset >= 0 && offset + appConfig.toolbar.contrast.bytesPerSample <= pixels.length
+    (offset) => offset >= 0 && offset + BYTES_PER_SAMPLE <= pixels.length
   ).length;
   if (count === 0) {
     return {
@@ -63,10 +81,7 @@ const getToolbarContrastMetrics = (
   let lowContrastCount = 0;
 
   sampleOffsets.forEach((offset) => {
-    if (
-      offset < 0 ||
-      offset + appConfig.toolbar.contrast.bytesPerSample > pixels.length
-    ) {
+    if (offset < 0 || offset + BYTES_PER_SAMPLE > pixels.length) {
       return;
     }
 
@@ -74,15 +89,13 @@ const getToolbarContrastMetrics = (
     const green = pixels[offset + 1];
     const blue = pixels[offset + (isBgra ? 0 : 2)];
     const luminance = getRelativeLuminance(red, green, blue);
-    const contrastWithWhite =
-      appConfig.toolbar.contrast.whiteContrastNumerator /
-      (luminance + appConfig.toolbar.contrast.contrastOffset);
+    const contrastWithWhite = WHITE_CONTRAST_NUMERATOR / (luminance + CONTRAST_OFFSET);
 
     luminanceTotal += luminance;
-    if (luminance > appConfig.toolbar.contrast.brightLuminanceThreshold) {
+    if (luminance > BRIGHT_LUMINANCE_THRESHOLD) {
       brightCount++;
     }
-    if (contrastWithWhite < appConfig.toolbar.contrast.lowContrastThreshold) {
+    if (contrastWithWhite < LOW_CONTRAST_THRESHOLD) {
       lowContrastCount++;
     }
   });
@@ -91,13 +104,11 @@ const getToolbarContrastMetrics = (
   const brightRatio = brightCount / count;
   const lowContrastRatio = lowContrastCount / count;
   const backgroundStrength = clamp01(
-    Math.max(0, averageLuminance - appConfig.toolbar.contrast.luminanceBase) /
-      appConfig.toolbar.contrast.luminanceRange +
-      brightRatio * appConfig.toolbar.contrast.brightWeight +
-      lowContrastRatio * appConfig.toolbar.contrast.lowContrastWeight
+    Math.max(0, averageLuminance - LUMINANCE_BASE) / LUMINANCE_RANGE +
+      brightRatio * BRIGHT_WEIGHT +
+      lowContrastRatio * LOW_CONTRAST_WEIGHT
   );
-  const backgroundOpacity =
-    backgroundStrength * appConfig.toolbar.contrast.backgroundOpacityMax;
+  const backgroundOpacity = backgroundStrength * BACKGROUND_OPACITY_MAX;
 
   return {
     averageLuminance,
@@ -128,7 +139,7 @@ export class ToolbarContrastMonitor {
     if (
       this.isDestroyed ||
       this.isReadbackPending ||
-      time - this.lastSampleAt < appConfig.toolbar.contrast.sampleIntervalMs
+      time - this.lastSampleAt < SAMPLE_INTERVAL_MS
     ) {
       return null;
     }
@@ -211,12 +222,12 @@ export class ToolbarContrastMonitor {
 
   private setToolbarBackgroundOpacity(backgroundOpacity: number): void {
     const safeBackgroundOpacity = Math.min(
-      appConfig.toolbar.contrast.backgroundOpacityMax,
+      BACKGROUND_OPACITY_MAX,
       Math.max(0, backgroundOpacity)
     );
     const backgroundStrength =
-      appConfig.toolbar.contrast.backgroundOpacityMax > 0
-        ? clamp01(safeBackgroundOpacity / appConfig.toolbar.contrast.backgroundOpacityMax)
+      BACKGROUND_OPACITY_MAX > 0
+        ? clamp01(safeBackgroundOpacity / BACKGROUND_OPACITY_MAX)
         : 0;
 
     this.toolbar.style.setProperty(
@@ -279,22 +290,20 @@ export class ToolbarContrastMonitor {
     }
 
     const bytesPerRow = alignTo(
-      width * appConfig.toolbar.contrast.bytesPerSample,
+      width * BYTES_PER_SAMPLE,
       GPU_COPY_BYTES_PER_ROW_ALIGNMENT
     );
     const points = new Map<string, CanvasSamplePoint>();
 
-    for (let row = 0; row < appConfig.toolbar.contrast.sampleRows; row++) {
-      const cssY =
-        top + ((row + 0.5) / appConfig.toolbar.contrast.sampleRows) * cssHeight;
+    for (let row = 0; row < SAMPLE_ROWS; row++) {
+      const cssY = top + ((row + 0.5) / SAMPLE_ROWS) * cssHeight;
       const y = Math.min(
         this.canvas.height - 1,
         Math.max(0, Math.floor((cssY - canvasRect.top) * yScale))
       );
 
-      for (let column = 0; column < appConfig.toolbar.contrast.sampleColumns; column++) {
-        const cssX =
-          left + ((column + 0.5) / appConfig.toolbar.contrast.sampleColumns) * cssWidth;
+      for (let column = 0; column < SAMPLE_COLUMNS; column++) {
+        const cssX = left + ((column + 0.5) / SAMPLE_COLUMNS) * cssWidth;
         const x = Math.min(
           this.canvas.width - 1,
           Math.max(0, Math.floor((cssX - canvasRect.left) * xScale))
@@ -309,8 +318,7 @@ export class ToolbarContrastMonitor {
       origin,
       sampleOffsets: [...points.values()].map(
         (point) =>
-          (point.y - origin.y) * bytesPerRow +
-          (point.x - origin.x) * appConfig.toolbar.contrast.bytesPerSample
+          (point.y - origin.y) * bytesPerRow + (point.x - origin.x) * BYTES_PER_SAMPLE
       ),
       width,
     };

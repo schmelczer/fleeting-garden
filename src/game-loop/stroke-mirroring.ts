@@ -2,6 +2,9 @@ import { vec2 } from 'gl-matrix';
 
 import { type StrokeSegment } from './game-loop-types';
 
+export const MIN_MIRROR_SEGMENT_COUNT = 1;
+export const MAX_MIRROR_SEGMENT_COUNT = 12;
+
 export const getMirroredStrokeSegments = (
   from: vec2,
   to: vec2,

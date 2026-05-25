@@ -1,19 +1,24 @@
-import { appConfig } from '../config';
+import { DEFAULT_AUDIO_VOLUME } from '../audio/garden-audio-config';
 import type GameLoop from '../game-loop/game-loop';
 import { readBrowserStorage, writeBrowserStorage } from '../utils/browser-storage';
 import { queryRequiredElement } from '../utils/dom';
 import { clamp01 } from '../utils/math';
 
+const AUDIO_MUTED_STORAGE_KEY = 'fleeting-garden:audio-muted';
+const AUDIO_VOLUME_STORAGE_KEY = 'fleeting-garden:audio-volume';
+const AUDIO_VOLUME_MIN = 0;
+const AUDIO_VOLUME_MAX = 1;
+const AUDIO_VOLUME_STEP = 0.01;
+
 const clampAudioVolume = (value: number): number => {
-  const { default: defaultVolume, max, min } = appConfig.toolbar.volume;
-  const safeValue = Number.isFinite(value) ? value : defaultVolume;
-  return Math.min(max, Math.max(min, clamp01(safeValue)));
+  const safeValue = Number.isFinite(value) ? value : DEFAULT_AUDIO_VOLUME;
+  return Math.min(AUDIO_VOLUME_MAX, Math.max(AUDIO_VOLUME_MIN, clamp01(safeValue)));
 };
 
 const readInitialAudioVolume = (): number => {
-  const storedVolume = readBrowserStorage(appConfig.storage.audioVolumeKey);
+  const storedVolume = readBrowserStorage(AUDIO_VOLUME_STORAGE_KEY);
   return storedVolume === null
-    ? appConfig.toolbar.volume.default
+    ? DEFAULT_AUDIO_VOLUME
     : clampAudioVolume(Number(storedVolume));
 };
 
@@ -45,7 +50,7 @@ export class AudioControl {
 
   private audioVolume = readInitialAudioVolume();
   private isMutedState =
-    readBrowserStorage(appConfig.storage.audioMutedKey) === STORED_MUTED_TRUE ||
+    readBrowserStorage(AUDIO_MUTED_STORAGE_KEY) === STORED_MUTED_TRUE ||
     this.audioVolume <= 0;
 
   public constructor(private readonly options: AudioControlOptions) {
@@ -85,9 +90,9 @@ export class AudioControl {
     this.soundButton.setAttribute('aria-label', muteLabel);
     this.soundButton.title = muteLabel;
 
-    this.volumeSlider.min = appConfig.toolbar.volume.min.toString();
-    this.volumeSlider.max = appConfig.toolbar.volume.max.toString();
-    this.volumeSlider.step = appConfig.toolbar.volume.step.toString();
+    this.volumeSlider.min = AUDIO_VOLUME_MIN.toString();
+    this.volumeSlider.max = AUDIO_VOLUME_MAX.toString();
+    this.volumeSlider.step = AUDIO_VOLUME_STEP.toString();
     this.volumeSlider.value = formatStoredAudioVolume(this.audioVolume);
     this.volumeSlider.setAttribute(
       'aria-valuetext',
@@ -107,7 +112,7 @@ export class AudioControl {
   private readonly onToggleMute = () => {
     const shouldUnmute = this.isMutedState || this.audioVolume <= 0;
     if (shouldUnmute && this.audioVolume <= 0) {
-      this.audioVolume = appConfig.toolbar.volume.default;
+      this.audioVolume = DEFAULT_AUDIO_VOLUME;
     }
     this.isMutedState = !shouldUnmute;
     this.persist();
@@ -141,11 +146,11 @@ export class AudioControl {
 
   private persist(): void {
     writeBrowserStorage(
-      appConfig.storage.audioMutedKey,
+      AUDIO_MUTED_STORAGE_KEY,
       this.isMutedState ? STORED_MUTED_TRUE : STORED_MUTED_FALSE
     );
     writeBrowserStorage(
-      appConfig.storage.audioVolumeKey,
+      AUDIO_VOLUME_STORAGE_KEY,
       formatStoredAudioVolume(this.audioVolume)
     );
   }

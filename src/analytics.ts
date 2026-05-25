@@ -4,8 +4,12 @@ import {
   type PlausibleEventOptions,
 } from '@plausible-analytics/tracker';
 
-import { appConfig } from './config';
 import type { VibeId } from './vibes';
+
+const ANALYTICS_AUTO_CAPTURE_PAGEVIEWS = true;
+const ANALYTICS_DOMAIN = 'schmelczer.dev/fleeting';
+const ANALYTICS_ENDPOINT = 'https://stats.schmelczer.dev/status';
+const ANALYTICS_LOGGING = import.meta.env.DEV;
 
 let isInitialized = false;
 
@@ -24,10 +28,10 @@ export const initAnalytics = () => {
 
   try {
     plausibleInit({
-      domain: appConfig.analytics.domain,
-      endpoint: appConfig.analytics.endpoint,
-      autoCapturePageviews: appConfig.analytics.autoCapturePageviews,
-      logging: appConfig.analytics.logging,
+      domain: ANALYTICS_DOMAIN,
+      endpoint: ANALYTICS_ENDPOINT,
+      autoCapturePageviews: ANALYTICS_AUTO_CAPTURE_PAGEVIEWS,
+      logging: ANALYTICS_LOGGING,
     });
     isInitialized = true;
   } catch (error) {

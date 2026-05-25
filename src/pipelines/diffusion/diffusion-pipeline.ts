@@ -1,6 +1,5 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../../config';
 import { createBindGroupCache } from '../../utils/graphics/bind-group-cache';
 import {
   createCachedBufferWrite,
@@ -29,12 +28,13 @@ type DiffusionUniformSettings = Pick<
   | 'brushDecayAlphaOffset'
 >;
 
+const MIN_DIFFUSION_RATE = 0.000001;
+
 const getSafeInverseDiffusionRate = (diffusionRate: number): number =>
   1 /
-  (Number.isFinite(diffusionRate) &&
-  diffusionRate > appConfig.pipelines.diffusion.minDiffusionRate
+  (Number.isFinite(diffusionRate) && diffusionRate > MIN_DIFFUSION_RATE
     ? diffusionRate
-    : appConfig.pipelines.diffusion.minDiffusionRate);
+    : MIN_DIFFUSION_RATE);
 
 const setDiffusionUniformValues = (
   target: Float32Array,

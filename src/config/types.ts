@@ -1,7 +1,4 @@
-import type {
-  GardenAudioConfig,
-  GardenAudioVibeSettings,
-} from '../audio/garden-audio-config';
+import type { GardenAudioVibeSettings } from '../audio/garden-audio-config';
 import type { AgentSettings } from '../pipelines/agents/agent-pipeline';
 import type { BrushSettings } from '../pipelines/brush/brush-pipeline';
 import type { DiffusionSettings } from '../pipelines/diffusion/diffusion-pipeline';
@@ -49,7 +46,7 @@ export type GardenRuntimeSettings = {
   DiffusionSettings &
   RenderSettings;
 
-type RuntimeSettingControlConfig = Partial<
+export type RuntimeSettingControlConfig = Partial<
   Record<keyof GardenRuntimeSettings, NumberControlConfig>
 >;
 
@@ -79,7 +76,7 @@ export type GardenVibeSettings = Pick<
   | 'turnWhenLost'
 >;
 
-type GardenDefaultSettings = Omit<
+export type GardenDefaultSettings = Omit<
   GardenRuntimeSettings,
   keyof GardenVibeSettings | 'eraserSize' | 'mirrorSegmentCount'
 >;
@@ -100,170 +97,4 @@ export interface VibePreset {
   backgroundColor: RgbColor;
   settings: GardenVibeSettings;
   audio: GardenAudioVibeSettings;
-}
-
-export interface GardenAppConfig {
-  audio: GardenAudioConfig;
-  analytics: {
-    autoCapturePageviews: boolean;
-    domain: string;
-    endpoint: string;
-    logging: boolean;
-  };
-  deltaTime: {
-    maxDeltaTimeSeconds: number;
-    minDeltaTimeSeconds: number;
-  };
-  exportSnapshot: {
-    bytesPerPixel: number;
-    filenameExtension: string;
-    filenamePrefix: string;
-    filenameSuffix: string;
-    mimeType: string;
-    rowAlignmentBytes: number;
-  };
-  menuHider: {
-    bottomRevealDistancePx: number;
-    desktopMediaQuery: string;
-    hideDelayMs: number;
-  };
-  pipelines: {
-    common: {
-      noiseChannelSeeds: [number, number, number, number];
-      noiseClearValue: GPUColor;
-      noiseDrawInstanceCount: number;
-      noiseDrawVertexCount: number;
-      noiseHashMultiplier: number;
-      noiseHashX: number;
-      noiseHashY: number;
-      noiseTextureFormat: GPUTextureFormat;
-      noiseTextureSize: number;
-    };
-    brush: {
-      maxLineCount: number;
-    };
-    diffusion: {
-      minDiffusionRate: number;
-    };
-    eraser: {
-      maxTextureLineCount: number;
-    };
-  };
-  defaultSettings: GardenDefaultSettings;
-  runtimeSettings: {
-    controls: RuntimeSettingControlConfig;
-  };
-  simulation: {
-    brushEffectFramesPerSecond: number;
-    clearColor: GPUColor;
-    initialAgentCount: number;
-    sourceActiveFramesAfterWrite: number;
-    intro: {
-      angleJitterRadians: number;
-      angleEaseEnd: number;
-      angleEaseStart: number;
-      circleMaxSideRatio: number;
-      circleMinSideRatio: number;
-      drawHintDelayMs: number;
-      durationSeconds: number;
-      entryJitterSideRatio: number;
-      fontScaleDown: number;
-      fontFamily: string;
-      initialFontHeightRatio: number;
-      initialFontWidthRatio: number;
-      letterSpacingEm: number;
-      maskAlphaThreshold: number;
-      maskGradientThreshold: number;
-      maskMaxPixels: number;
-      maskSampleDensity: number;
-      maxHeightRatio: number;
-      maxWidthRatio: number;
-      minEntryJitterPx: number;
-      minFontSizePx: number;
-      minTargetJitterPx: number;
-      pathEasing: 'easeOutQuad' | 'linear';
-      pathProgressEpsilon: number;
-      radialJitterRatio: number;
-      radialStartEpsilon: number;
-      resizeMinimumRemainingSeconds: number;
-      resizeSettleMs: number;
-      targetDelayDistanceMultiplier: number;
-      targetDelayMax: number;
-      targetDelayRandomMultiplier: number;
-      targetJitterSideRatio: number;
-      title: string;
-      titleColorCutLetters: [number, number];
-      titleRadiusMultiplier: number;
-      titleStrokeWidthMinPx: number;
-      titleStrokeWidthRatio: number;
-      verticalAnchor: number;
-    };
-    introMoveSpeed: number;
-    stroke: {
-      densityMultiplier: number;
-      maxAgentCount: number;
-    };
-  };
-  storage: {
-    audioMutedKey: string;
-    audioVolumeKey: string;
-    vibeKey: string;
-  };
-  toolbar: {
-    eraser: {
-      controlScaleMax: number;
-      controlScaleMin: number;
-      default: number;
-      max: number;
-      min: number;
-      step: number;
-    };
-    mirror: {
-      default: number;
-      fallbackSegmentName: string;
-      max: number;
-      min: number;
-      names: Record<number, string>;
-      offLabel: string;
-      step: number;
-    };
-    contrast: {
-      backgroundOpacityMax: number;
-      brightLuminanceThreshold: number;
-      brightWeight: number;
-      bytesPerSample: number;
-      contrastOffset: number;
-      linearChannelBreakpoint: number;
-      linearChannelDivisor: number;
-      linearChannelGamma: number;
-      linearChannelOffset: number;
-      linearChannelScale: number;
-      lowContrastThreshold: number;
-      lowContrastWeight: number;
-      luminanceBase: number;
-      luminanceBlueWeight: number;
-      luminanceGreenWeight: number;
-      luminanceRange: number;
-      luminanceRedWeight: number;
-      sampleColumns: number;
-      sampleIntervalMs: number;
-      sampleRows: number;
-      whiteContrastNumerator: number;
-    };
-    volume: {
-      default: number;
-      max: number;
-      min: number;
-      step: number;
-    };
-  };
-  tuningPane: {
-    showFpsOverlay: boolean;
-    startHidden: boolean;
-    title: string;
-  };
-  vibes: {
-    defaultVibeId: VibeId;
-    presets: Array<VibePreset>;
-  };
 }

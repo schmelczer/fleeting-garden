@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
 
-import { appConfig } from '../config';
 import {
+  ERASER_SIZE_MAX,
+  ERASER_SIZE_MIN,
   getEraserSizeFromSliderRatio,
   getEraserSliderRatioFromSize,
 } from './eraser-size-control';
 
 describe('eraser size slider mapping', () => {
   it('maps slider position quadratically to eraser size', () => {
-    const { max, min } = appConfig.toolbar.eraser;
-
-    expect(getEraserSizeFromSliderRatio(0)).toBe(min);
-    expect(getEraserSizeFromSliderRatio(0.5)).toBe(min + (max - min) * 0.25);
-    expect(getEraserSizeFromSliderRatio(1)).toBe(max);
+    expect(getEraserSizeFromSliderRatio(0)).toBe(ERASER_SIZE_MIN);
+    expect(getEraserSizeFromSliderRatio(0.5)).toBe(
+      ERASER_SIZE_MIN + (ERASER_SIZE_MAX - ERASER_SIZE_MIN) * 0.25
+    );
+    expect(getEraserSizeFromSliderRatio(1)).toBe(ERASER_SIZE_MAX);
   });
 
   it('maps eraser size back to the inverse slider position', () => {
-    const { max, min } = appConfig.toolbar.eraser;
-    const quarterRangeSize = min + (max - min) * 0.25;
+    const quarterRangeSize = ERASER_SIZE_MIN + (ERASER_SIZE_MAX - ERASER_SIZE_MIN) * 0.25;
 
-    expect(getEraserSliderRatioFromSize(min)).toBe(0);
+    expect(getEraserSliderRatioFromSize(ERASER_SIZE_MIN)).toBe(0);
     expect(getEraserSliderRatioFromSize(quarterRangeSize)).toBe(0.5);
-    expect(getEraserSliderRatioFromSize(max)).toBe(1);
+    expect(getEraserSliderRatioFromSize(ERASER_SIZE_MAX)).toBe(1);
   });
 });

@@ -1,5 +1,5 @@
 import { INTERNAL_RENDER_AREA_MEGAPIXEL_LIMITS } from './runtime-setting-bounds';
-import type { GardenAppConfig } from './types';
+import type { GardenDefaultSettings } from './types';
 
 // Mirrors the historical render-scale cap so the default render area stays
 // roughly equivalent to native rendering on high-DPR phones without the
@@ -21,7 +21,7 @@ const computeDefaultInternalRenderAreaMegapixels = (): number => {
   );
 };
 
-export const defaultSettings: GardenAppConfig['defaultSettings'] = {
+export const defaultSettings: GardenDefaultSettings = {
   selectedColorIndex: 0,
 
   introNearDistanceMin: 28,

@@ -1,10 +1,14 @@
 import {
-  appConfig,
+  defaultSettings,
   normalizeRuntimeSettings,
+  runtimeControls,
   type GardenRuntimeSettings,
 } from './config';
 import { writeBrowserStorage } from './utils/browser-storage';
-import { getInitialVibe, type VibePreset } from './vibes';
+import { getInitialVibe, VIBE_STORAGE_KEY, type VibePreset } from './vibes';
+
+export const DEFAULT_ERASER_SIZE = 96;
+export const DEFAULT_MIRROR_SEGMENT_COUNT = 8;
 
 const preservedRuntimeSettingKeys = [
   'eraserSize',
@@ -37,12 +41,12 @@ const cloneVibePreset = (vibe: VibePreset): VibePreset => ({
 const buildSettings = (vibe: VibePreset): GardenRuntimeSettings =>
   normalizeRuntimeSettings(
     {
-      ...appConfig.defaultSettings,
-      eraserSize: appConfig.toolbar.eraser.default,
-      mirrorSegmentCount: appConfig.toolbar.mirror.default,
+      ...defaultSettings,
+      eraserSize: DEFAULT_ERASER_SIZE,
+      mirrorSegmentCount: DEFAULT_MIRROR_SEGMENT_COUNT,
       ...vibe.settings,
     },
-    appConfig.runtimeSettings.controls
+    runtimeControls
   );
 
 export let activeVibe = cloneVibePreset(getInitialVibe());
@@ -52,7 +56,7 @@ export const settings: GardenRuntimeSettings = {
 };
 
 export const rememberActiveVibeSelection = (): void => {
-  writeBrowserStorage(appConfig.storage.vibeKey, activeVibe.id);
+  writeBrowserStorage(VIBE_STORAGE_KEY, activeVibe.id);
 };
 
 export const applyVibeSettings = (vibe: VibePreset) => {
@@ -66,10 +70,7 @@ export const applyVibeSettings = (vibe: VibePreset) => {
     activeVibe.colors.length - 1
   );
 
-  Object.assign(
-    settings,
-    normalizeRuntimeSettings(nextSettings, appConfig.runtimeSettings.controls)
-  );
+  Object.assign(settings, normalizeRuntimeSettings(nextSettings, runtimeControls));
 
   rememberActiveVibeSelection();
 

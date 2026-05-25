@@ -1,12 +1,16 @@
-import { appConfig } from '../config';
 import type GameLoop from '../game-loop/game-loop';
-import { settings } from '../settings';
+import { DEFAULT_ERASER_SIZE, settings } from '../settings';
 import { queryRequiredElement } from '../utils/dom';
 
+export const ERASER_SIZE_MIN = 24;
+export const ERASER_SIZE_MAX = 480;
+
+const ERASER_CONTROL_SCALE_MIN = 0.74;
+const ERASER_CONTROL_SCALE_MAX = 1.34;
+
 const clampEraserSize = (value: number): number => {
-  const { default: defaultSize, max, min } = appConfig.toolbar.eraser;
-  const safeValue = Number.isFinite(value) ? value : defaultSize;
-  return Math.min(max, Math.max(min, Math.round(safeValue)));
+  const safeValue = Number.isFinite(value) ? value : DEFAULT_ERASER_SIZE;
+  return Math.min(ERASER_SIZE_MAX, Math.max(ERASER_SIZE_MIN, Math.round(safeValue)));
 };
 
 const ERASER_SLIDER_MIN = 0;
@@ -19,13 +23,14 @@ const clampSliderRatio = (value: number): number => {
 };
 
 const getEraserSizeRatio = (size: number): number => {
-  const { max, min } = appConfig.toolbar.eraser;
-  return (clampEraserSize(size) - min) / (max - min);
+  return (clampEraserSize(size) - ERASER_SIZE_MIN) / (ERASER_SIZE_MAX - ERASER_SIZE_MIN);
 };
 
 export const getEraserSizeFromSliderRatio = (sliderRatio: number): number => {
-  const { max, min } = appConfig.toolbar.eraser;
-  return clampEraserSize(min + (max - min) * clampSliderRatio(sliderRatio) ** 2);
+  return clampEraserSize(
+    ERASER_SIZE_MIN +
+      (ERASER_SIZE_MAX - ERASER_SIZE_MIN) * clampSliderRatio(sliderRatio) ** 2
+  );
 };
 
 export const getEraserSliderRatioFromSize = (size: number): number =>
@@ -72,10 +77,8 @@ export class EraserSizeControl {
 
     const sizeRatio = getEraserSizeRatio(size);
     const scale =
-      appConfig.toolbar.eraser.controlScaleMin +
-      (appConfig.toolbar.eraser.controlScaleMax -
-        appConfig.toolbar.eraser.controlScaleMin) *
-        sizeRatio;
+      ERASER_CONTROL_SCALE_MIN +
+      (ERASER_CONTROL_SCALE_MAX - ERASER_CONTROL_SCALE_MIN) * sizeRatio;
     this.control.style.setProperty('--eraser-progress', `${sliderRatio * 100}%`);
     this.control.style.setProperty('--eraser-control-scale', scale.toFixed(3));
     this.syncActiveState();

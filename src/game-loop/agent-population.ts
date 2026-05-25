@@ -1,6 +1,5 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../config';
 import { getRenderQualityBrushSize } from '../config/brush-size';
 import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
 import { AGENT_FLOAT_COUNT, writeAgentValues } from '../pipelines/agents/agent-limits';
@@ -8,6 +7,11 @@ import { getSafePixelRatio } from '../pipelines/brush/brush-pipeline';
 import { settings } from '../settings';
 import type { FramePerformance } from './frame-performance';
 import { createIntroTitleAgents } from './intro-title-agents';
+
+export const STROKE_AGENT_BATCH_CAPACITY = 2_400;
+export const STROKE_DENSITY_MULTIPLIER = 110;
+
+const INITIAL_INTRO_AGENT_COUNT = 180_000;
 
 export class AgentPopulation {
   private activeCount = 0;
@@ -22,7 +26,7 @@ export class AgentPopulation {
   private readonly queuedAgentBatches: Array<Float32Array> = [];
   private pendingStrokeAgentCount = 0;
   private readonly strokeAgentData = new Float32Array(
-    appConfig.simulation.stroke.maxAgentCount * AGENT_FLOAT_COUNT
+    STROKE_AGENT_BATCH_CAPACITY * AGENT_FLOAT_COUNT
   );
 
   public constructor(
@@ -46,10 +50,7 @@ export class AgentPopulation {
 
   public replaceIntroAgents(canvasSize: vec2, progress: number): void {
     this.adaptiveCap = this.clampAndEnsureAdaptiveCap(this.adaptiveCap);
-    const introAgentCount = Math.min(
-      this.adaptiveCap,
-      appConfig.simulation.initialAgentCount
-    );
+    const introAgentCount = Math.min(this.adaptiveCap, INITIAL_INTRO_AGENT_COUNT);
     const data = createIntroTitleAgents({
       count: introAgentCount,
       width: canvasSize[0],
@@ -332,8 +333,5 @@ const getStrokeSpawnRate = (): number => {
   const spawnPerPixel = Number.isFinite(settings.spawnPerPixel)
     ? settings.spawnPerPixel
     : 0;
-  const densityMultiplier = Number.isFinite(appConfig.simulation.stroke.densityMultiplier)
-    ? appConfig.simulation.stroke.densityMultiplier
-    : 0;
-  return Math.max(0, spawnPerPixel * densityMultiplier);
+  return Math.max(0, spawnPerPixel * STROKE_DENSITY_MULTIPLIER);
 };

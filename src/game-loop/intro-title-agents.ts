@@ -1,4 +1,3 @@
-import { appConfig, type GardenAppConfig } from '../config';
 import { AGENT_FLOAT_COUNT, writeAgentValues } from '../pipelines/agents/agent-limits';
 import { clamp, easeOutQuad, mix, mixAngle, smoothstep } from '../utils/math';
 
@@ -18,9 +17,43 @@ interface IntroTitleAgentOptions {
 }
 
 type RandomSource = () => number;
-type IntroPathEasing = GardenAppConfig['simulation']['intro']['pathEasing'];
+type IntroPathEasing = 'easeOutQuad' | 'linear';
 
-const INTRO_TITLE = appConfig.simulation.intro.title;
+const INTRO_TITLE = 'Fleeting';
+const INTRO_ANGLE_JITTER_RADIANS = Math.PI * 0.08;
+const INTRO_ANGLE_EASE_START = 0.6;
+const INTRO_ANGLE_EASE_END = 1;
+const INTRO_CIRCLE_MIN_SIDE_RATIO = 0.32;
+const INTRO_CIRCLE_MAX_SIDE_RATIO = 0.46;
+const INTRO_ENTRY_JITTER_SIDE_RATIO = 0.035;
+const INTRO_FONT_FAMILY = '"Open Sans", sans-serif';
+const INTRO_FONT_SCALE_DOWN = 0.94;
+const INTRO_INITIAL_FONT_HEIGHT_RATIO = 0.28;
+const INTRO_INITIAL_FONT_WIDTH_RATIO = 0.19;
+const INTRO_LETTER_SPACING_EM = 0.07;
+const INTRO_MASK_ALPHA_THRESHOLD = 32;
+const INTRO_MASK_GRADIENT_THRESHOLD = 8;
+const INTRO_MASK_MAX_PIXELS = 1_000_000;
+const INTRO_MASK_SAMPLE_DENSITY = 540;
+const INTRO_MAX_HEIGHT_RATIO = 0.25;
+const INTRO_MAX_WIDTH_RATIO = 0.76;
+const INTRO_MIN_ENTRY_JITTER_PX = 6;
+const INTRO_MIN_FONT_SIZE_PX = 18;
+const INTRO_MIN_TARGET_JITTER_PX = 1;
+const INTRO_PATH_EASING: IntroPathEasing = 'easeOutQuad';
+const INTRO_PATH_PROGRESS_EPSILON = 0.001;
+const INTRO_RADIAL_JITTER_RATIO = 0.35;
+const INTRO_RADIAL_START_EPSILON = 0.001;
+const INTRO_TARGET_DELAY_DISTANCE_MULTIPLIER = 0.12;
+const INTRO_TARGET_DELAY_MAX = 0.22;
+const INTRO_TARGET_DELAY_RANDOM_MULTIPLIER = 0.06;
+const INTRO_TARGET_JITTER_SIDE_RATIO = 0.0035;
+const INTRO_TITLE_COLOR_CUT_LETTERS = [2, 5] as const;
+const INTRO_TITLE_RADIUS_MULTIPLIER = 1.55;
+const INTRO_TITLE_STROKE_WIDTH_MIN_PX = 6;
+const INTRO_TITLE_STROKE_WIDTH_RATIO = 0.11;
+const INTRO_VERTICAL_ANCHOR = 0.47;
+
 const isLinearPathEasing = (pathEasing: IntroPathEasing): boolean =>
   pathEasing === 'linear';
 
@@ -47,30 +80,27 @@ export const createIntroTitleAgents = ({
   const data = new Float32Array(count * AGENT_FLOAT_COUNT);
   const minSide = Math.min(safeWidth, safeHeight);
   const targetJitter = Math.max(
-    appConfig.simulation.intro.minTargetJitterPx,
-    minSide * appConfig.simulation.intro.targetJitterSideRatio
+    INTRO_MIN_TARGET_JITTER_PX,
+    minSide * INTRO_TARGET_JITTER_SIDE_RATIO
   );
   const entryJitter = Math.max(
-    appConfig.simulation.intro.minEntryJitterPx,
-    minSide * appConfig.simulation.intro.entryJitterSideRatio
+    INTRO_MIN_ENTRY_JITTER_PX,
+    minSide * INTRO_ENTRY_JITTER_SIDE_RATIO
   );
   const titleRadius = points.reduce(
     (radius, point) =>
       Math.max(
         radius,
-        Math.hypot(
-          point.x - safeWidth / 2,
-          point.y - safeHeight * appConfig.simulation.intro.verticalAnchor
-        )
+        Math.hypot(point.x - safeWidth / 2, point.y - safeHeight * INTRO_VERTICAL_ANCHOR)
       ),
     0
   );
   const introCircleRadius = Math.min(
     Math.max(
-      titleRadius * appConfig.simulation.intro.titleRadiusMultiplier,
-      minSide * appConfig.simulation.intro.circleMinSideRatio
+      titleRadius * INTRO_TITLE_RADIUS_MULTIPLIER,
+      minSide * INTRO_CIRCLE_MIN_SIDE_RATIO
     ),
-    minSide * appConfig.simulation.intro.circleMaxSideRatio
+    minSide * INTRO_CIRCLE_MAX_SIDE_RATIO
   );
 
   for (let i = 0; i < count; i++) {
@@ -101,21 +131,16 @@ export const createIntroTitleAgents = ({
     const distanceFraction =
       Math.hypot(targetX - startX, targetY - startY) / Math.hypot(safeWidth, safeHeight);
     const introDelay = Math.min(
-      appConfig.simulation.intro.targetDelayMax,
-      distanceFraction * appConfig.simulation.intro.targetDelayDistanceMultiplier +
-        random() * appConfig.simulation.intro.targetDelayRandomMultiplier
+      INTRO_TARGET_DELAY_MAX,
+      distanceFraction * INTRO_TARGET_DELAY_DISTANCE_MULTIPLIER +
+        random() * INTRO_TARGET_DELAY_RANDOM_MULTIPLIER
     );
     const pathProgress = getIntroAgentPathProgress(introProgress, introDelay);
-    const initialAngle =
-      approachAngle + (random() - 0.5) * appConfig.simulation.intro.angleJitterRadians;
+    const initialAngle = approachAngle + (random() - 0.5) * INTRO_ANGLE_JITTER_RADIANS;
     const currentAngle = mixAngle(
       initialAngle,
       targetAngle,
-      smoothstep(
-        appConfig.simulation.intro.angleEaseStart,
-        appConfig.simulation.intro.angleEaseEnd,
-        pathProgress
-      )
+      smoothstep(INTRO_ANGLE_EASE_START, INTRO_ANGLE_EASE_END, pathProgress)
     );
     writeAgentValues(data, i, {
       positionX: mix(startX, targetX, pathProgress),
@@ -142,12 +167,12 @@ const getIntroRadialStart = (
   random: RandomSource
 ): [number, number] => {
   const centerX = width / 2;
-  const centerY = height * appConfig.simulation.intro.verticalAnchor;
+  const centerY = height * INTRO_VERTICAL_ANCHOR;
   const offsetX = targetX - centerX;
   const offsetY = targetY - centerY;
   const length = Math.hypot(offsetX, offsetY);
   const angle =
-    length > appConfig.simulation.intro.radialStartEpsilon
+    length > INTRO_RADIAL_START_EPSILON
       ? Math.atan2(offsetY, offsetX)
       : random() * Math.PI * 2;
   const directionX = Math.cos(angle);
@@ -155,8 +180,7 @@ const getIntroRadialStart = (
   const tangentX = -directionY;
   const tangentY = directionX;
   const tangentJitter = (random() - 0.5) * jitter;
-  const radialJitter =
-    (random() - 0.5) * jitter * appConfig.simulation.intro.radialJitterRatio;
+  const radialJitter = (random() - 0.5) * jitter * INTRO_RADIAL_JITTER_RATIO;
   const startX =
     centerX + directionX * (radius + radialJitter) + tangentX * tangentJitter;
   const startY =
@@ -172,7 +196,7 @@ const createIntroTitlePoints = (
   width: number,
   height: number
 ): Array<IntroTitlePoint> => {
-  const safeMaxPixels = Math.max(1, appConfig.simulation.intro.maskMaxPixels);
+  const safeMaxPixels = Math.max(1, INTRO_MASK_MAX_PIXELS);
   const maskScale = Math.min(1, Math.sqrt(safeMaxPixels / Math.max(1, width * height)));
   const maskWidth = Math.max(1, Math.round(width * maskScale));
   const maskHeight = Math.max(1, Math.round(height * maskScale));
@@ -188,28 +212,28 @@ const createIntroTitlePoints = (
 
   const fontSize = getIntroTitleFontSize(context, maskWidth, maskHeight);
   context.clearRect(0, 0, maskWidth, maskHeight);
-  context.font = `${fontSize}px ${appConfig.simulation.intro.fontFamily}`;
+  context.font = `${fontSize}px ${INTRO_FONT_FAMILY}`;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillStyle = '#fff';
   context.strokeStyle = '#fff';
   context.lineJoin = 'round';
   context.lineWidth = Math.max(
-    appConfig.simulation.intro.titleStrokeWidthMinPx,
-    fontSize * appConfig.simulation.intro.titleStrokeWidthRatio
+    INTRO_TITLE_STROKE_WIDTH_MIN_PX,
+    fontSize * INTRO_TITLE_STROKE_WIDTH_RATIO
   );
-  const letterSpacing = fontSize * appConfig.simulation.intro.letterSpacingEm;
+  const letterSpacing = fontSize * INTRO_LETTER_SPACING_EM;
   drawIntroTitleText(
     context,
     maskWidth / 2,
-    maskHeight * appConfig.simulation.intro.verticalAnchor,
+    maskHeight * INTRO_VERTICAL_ANCHOR,
     letterSpacing,
     'stroke'
   );
   drawIntroTitleText(
     context,
     maskWidth / 2,
-    maskHeight * appConfig.simulation.intro.verticalAnchor,
+    maskHeight * INTRO_VERTICAL_ANCHOR,
     letterSpacing,
     'fill'
   );
@@ -217,9 +241,7 @@ const createIntroTitlePoints = (
   const { data } = context.getImageData(0, 0, maskWidth, maskHeight);
   const step = Math.max(
     1,
-    Math.floor(
-      Math.min(maskWidth, maskHeight) / appConfig.simulation.intro.maskSampleDensity
-    )
+    Math.floor(Math.min(maskWidth, maskHeight) / INTRO_MASK_SAMPLE_DENSITY)
   );
   const points: Array<IntroTitlePoint> = [];
   const characterColorBoundaries = getIntroTitleColorBoundaries(
@@ -231,7 +253,7 @@ const createIntroTitlePoints = (
   for (let y = 0; y < maskHeight; y += step) {
     for (let x = 0; x < maskWidth; x += step) {
       const alpha = getMaskAlpha(data, maskWidth, maskHeight, x, y);
-      if (alpha < appConfig.simulation.intro.maskAlphaThreshold) {
+      if (alpha < INTRO_MASK_ALPHA_THRESHOLD) {
         continue;
       }
 
@@ -255,9 +277,9 @@ const getIntroTitleColorBoundaries = (
   const letters = Array.from(INTRO_TITLE);
   const totalWidth = measureIntroTitleText(context, letters, letterSpacing);
   let x = width / 2 - totalWidth / 2;
-  const cutLetters = appConfig.simulation.intro.titleColorCutLetters
-    .map((cutLetter) => Math.min(letters.length - 1, Math.max(1, Math.round(cutLetter))))
-    .sort((a, b) => a - b);
+  const cutLetters = INTRO_TITLE_COLOR_CUT_LETTERS.map((cutLetter) =>
+    Math.min(letters.length - 1, Math.max(1, Math.round(cutLetter)))
+  ).sort((a, b) => a - b);
   const [firstCutLetter, secondCutLetter] = cutLetters;
   const letterBoxes = letters.map((letter, index) => {
     const letterWidth = context.measureText(letter).width;
@@ -330,17 +352,17 @@ const getIntroTitleFontSize = (
   width: number,
   height: number
 ): number => {
-  const maxWidth = width * appConfig.simulation.intro.maxWidthRatio;
-  const maxHeight = height * appConfig.simulation.intro.maxHeightRatio;
+  const maxWidth = width * INTRO_MAX_WIDTH_RATIO;
+  const maxHeight = height * INTRO_MAX_HEIGHT_RATIO;
   let fontSize = Math.floor(
     Math.min(
-      height * appConfig.simulation.intro.initialFontHeightRatio,
-      width * appConfig.simulation.intro.initialFontWidthRatio
+      height * INTRO_INITIAL_FONT_HEIGHT_RATIO,
+      width * INTRO_INITIAL_FONT_WIDTH_RATIO
     )
   );
 
-  while (fontSize > appConfig.simulation.intro.minFontSizePx) {
-    context.font = `${fontSize}px ${appConfig.simulation.intro.fontFamily}`;
+  while (fontSize > INTRO_MIN_FONT_SIZE_PX) {
+    context.font = `${fontSize}px ${INTRO_FONT_FAMILY}`;
     const metrics = context.measureText(INTRO_TITLE);
     const measuredHeight =
       metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent || fontSize;
@@ -349,7 +371,7 @@ const getIntroTitleFontSize = (
       return fontSize;
     }
 
-    fontSize = Math.floor(fontSize * appConfig.simulation.intro.fontScaleDown);
+    fontSize = Math.floor(fontSize * INTRO_FONT_SCALE_DOWN);
   }
 
   return fontSize;
@@ -369,10 +391,7 @@ const estimateMaskTangent = (
     getMaskAlpha(data, width, height, x, y + 1) -
     getMaskAlpha(data, width, height, x, y - 1);
 
-  if (
-    Math.abs(gradientX) + Math.abs(gradientY) <
-    appConfig.simulation.intro.maskGradientThreshold
-  ) {
+  if (Math.abs(gradientX) + Math.abs(gradientY) < INTRO_MASK_GRADIENT_THRESHOLD) {
     return null;
   }
 
@@ -397,8 +416,7 @@ const getIntroAgentPathProgress = (introProgress: number, introDelay: number): n
   }
 
   const activeProgress =
-    (introProgress - introDelay) /
-    Math.max(appConfig.simulation.intro.pathProgressEpsilon, 1 - introDelay);
+    (introProgress - introDelay) / Math.max(INTRO_PATH_PROGRESS_EPSILON, 1 - introDelay);
   return easePathProgress(clamp(activeProgress, 0, 1));
 };
 
@@ -414,7 +432,7 @@ const createSeededRandom = (seed: number): RandomSource => {
 };
 
 const easePathProgress = (amount: number): number => {
-  if (isLinearPathEasing(appConfig.simulation.intro.pathEasing)) {
+  if (isLinearPathEasing(INTRO_PATH_EASING)) {
     return amount;
   }
 

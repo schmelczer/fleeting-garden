@@ -1,6 +1,5 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../../config';
 import {
   createCachedBufferWrite,
   writeBufferIfChanged,
@@ -29,6 +28,7 @@ interface EraserTextureParameters {
 }
 
 const UNIFORM_COUNT = 8;
+const MAX_ERASER_TEXTURE_LINE_COUNT = 384;
 const TARGET_FORMATS: Array<GPUTextureFormat> = [
   ERASER_MASK_TEXTURE_FORMAT,
   TRAIL_SOURCE_TEXTURE_FORMAT,
@@ -50,10 +50,7 @@ export class EraserTexturePipeline {
     private readonly device: GPUDevice,
     private readonly commonState: CommonState
   ) {
-    this.segments = new LineSegmentBuffer(
-      device,
-      appConfig.pipelines.eraser.maxTextureLineCount
-    );
+    this.segments = new LineSegmentBuffer(device, MAX_ERASER_TEXTURE_LINE_COUNT);
 
     this.bindGroupLayout = device.createBindGroupLayout({
       entries: [

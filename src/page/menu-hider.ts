@@ -1,9 +1,10 @@
-import { appConfig } from '../config';
+const DESKTOP_AUTO_HIDE_MEDIA_QUERY =
+  '(min-width: 600px) and (hover: hover) and (pointer: fine)';
+const HIDE_DELAY_MS = 3000;
+const BOTTOM_REVEAL_DISTANCE_PX = 96;
 
 export class MenuHider {
-  private readonly desktopMediaQuery = window.matchMedia(
-    appConfig.menuHider.desktopMediaQuery
-  );
+  private readonly desktopMediaQuery = window.matchMedia(DESKTOP_AUTO_HIDE_MEDIA_QUERY);
   private hideTimeout: number | undefined;
   private isHidden = false;
   private pointerInside = false;
@@ -95,7 +96,7 @@ export class MenuHider {
       if (this.canAutoHide) {
         this.hide();
       }
-    }, appConfig.menuHider.hideDelayMs);
+    }, HIDE_DELAY_MS);
   }
 
   private reveal(): void {
@@ -134,6 +135,6 @@ export class MenuHider {
 
   private isNearViewportBottom(clientY: number): boolean {
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-    return clientY >= viewportHeight - appConfig.menuHider.bottomRevealDistancePx;
+    return clientY >= viewportHeight - BOTTOM_REVEAL_DISTANCE_PX;
   }
 }

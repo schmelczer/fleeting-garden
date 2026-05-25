@@ -1,6 +1,5 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../../config';
 import { getRenderQualityBrushSize } from '../../config/brush-size';
 import {
   createCachedBufferWrite,
@@ -40,6 +39,7 @@ export const getSafePixelRatio = (pixelRatio: number | undefined): number =>
     : 1;
 
 const UNIFORM_COUNT = 16;
+const MAX_BRUSH_LINE_COUNT = 240;
 
 const setBrushUniformValues = (
   target: Float32Array,
@@ -93,7 +93,7 @@ export class BrushPipeline {
     private readonly device: GPUDevice,
     private readonly commonState: CommonState
   ) {
-    this.segments = new LineSegmentBuffer(device, appConfig.pipelines.brush.maxLineCount);
+    this.segments = new LineSegmentBuffer(device, MAX_BRUSH_LINE_COUNT);
 
     this.bindGroupLayout = device.createBindGroupLayout({
       entries: [

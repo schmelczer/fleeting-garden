@@ -1,11 +1,10 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../../config';
 import {
   createCachedBufferWrite,
   writeBufferIfChanged,
 } from '../../utils/graphics/cached-buffer-write';
-import { generateNoise } from '../../utils/graphics/noise';
+import { generateNoise, NOISE_TEXTURE_SIZE } from '../../utils/graphics/noise';
 
 export class CommonState {
   private static readonly UNIFORM_COUNT = 4;
@@ -39,8 +38,8 @@ export class CommonState {
 
     const noise = generateNoise({
       device,
-      width: appConfig.pipelines.common.noiseTextureSize,
-      height: appConfig.pipelines.common.noiseTextureSize,
+      width: NOISE_TEXTURE_SIZE,
+      height: NOISE_TEXTURE_SIZE,
     });
     this.noise = noise.texture;
 

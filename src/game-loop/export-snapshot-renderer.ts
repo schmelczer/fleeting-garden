@@ -1,6 +1,12 @@
-import { appConfig } from '../config';
 import { RenderPipeline } from '../pipelines/render/render-pipeline';
 import type { VibeId } from '../vibes';
+
+const SNAPSHOT_BYTES_PER_PIXEL = 4;
+const SNAPSHOT_FILENAME_EXTENSION = 'png';
+const SNAPSHOT_FILENAME_PREFIX = 'fleeting-garden';
+const SNAPSHOT_FILENAME_SUFFIX = '-snapshot';
+const SNAPSHOT_MIME_TYPE = 'image/png';
+const SNAPSHOT_ROW_ALIGNMENT_BYTES = 256;
 
 interface ExportSnapshotRendererOptions {
   device: GPUDevice;
@@ -121,15 +127,15 @@ export class ExportSnapshotRenderer {
 
     context.putImageData(new ImageData(pixels, width, height), 0, 0);
     const blob = await canvas.convertToBlob({
-      type: appConfig.exportSnapshot.mimeType,
+      type: SNAPSHOT_MIME_TYPE,
     });
     const link = document.createElement('a');
     const objectUrl = URL.createObjectURL(blob);
     try {
       link.href = objectUrl;
-      link.download = `${appConfig.exportSnapshot.filenamePrefix}_${this.options.getVibeId()}_${
+      link.download = `${SNAPSHOT_FILENAME_PREFIX}_${this.options.getVibeId()}_${
         this.options.seed
-      }_${width}x${height}${appConfig.exportSnapshot.filenameSuffix}.${appConfig.exportSnapshot.filenameExtension}`;
+      }_${width}x${height}${SNAPSHOT_FILENAME_SUFFIX}.${SNAPSHOT_FILENAME_EXTENSION}`;
       link.click();
     } finally {
       URL.revokeObjectURL(objectUrl);
@@ -154,11 +160,8 @@ const getSnapshotDimension = (value: number): number =>
 const getSnapshotLayout = (sourceWidth: number, sourceHeight: number): SnapshotLayout => {
   const width = getSnapshotDimension(sourceWidth);
   const height = getSnapshotDimension(sourceHeight);
-  const unpaddedBytesPerRow = width * appConfig.exportSnapshot.bytesPerPixel;
-  const bytesPerRow = alignTo(
-    unpaddedBytesPerRow,
-    appConfig.exportSnapshot.rowAlignmentBytes
-  );
+  const unpaddedBytesPerRow = width * SNAPSHOT_BYTES_PER_PIXEL;
+  const bytesPerRow = alignTo(unpaddedBytesPerRow, SNAPSHOT_ROW_ALIGNMENT_BYTES);
 
   return {
     width,
@@ -191,8 +194,8 @@ const readSnapshotPixels = ({
     const sourceOffset = y * bytesPerRow;
     const targetOffset = y * unpaddedBytesPerRow;
     for (let x = 0; x < width; x++) {
-      const source = sourceOffset + x * appConfig.exportSnapshot.bytesPerPixel;
-      const target = targetOffset + x * appConfig.exportSnapshot.bytesPerPixel;
+      const source = sourceOffset + x * SNAPSHOT_BYTES_PER_PIXEL;
+      const target = targetOffset + x * SNAPSHOT_BYTES_PER_PIXEL;
       pixels[target] = isBgra ? mapped[source + 2] : mapped[source];
       pixels[target + 1] = mapped[source + 1];
       pixels[target + 2] = isBgra ? mapped[source] : mapped[source + 2];

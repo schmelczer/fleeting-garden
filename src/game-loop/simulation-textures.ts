@@ -1,11 +1,12 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig } from '../config';
 import { ERASER_MASK_TEXTURE_FORMAT } from '../pipelines/texture-formats';
 import {
   ResizableTexture,
   type PendingTextureResize,
 } from '../utils/graphics/resizable-texture';
+
+const SIMULATION_CLEAR_COLOR = { r: 0, g: 0, b: 0, a: 0 };
 
 export class SimulationTextures {
   // trailMapA holds the current trail (read by agent and diffuse). trailMapB
@@ -83,7 +84,7 @@ export class SimulationTextures {
         colorAttachments: [
           {
             view: texture.getTextureView(),
-            clearValue: appConfig.simulation.clearColor,
+            clearValue: SIMULATION_CLEAR_COLOR,
             loadOp: 'clear',
             storeOp: 'store',
           },
@@ -122,7 +123,7 @@ export class SimulationTextures {
       colorAttachments: [
         {
           view: this.sourceMapA.getTextureView(),
-          clearValue: appConfig.simulation.clearColor,
+          clearValue: SIMULATION_CLEAR_COLOR,
           loadOp: 'clear',
           storeOp: 'store',
         },

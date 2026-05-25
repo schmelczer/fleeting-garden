@@ -3,11 +3,12 @@ import { Pane } from 'tweakpane';
 
 import type { GardenAudioVibeSettings } from '../audio/garden-audio-config';
 import {
-  appConfig,
   normalizeNumberControlValue,
+  runtimeControls,
   type GardenRuntimeSettings,
   type NumberControlConfig,
 } from '../config';
+import { perfStatsOverlayState } from '../game-loop/perf-stats-overlay';
 import { activeVibe, settings } from '../settings';
 import { hexColorToRgbColor, rgbColorToHex, type RgbColor } from '../utils/rgb-color';
 import { ColorReactionMatrixControl } from './color-reaction-matrix-control';
@@ -29,6 +30,8 @@ interface PaneState extends GardenAudioVibeSettings {
 }
 
 const runtimeFolderOrder = ['Brush', 'Movement', 'Look', 'Performance'] as const;
+const CONFIG_PANE_TITLE = 'Garden Settings';
+const CONFIG_PANE_START_HIDDEN = true;
 
 const MUSIC_CONTROLS: ReadonlyArray<{
   key: VibeNumberKey;
@@ -56,7 +59,7 @@ interface ConfigPaneOptions {
 
 const getRuntimeControlKeys = (folder: string): Array<RuntimeControlKey> =>
   (
-    Object.entries(appConfig.runtimeSettings.controls) as Array<
+    Object.entries(runtimeControls) as Array<
       [RuntimeControlKey, NumberControlConfig | undefined]
     >
   )
@@ -123,10 +126,10 @@ export class ConfigPane {
 
     this.pane = new Pane({
       container: this.container,
-      title: appConfig.tuningPane.title,
+      title: CONFIG_PANE_TITLE,
       expanded: true,
     });
-    this.pane.hidden = appConfig.tuningPane.startHidden;
+    this.pane.hidden = CONFIG_PANE_START_HIDDEN;
     this.pane.element.classList.add('config-pane');
     this.pane.element.id = 'config-pane';
 
@@ -310,7 +313,7 @@ export class ConfigPane {
   private getRuntimeControlConfig(
     key: RuntimeControlKey
   ): NumberControlConfig | undefined {
-    const config = appConfig.runtimeSettings.controls[key];
+    const config = runtimeControls[key];
     if (!config || key !== 'maxAgentCount') {
       return config;
     }
@@ -323,7 +326,7 @@ export class ConfigPane {
 
   private addFpsOverlayBinding(container: PaneContainer): void {
     container
-      .addBinding(appConfig.tuningPane, 'showFpsOverlay', {
+      .addBinding(perfStatsOverlayState, 'isVisible', {
         label: 'Show FPS',
       })
       .on('change', () => this.options.onConfigChange());

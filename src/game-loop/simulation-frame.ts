@@ -1,4 +1,3 @@
-import { appConfig } from '../config';
 import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
 import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
 import { DiffusionPipeline } from '../pipelines/diffusion/diffusion-pipeline';
@@ -9,6 +8,11 @@ import { settings } from '../settings';
 import { CanvasReadbackRequest } from './game-loop-types';
 import { GpuProfiler } from './gpu-profiler';
 import { SimulationTextures } from './simulation-textures';
+
+const BRUSH_EFFECT_FRAMES_PER_SECOND = 60;
+// How long the source map continues to be diffused after a brush stroke ends.
+// 600 frames at ~60 FPS is roughly 10 seconds.
+const SOURCE_ACTIVE_FRAMES_AFTER_WRITE = 600;
 
 interface SimulationFramePipelines {
   agentPipeline: AgentPipeline;
@@ -135,10 +139,9 @@ export class SimulationFrameRenderer {
 }
 
 const getSourceActiveFrameCount = (): number => {
-  const frameCount =
-    settings.brushEffectDuration * appConfig.simulation.brushEffectFramesPerSecond;
+  const frameCount = settings.brushEffectDuration * BRUSH_EFFECT_FRAMES_PER_SECOND;
   if (Number.isFinite(frameCount) && frameCount > 0) {
     return Math.ceil(frameCount);
   }
-  return Math.max(1, appConfig.simulation.sourceActiveFramesAfterWrite);
+  return Math.max(1, SOURCE_ACTIVE_FRAMES_AFTER_WRITE);
 };

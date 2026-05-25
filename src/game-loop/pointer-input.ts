@@ -1,9 +1,9 @@
 import { vec2 } from 'gl-matrix';
 
 import { GardenAudio } from '../audio/garden-audio';
-import { appConfig } from '../config';
 import { getSafePixelRatio } from '../pipelines/brush/brush-pipeline';
 import { activeVibe } from '../settings';
+import { MIN_DELTA_TIME_SECONDS } from '../utils/delta-time-calculator';
 import { BrushStrokeSmoother } from './brush-stroke-smoother';
 import { type StrokeSegment } from './game-loop-types';
 import { getMirroredStrokeSegments } from './stroke-mirroring';
@@ -155,7 +155,7 @@ export class GardenPointerInput {
     const previousPosition = this.lastPointerPosition ?? position;
     const previousTimeMs = this.lastPointerEventTimeMs ?? event.timeStamp;
     const elapsedSeconds = Math.max(
-      appConfig.deltaTime.minDeltaTimeSeconds,
+      MIN_DELTA_TIME_SECONDS,
       (event.timeStamp - previousTimeMs) / 1000
     );
 

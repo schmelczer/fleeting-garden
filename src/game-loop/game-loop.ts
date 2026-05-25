@@ -1,7 +1,7 @@
 import { vec2 } from 'gl-matrix';
 
 import { GardenAudio } from '../audio/garden-audio';
-import { appConfig } from '../config';
+import { createGardenAudioConfig } from '../audio/garden-audio-config';
 import { activeVibe, settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
 import { rgbColorToCss, type RgbColor } from '../utils/rgb-color';
@@ -13,14 +13,19 @@ import { GameLoopResources } from './game-loop-resources';
 import { GardenUi } from './game-loop-types';
 import { getInternalRenderSize } from './internal-render-size';
 import { IntroPrompt } from './intro-prompt';
-import { PerfStatsOverlay } from './perf-stats-overlay';
+import { PerfStatsOverlay, perfStatsOverlayState } from './perf-stats-overlay';
 import { GardenPointerInput } from './pointer-input';
+import { MAX_MIRROR_SEGMENT_COUNT, MIN_MIRROR_SEGMENT_COUNT } from './stroke-mirroring';
 import { PipelineStrokeOutput } from './stroke-output';
 import { ToolbarContrastMonitor } from './toolbar-contrast-monitor';
 
+const INTRO_RESIZE_SETTLE_MS = 120;
+const INTRO_RESIZE_MINIMUM_REMAINING_SECONDS = 1.4;
+const GARDEN_AUDIO_CONFIG = createGardenAudioConfig();
+
 export default class GameLoop {
   private readonly resources: GameLoopResources;
-  private readonly audio = new GardenAudio(appConfig.audio);
+  private readonly audio = new GardenAudio(GARDEN_AUDIO_CONFIG);
   private readonly introPrompt: IntroPrompt;
   private readonly eraserPreview: EraserPreview;
   private readonly pointerInput: GardenPointerInput;
@@ -250,7 +255,7 @@ export default class GameLoop {
   };
 
   private syncPerfStatsOverlay(): void {
-    if (appConfig.tuningPane.showFpsOverlay) {
+    if (perfStatsOverlayState.isVisible) {
       this.perfStatsOverlay ??= new PerfStatsOverlay(
         this.canvas.parentElement ?? document.body
       );
@@ -323,13 +328,11 @@ export default class GameLoop {
       return;
     }
 
-    if (time - this.pendingIntroResizeAt < appConfig.simulation.intro.resizeSettleMs) {
+    if (time - this.pendingIntroResizeAt < INTRO_RESIZE_SETTLE_MS) {
       return;
     }
 
-    this.introPrompt.rewindToLeaveRemainingTime(
-      appConfig.simulation.intro.resizeMinimumRemainingSeconds
-    );
+    this.introPrompt.rewindToLeaveRemainingTime(INTRO_RESIZE_MINIMUM_REMAINING_SECONDS);
     this.resources.clearSimulation();
     this.agentPopulation.replaceIntroAgents(this.canvasSize, this.introPrompt.progress);
     this.pendingIntroResizeAt = null;
@@ -351,10 +354,10 @@ export default class GameLoop {
   private get mirrorSegmentCount(): number {
     const count = Number.isFinite(settings.mirrorSegmentCount)
       ? settings.mirrorSegmentCount
-      : appConfig.toolbar.mirror.min;
+      : MIN_MIRROR_SEGMENT_COUNT;
     return Math.min(
-      appConfig.toolbar.mirror.max,
-      Math.max(appConfig.toolbar.mirror.min, Math.round(count))
+      MAX_MIRROR_SEGMENT_COUNT,
+      Math.max(MIN_MIRROR_SEGMENT_COUNT, Math.round(count))
     );
   }
 

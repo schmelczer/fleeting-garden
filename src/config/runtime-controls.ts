@@ -1,6 +1,6 @@
 import { colorInteractionControl } from './color-interactions';
 import { INTERNAL_RENDER_AREA_MEGAPIXEL_LIMITS } from './runtime-setting-bounds';
-import type { GardenAppConfig } from './types';
+import type { RuntimeSettingControlConfig } from './types';
 
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 const formatRadiansAsDegrees = (value: number): string =>
@@ -16,7 +16,7 @@ const formatCompactNumber = (value: number): string => {
   return `${value}`;
 };
 
-export const runtimeControls: GardenAppConfig['runtimeSettings']['controls'] = {
+export const runtimeControls: RuntimeSettingControlConfig = {
   color1ToColor1: colorInteractionControl('Color 1 Follows Color 1'),
   color1ToColor2: colorInteractionControl('Color 1 Follows Color 2'),
   color1ToColor3: colorInteractionControl('Color 1 Follows Color 3'),

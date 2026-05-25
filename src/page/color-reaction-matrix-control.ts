@@ -1,6 +1,6 @@
 import type { FolderApi } from '@tweakpane/core';
 
-import { appConfig, normalizeNumberControlValue } from '../config';
+import { normalizeNumberControlValue, runtimeControls } from '../config';
 import { activeVibe, settings } from '../settings';
 import { rgbColorToCss } from '../utils/rgb-color';
 
@@ -128,7 +128,7 @@ export class ColorReactionMatrixControl {
     const cell = document.createElement('div');
     cell.className = 'color-reaction-matrix__cell';
 
-    const config = appConfig.runtimeSettings.controls[key];
+    const config = runtimeControls[key];
     if (!config) {
       return cell;
     }
@@ -165,7 +165,7 @@ export class ColorReactionMatrixControl {
     sourceColorIndex: number,
     targetColorIndex: number
   ): void {
-    const config = appConfig.runtimeSettings.controls[key];
+    const config = runtimeControls[key];
     if (!config) {
       return;
     }

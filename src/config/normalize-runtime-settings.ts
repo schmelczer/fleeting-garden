@@ -1,10 +1,8 @@
 import type {
-  GardenAppConfig,
   GardenRuntimeSettings,
   NumberControlConfig,
+  RuntimeSettingControlConfig,
 } from './types';
-
-type RuntimeSettingControls = GardenAppConfig['runtimeSettings']['controls'];
 
 export const normalizeNumberControlValue = (
   value: number,
@@ -28,7 +26,7 @@ export const normalizeNumberControlValue = (
 
 export const normalizeRuntimeSettings = (
   settings: GardenRuntimeSettings,
-  controls: RuntimeSettingControls
+  controls: RuntimeSettingControlConfig
 ): GardenRuntimeSettings => {
   const normalized = { ...settings };
 

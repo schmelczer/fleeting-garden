@@ -1,6 +1,6 @@
 import { vec2 } from 'gl-matrix';
 
-import { appConfig, type GardenRuntimeSettings } from '../config';
+import { type GardenRuntimeSettings } from '../config';
 import { AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
 import { AgentPipeline } from '../pipelines/agents/agent-pipeline';
 import { BrushPipeline } from '../pipelines/brush/brush-pipeline';
@@ -12,8 +12,11 @@ import { RenderPipeline } from '../pipelines/render/render-pipeline';
 import { initializeContext } from '../utils/graphics/initialize-context';
 import { CanvasReadbackRequest, RenderInputs } from './game-loop-types';
 import { GpuProfiler } from './gpu-profiler';
+import { perfStatsOverlayState } from './perf-stats-overlay';
 import { SimulationFrameRenderer } from './simulation-frame';
 import { SimulationTextures } from './simulation-textures';
+
+const INTRO_MOVE_SPEED = 280;
 
 interface FrameParameters extends RenderInputs {
   time: number;
@@ -78,7 +81,7 @@ export class GameLoopResources {
     this.renderPipeline = new RenderPipeline(context, this.device, this.canvasFormat);
     this.gpuProfiler = GpuProfiler.create(
       this.device,
-      () => appConfig.tuningPane.showFpsOverlay
+      () => perfStatsOverlayState.isVisible
     );
 
     this.frameRenderer = new SimulationFrameRenderer(
@@ -134,7 +137,7 @@ export class GameLoopResources {
       deltaTime,
       time,
       agentCount: activeAgentCount,
-      introMoveSpeed: appConfig.simulation.introMoveSpeed,
+      introMoveSpeed: INTRO_MOVE_SPEED,
       introProgress,
     });
     this.brushPipeline.setParameters({

@@ -1,6 +1,6 @@
-import { appConfig } from '../config';
-
 const DRAW_HINT_CLASS = 'draw-hint';
+const INTRO_DURATION_SECONDS = 4;
+const DRAW_HINT_DELAY_MS = 3000;
 
 export class IntroPrompt {
   private introComplete = false;
@@ -13,10 +13,7 @@ export class IntroPrompt {
   public get progress(): number {
     return this.introComplete
       ? 1
-      : Math.min(
-          1,
-          this.introElapsedSeconds / appConfig.simulation.intro.durationSeconds
-        );
+      : Math.min(1, this.introElapsedSeconds / INTRO_DURATION_SECONDS);
   }
 
   public get shouldRegenerateTitleOnResize(): boolean {
@@ -33,7 +30,7 @@ export class IntroPrompt {
       : 0;
     this.introElapsedSeconds = Math.min(
       this.introElapsedSeconds,
-      Math.max(0, appConfig.simulation.intro.durationSeconds - safeRemainingSeconds)
+      Math.max(0, INTRO_DURATION_SECONDS - safeRemainingSeconds)
     );
   }
 
@@ -45,10 +42,7 @@ export class IntroPrompt {
       this.introElapsedSeconds += safeDeltaTime;
     }
 
-    if (
-      !this.introComplete &&
-      this.introElapsedSeconds >= appConfig.simulation.intro.durationSeconds
-    ) {
+    if (!this.introComplete && this.introElapsedSeconds >= INTRO_DURATION_SECONDS) {
       this.complete(now);
     }
 
@@ -56,7 +50,7 @@ export class IntroPrompt {
       !this.introComplete ||
       this.hasStartedDrawing ||
       this.introCompletedAt === null ||
-      now - this.introCompletedAt < appConfig.simulation.intro.drawHintDelayMs
+      now - this.introCompletedAt < DRAW_HINT_DELAY_MS
     ) {
       return;
     }

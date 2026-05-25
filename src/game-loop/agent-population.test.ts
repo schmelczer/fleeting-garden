@@ -1,11 +1,14 @@
 import { vec2 } from 'gl-matrix';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { appConfig } from '../config';
 import { type AgentGenerationPipeline } from '../pipelines/agents/agent-generation/agent-generation-pipeline';
 import { AGENT_FLOAT_COUNT } from '../pipelines/agents/agent-limits';
 import { settings } from '../settings';
-import { AgentPopulation } from './agent-population';
+import {
+  AgentPopulation,
+  STROKE_AGENT_BATCH_CAPACITY,
+  STROKE_DENSITY_MULTIPLIER,
+} from './agent-population';
 import { type FramePerformance } from './frame-performance';
 
 const originalSettings = {
@@ -70,7 +73,7 @@ const createPopulation = (): {
 };
 
 const setSpawnRate = (agentsPerPixel: number): void => {
-  settings.spawnPerPixel = agentsPerPixel / appConfig.simulation.stroke.densityMultiplier;
+  settings.spawnPerPixel = agentsPerPixel / STROKE_DENSITY_MULTIPLIER;
 };
 
 describe('AgentPopulation stroke spawning', () => {
@@ -124,7 +127,7 @@ describe('AgentPopulation stroke spawning', () => {
 
   it('chunks long stroke writes without clipping length-linear spawn counts', () => {
     const { pipeline, population } = createPopulation();
-    const batchCapacity = appConfig.simulation.stroke.maxAgentCount;
+    const batchCapacity = STROKE_AGENT_BATCH_CAPACITY;
     const expectedAgentCount = batchCapacity + 10;
 
     population.spawnStrokeAgents(

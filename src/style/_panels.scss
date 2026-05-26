@@ -2,13 +2,10 @@
 
 html > body > aside.control-dock > .info-page {
   width: min(100%, 520px);
-  max-height: min(62vh, 480px);
-  max-height: min(62dvh, 480px);
+  max-height: 200vh;
+  max-height: 200dvh;
   margin: 0 auto 10px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
+  overflow: hidden;
   border: 1px solid rgb(255 255 255 / 46%);
   border-radius: 8px;
   background:
@@ -20,25 +17,11 @@ html > body > aside.control-dock > .info-page {
     0 16px 42px rgb(0 0 0 / 30%),
     0 2px 10px rgb(0 0 0 / 18%);
   backdrop-filter: blur(16px) saturate(118%);
-  scrollbar-width: thin;
-  scrollbar-color: rgb(69 98 88 / 62%) transparent;
-  -webkit-overflow-scrolling: touch;
   transition:
     max-height var(--transition-time-long),
     opacity var(--transition-time-long),
     transform var(--transition-time-long),
     margin-bottom var(--transition-time-long);
-
-  &::-webkit-scrollbar-track,
-  &::-webkit-scrollbar {
-    background-color: transparent;
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: rgb(69 98 88 / 62%);
-    border-radius: 8px;
-  }
 
   &:focus-visible {
     outline: 2px solid rgb(17 56 45);
@@ -225,8 +208,6 @@ html > body > aside.control-dock > .info-page {
 
   @include on-small-screen {
     width: min(100%, 520px);
-    max-height: min(58vh, 500px);
-    max-height: min(58dvh, 500px);
 
     .info-page__content {
       gap: 0.75rem;
@@ -243,27 +224,5 @@ html > body > aside.control-dock > .info-page {
       font-size: 0.875rem;
       line-height: 1.45;
     }
-  }
-
-  @media (max-height: 420px) {
-    max-height: min(
-      58vh,
-      max(
-        10rem,
-        calc(
-          100vh - 168px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
-        )
-      )
-    );
-    max-height: min(
-      58dvh,
-      max(
-        10rem,
-        calc(
-          100dvh -
-            168px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
-        )
-      )
-    );
   }
 }

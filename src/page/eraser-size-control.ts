@@ -1,40 +1,25 @@
+import {
+  clampEraserSize,
+  ERASER_SIZE_MAX,
+  getElementCssPixelSize,
+  getEraserSizeFromSliderRatio,
+  getEraserSizeMaxForCssSize,
+  getEraserSizeRatio,
+  getEraserSliderRatioFromSize,
+} from '../config/eraser-size';
 import type GameLoop from '../game-loop/game-loop';
 import { DEFAULT_ERASER_SIZE, settings } from '../settings';
 import { queryRequiredElement } from '../utils/dom';
 
-export const ERASER_SIZE_MIN = 24;
-export const ERASER_SIZE_MAX = 480;
-
 const ERASER_CONTROL_SCALE_MIN = 0.74;
 const ERASER_CONTROL_SCALE_MAX = 1.34;
-
-const clampEraserSize = (value: number): number => {
-  const safeValue = Number.isFinite(value) ? value : DEFAULT_ERASER_SIZE;
-  return Math.min(ERASER_SIZE_MAX, Math.max(ERASER_SIZE_MIN, Math.round(safeValue)));
-};
 
 const ERASER_SLIDER_MIN = 0;
 const ERASER_SLIDER_MAX = 1;
 const ERASER_SLIDER_STEP = 0.001;
 
-const clampSliderRatio = (value: number): number => {
-  const safeValue = Number.isFinite(value) ? value : ERASER_SLIDER_MIN;
-  return Math.min(ERASER_SLIDER_MAX, Math.max(ERASER_SLIDER_MIN, safeValue));
-};
-
-const getEraserSizeRatio = (size: number): number => {
-  return (clampEraserSize(size) - ERASER_SIZE_MIN) / (ERASER_SIZE_MAX - ERASER_SIZE_MIN);
-};
-
-export const getEraserSizeFromSliderRatio = (sliderRatio: number): number => {
-  return clampEraserSize(
-    ERASER_SIZE_MIN +
-      (ERASER_SIZE_MAX - ERASER_SIZE_MIN) * clampSliderRatio(sliderRatio) ** 2
-  );
-};
-
-export const getEraserSliderRatioFromSize = (size: number): number =>
-  Math.sqrt(getEraserSizeRatio(size));
+const clampStoredEraserSize = (value: number): number =>
+  clampEraserSize(value, ERASER_SIZE_MAX, DEFAULT_ERASER_SIZE);
 
 interface EraserSizeControlOptions {
   getGame: () => GameLoop | null;
@@ -48,6 +33,7 @@ export class EraserSizeControl {
     HTMLLabelElement
   );
   private readonly slider = queryRequiredElement('.eraser-size-slider', HTMLInputElement);
+  private readonly canvas = queryRequiredElement('canvas', HTMLCanvasElement);
   private isActive = false;
 
   public constructor(private readonly options: EraserSizeControlOptions) {
@@ -55,7 +41,10 @@ export class EraserSizeControl {
     this.control.addEventListener('click', this.activate);
     this.slider.addEventListener('focus', this.activate);
     this.slider.addEventListener('input', () => {
-      settings.eraserSize = getEraserSizeFromSliderRatio(Number(this.slider.value));
+      settings.eraserSize = getEraserSizeFromSliderRatio(
+        Number(this.slider.value),
+        this.getResponsiveMaxSize()
+      );
       this.activate();
       this.render();
       this.options.onChange();
@@ -63,19 +52,21 @@ export class EraserSizeControl {
   }
 
   public render(): void {
-    const size = clampEraserSize(settings.eraserSize);
-    if (settings.eraserSize !== size) {
-      settings.eraserSize = size;
+    const maxSize = this.getResponsiveMaxSize();
+    const storedSize = clampStoredEraserSize(settings.eraserSize);
+    if (settings.eraserSize !== storedSize) {
+      settings.eraserSize = storedSize;
     }
 
-    const sliderRatio = getEraserSliderRatioFromSize(size);
+    const size = clampEraserSize(storedSize, maxSize, DEFAULT_ERASER_SIZE);
+    const sliderRatio = getEraserSliderRatioFromSize(size, maxSize);
     this.slider.min = ERASER_SLIDER_MIN.toString();
     this.slider.max = ERASER_SLIDER_MAX.toString();
     this.slider.step = ERASER_SLIDER_STEP.toString();
     this.slider.value = sliderRatio.toString();
     this.slider.setAttribute('aria-valuetext', `${size}px`);
 
-    const sizeRatio = getEraserSizeRatio(size);
+    const sizeRatio = getEraserSizeRatio(size, maxSize);
     const scale =
       ERASER_CONTROL_SCALE_MIN +
       (ERASER_CONTROL_SCALE_MAX - ERASER_CONTROL_SCALE_MIN) * sizeRatio;
@@ -94,6 +85,10 @@ export class EraserSizeControl {
     this.setActive(true);
     this.options.onActivate();
   };
+
+  private getResponsiveMaxSize(): number {
+    return getEraserSizeMaxForCssSize(getElementCssPixelSize(this.canvas));
+  }
 
   private syncActiveState(): void {
     this.control.classList.toggle('active', this.isActive);

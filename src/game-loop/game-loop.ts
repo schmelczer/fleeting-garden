@@ -2,6 +2,7 @@ import { vec2 } from 'gl-matrix';
 
 import { GardenAudio } from '../audio/garden-audio';
 import { createGardenAudioConfig } from '../audio/garden-audio-config';
+import { getEffectiveEraserSize, getElementCssPixelSize } from '../config/eraser-size';
 import { activeVibe, settings } from '../settings';
 import { DeltaTimeCalculator } from '../utils/delta-time-calculator';
 import { rgbColorToCss, type RgbColor } from '../utils/rgb-color';
@@ -209,7 +210,11 @@ export default class GameLoop {
     const runtimeSettings = { ...settings };
     const introProgress = this.introPrompt.progress;
     const canvasPixelRatio = this.canvasPixelRatio;
-    const eraserPixelSize = runtimeSettings.eraserSize * canvasPixelRatio;
+    const eraserCssSize = getEffectiveEraserSize(
+      runtimeSettings.eraserSize,
+      getElementCssPixelSize(this.canvas)
+    );
+    const eraserPixelSize = eraserCssSize * canvasPixelRatio;
     const isErasing = this.pointerInput.isEraseMode;
     const accentColor =
       channelColors[runtimeSettings.selectedColorIndex] ?? channelColors[0];

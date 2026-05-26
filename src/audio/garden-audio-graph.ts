@@ -28,10 +28,10 @@ const graphTuning = {
   latencyHint: 'interactive',
   outputFilterType: 'highpass',
   compressor: {
-    thresholdDb: -18,
-    kneeDb: 18,
-    ratio: 2.1,
-    attackSeconds: 0.018,
+    thresholdDb: -22,
+    kneeDb: 12,
+    ratio: 4.5,
+    attackSeconds: 0.006,
     releaseSeconds: 0.18,
   },
 } as const;
@@ -87,10 +87,12 @@ export class GardenAudioGraph {
     const context = new AudioContextConstructor({
       latencyHint: graphTuning.latencyHint,
     });
+    const outputBus = context.createGain();
     const masterGain = context.createGain();
     const highPass = context.createBiquadFilter();
     const compressor = context.createDynamicsCompressor();
 
+    outputBus.gain.value = 1;
     masterGain.gain.value = 0;
     highPass.type = graphTuning.outputFilterType;
     highPass.frequency.value = outputHighPassFrequencyHz;
@@ -100,15 +102,17 @@ export class GardenAudioGraph {
     compressor.attack.value = graphTuning.compressor.attackSeconds;
     compressor.release.value = graphTuning.compressor.releaseSeconds;
 
-    masterGain.connect(highPass);
+    // Keep peak control independent from the user's volume slider.
+    outputBus.connect(highPass);
     highPass.connect(compressor);
-    compressor.connect(context.destination);
+    compressor.connect(masterGain);
+    masterGain.connect(context.destination);
 
     this.context = context;
     this.masterGain = masterGain;
     this.noiseBuffer = this.createNoiseBuffer(context);
-    this.createDelay(context, masterGain);
-    this.createBuses(context, masterGain);
+    this.createDelay(context, outputBus);
+    this.createBuses(context, outputBus);
 
     return context;
   }
@@ -224,7 +228,7 @@ export class GardenAudioGraph {
     }
   }
 
-  private createDelay(context: AudioContext, masterGain: GainNode): void {
+  private createDelay(context: AudioContext, outputBus: GainNode): void {
     const delayInput = context.createGain();
     const delayNode = context.createDelay(graphTuning.delayMaxSeconds);
     const delayFeedback = context.createGain();
@@ -250,7 +254,7 @@ export class GardenAudioGraph {
     delayFeedback.connect(delayNode);
     delayNode.connect(returnLowPass);
     returnLowPass.connect(delayOutput);
-    delayOutput.connect(masterGain);
+    delayOutput.connect(outputBus);
 
     this.delayInput = delayInput;
     this.delayNode = delayNode;
@@ -258,10 +262,10 @@ export class GardenAudioGraph {
     this.delayOutput = delayOutput;
   }
 
-  private createBuses(context: AudioContext, masterGain: GainNode): void {
+  private createBuses(context: AudioContext, outputBus: GainNode): void {
     const eventBus = context.createGain();
     eventBus.gain.value = graphTuning.eventBusGain;
-    eventBus.connect(masterGain);
+    eventBus.connect(outputBus);
     this.eventBus = eventBus;
     this.pianoBuses.clear();
 

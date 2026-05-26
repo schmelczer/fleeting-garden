@@ -1,3 +1,4 @@
+import { getEffectiveEraserSize } from '../config/eraser-size';
 import { settings } from '../settings';
 
 export class EraserPreview {
@@ -49,9 +50,15 @@ export class EraserPreview {
       };
     }
 
-    if (this.previousSize !== settings.eraserSize) {
-      this.element.style.setProperty('--eraser-preview-size', `${settings.eraserSize}px`);
-      this.previousSize = settings.eraserSize;
+    const rect = this.canvas.getBoundingClientRect();
+    const size = getEffectiveEraserSize(settings.eraserSize, {
+      height: rect.height || this.canvas.clientHeight,
+      width: rect.width || this.canvas.clientWidth,
+    });
+
+    if (this.previousSize !== size) {
+      this.element.style.setProperty('--eraser-preview-size', `${size}px`);
+      this.previousSize = size;
     }
 
     if (
@@ -63,7 +70,6 @@ export class EraserPreview {
       return;
     }
 
-    const rect = this.canvas.getBoundingClientRect();
     const left = `${this.previewClientPosition.x - rect.left}px`;
     const top = `${this.previewClientPosition.y - rect.top}px`;
     if (this.previousLeft !== left) {

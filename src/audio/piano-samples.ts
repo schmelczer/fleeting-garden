@@ -1,39 +1,25 @@
-import type { LoadedPianoSample } from './garden-audio-types';
-import a0SampleUrl from './samples/A0v12.m4a?url&no-inline';
-import a1SampleUrl from './samples/A1v12.m4a?url&no-inline';
-import a2SampleUrl from './samples/A2v12.m4a?url&no-inline';
-import a3SampleUrl from './samples/A3v12.m4a?url&no-inline';
-import a4SampleUrl from './samples/A4v12.m4a?url&no-inline';
-import a5SampleUrl from './samples/A5v12.m4a?url&no-inline';
-import a6SampleUrl from './samples/A6v12.m4a?url&no-inline';
-import a7SampleUrl from './samples/A7v12.m4a?url&no-inline';
-import c1SampleUrl from './samples/C1v12.m4a?url&no-inline';
-import c2SampleUrl from './samples/C2v12.m4a?url&no-inline';
-import c3SampleUrl from './samples/C3v12.m4a?url&no-inline';
-import c4SampleUrl from './samples/C4v12.m4a?url&no-inline';
-import c5SampleUrl from './samples/C5v12.m4a?url&no-inline';
-import c6SampleUrl from './samples/C6v12.m4a?url&no-inline';
-import c7SampleUrl from './samples/C7v12.m4a?url&no-inline';
-import c8SampleUrl from './samples/C8v12.m4a?url&no-inline';
-import dSharp1SampleUrl from './samples/Dsharp1v12.m4a?url&no-inline';
-import dSharp2SampleUrl from './samples/Dsharp2v12.m4a?url&no-inline';
-import dSharp3SampleUrl from './samples/Dsharp3v12.m4a?url&no-inline';
-import dSharp4SampleUrl from './samples/Dsharp4v12.m4a?url&no-inline';
-import dSharp5SampleUrl from './samples/Dsharp5v12.m4a?url&no-inline';
-import dSharp6SampleUrl from './samples/Dsharp6v12.m4a?url&no-inline';
-import dSharp7SampleUrl from './samples/Dsharp7v12.m4a?url&no-inline';
-import fSharp1SampleUrl from './samples/Fsharp1v12.m4a?url&no-inline';
-import fSharp2SampleUrl from './samples/Fsharp2v12.m4a?url&no-inline';
-import fSharp3SampleUrl from './samples/Fsharp3v12.m4a?url&no-inline';
-import fSharp4SampleUrl from './samples/Fsharp4v12.m4a?url&no-inline';
-import fSharp5SampleUrl from './samples/Fsharp5v12.m4a?url&no-inline';
-import fSharp6SampleUrl from './samples/Fsharp6v12.m4a?url&no-inline';
-import fSharp7SampleUrl from './samples/Fsharp7v12.m4a?url&no-inline';
+import type {
+  LoadedPianoReleaseSample,
+  LoadedPianoSamples,
+  LoadedPianoStrikeSample,
+} from './garden-audio-types';
 
-interface PianoSampleDefinition {
-  note: string;
+interface PianoStrikeSampleDefinition {
+  kind: 'strike';
+  midi: number;
+  path: string;
+  url: string;
+  velocityLayer: number;
+}
+
+interface PianoReleaseSampleDefinition {
+  kind: 'release';
+  midi: number;
+  path: string;
   url: string;
 }
+
+type PianoSampleDefinition = PianoStrikeSampleDefinition | PianoReleaseSampleDefinition;
 
 export interface PianoSampleLoadProgress {
   failedCount: number;
@@ -42,54 +28,28 @@ export interface PianoSampleLoadProgress {
   totalCount: number;
 }
 
-const pianoSampleDefinitions: Array<PianoSampleDefinition> = [
-  { url: a0SampleUrl, note: 'A0' },
-  { url: c1SampleUrl, note: 'C1' },
-  { url: dSharp1SampleUrl, note: 'Dsharp1' },
-  { url: fSharp1SampleUrl, note: 'Fsharp1' },
-  { url: a1SampleUrl, note: 'A1' },
-  { url: c2SampleUrl, note: 'C2' },
-  { url: dSharp2SampleUrl, note: 'Dsharp2' },
-  { url: fSharp2SampleUrl, note: 'Fsharp2' },
-  { url: a2SampleUrl, note: 'A2' },
-  { url: c3SampleUrl, note: 'C3' },
-  { url: dSharp3SampleUrl, note: 'Dsharp3' },
-  { url: fSharp3SampleUrl, note: 'Fsharp3' },
-  { url: a3SampleUrl, note: 'A3' },
-  { url: c4SampleUrl, note: 'C4' },
-  { url: dSharp4SampleUrl, note: 'Dsharp4' },
-  { url: fSharp4SampleUrl, note: 'Fsharp4' },
-  { url: a4SampleUrl, note: 'A4' },
-  { url: c5SampleUrl, note: 'C5' },
-  { url: dSharp5SampleUrl, note: 'Dsharp5' },
-  { url: fSharp5SampleUrl, note: 'Fsharp5' },
-  { url: a5SampleUrl, note: 'A5' },
-  { url: c6SampleUrl, note: 'C6' },
-  { url: dSharp6SampleUrl, note: 'Dsharp6' },
-  { url: fSharp6SampleUrl, note: 'Fsharp6' },
-  { url: a6SampleUrl, note: 'A6' },
-  { url: c7SampleUrl, note: 'C7' },
-  { url: dSharp7SampleUrl, note: 'Dsharp7' },
-  { url: fSharp7SampleUrl, note: 'Fsharp7' },
-  { url: a7SampleUrl, note: 'A7' },
-  { url: c8SampleUrl, note: 'C8' },
-];
+const pianoSampleModules = import.meta.glob('./samples/*.m4a', {
+  eager: true,
+  import: 'default',
+  query: '?url&no-inline',
+}) as Record<string, string>;
+const pianoSampleDefinitions = getPianoSampleDefinitions(pianoSampleModules);
 
-let loadedPianoSamples: Array<LoadedPianoSample> | null = null;
-let pianoSampleLoadPromise: Promise<Array<LoadedPianoSample>> | null = null;
+let loadedPianoSamples: LoadedPianoSamples | null = null;
+let pianoSampleLoadPromise: Promise<LoadedPianoSamples> | null = null;
 let lastPianoSampleProgress: PianoSampleLoadProgress | null = null;
 const pianoSampleProgressListeners = new Set<
   (progress: PianoSampleLoadProgress) => void
 >();
 
 const sampleLoadTuning = {
-  concurrency: 4,
+  concurrency: 6,
   sampleTimeoutMs: 15_000,
 };
 
 export const preloadPianoSamples = (
   onProgress?: (progress: PianoSampleLoadProgress) => void
-): Promise<Array<LoadedPianoSample>> => {
+): Promise<LoadedPianoSamples> => {
   const OfflineAudioContextConstructor = globalThis.OfflineAudioContext;
 
   if (!OfflineAudioContextConstructor) {
@@ -106,18 +66,19 @@ export const preloadPianoSamples = (
 export const loadPianoSamples = (
   decodeContext: BaseAudioContext,
   onProgress?: (progress: PianoSampleLoadProgress) => void
-): Promise<Array<LoadedPianoSample>> => {
+): Promise<LoadedPianoSamples> => {
   const unsubscribeProgress = subscribeToPianoSampleProgress(onProgress);
 
   if (loadedPianoSamples) {
     emitPianoSampleProgress({
       failedCount: 0,
-      loadedCount: loadedPianoSamples.length,
-      settledCount: loadedPianoSamples.length,
+      loadedCount: loadedPianoSamples.strikes.length + loadedPianoSamples.releases.length,
+      settledCount:
+        loadedPianoSamples.strikes.length + loadedPianoSamples.releases.length,
       totalCount: pianoSampleDefinitions.length,
     });
     unsubscribeProgress();
-    return Promise.resolve([...loadedPianoSamples]);
+    return Promise.resolve(cloneLoadedPianoSamples(loadedPianoSamples));
   }
 
   if (pianoSampleLoadPromise) {
@@ -151,13 +112,15 @@ export const loadPianoSamples = (
   )
     .then(
       (samples) => {
-        loadedPianoSamples = samples.sort((a, b) => a.midi - b.midi);
-        if (loadedPianoSamples.length !== pianoSampleDefinitions.length) {
+        loadedPianoSamples = sortLoadedPianoSamples(samples);
+        const loadedCount =
+          loadedPianoSamples.strikes.length + loadedPianoSamples.releases.length;
+        if (loadedCount !== pianoSampleDefinitions.length) {
           throw new Error(
-            `Loaded ${loadedPianoSamples.length}/${pianoSampleDefinitions.length} piano samples.`
+            `Loaded ${loadedCount}/${pianoSampleDefinitions.length} piano samples.`
           );
         }
-        return [...loadedPianoSamples];
+        return cloneLoadedPianoSamples(loadedPianoSamples);
       },
       (error: unknown) => {
         pianoSampleLoadPromise = null;
@@ -170,29 +133,38 @@ export const loadPianoSamples = (
   return pianoSampleLoadPromise;
 };
 
-export const getLoadedPianoSamples = (): Array<LoadedPianoSample> | null =>
-  loadedPianoSamples ? [...loadedPianoSamples] : null;
+export const getLoadedPianoSamples = (): LoadedPianoSamples | null =>
+  loadedPianoSamples ? cloneLoadedPianoSamples(loadedPianoSamples) : null;
 
 const loadPianoSample = async (
   decodeContext: BaseAudioContext,
   sample: PianoSampleDefinition,
   signal: AbortSignal
-): Promise<LoadedPianoSample> => {
+): Promise<LoadedPianoStrikeSample | LoadedPianoReleaseSample> => {
   const response = await fetch(sample.url, { signal });
   if (!response.ok) {
-    throw new Error(`Unable to load piano sample ${getPianoSamplePath(sample)}`);
+    throw new Error(`Unable to load piano sample ${sample.path}`);
   }
 
   const audioData = await response.arrayBuffer();
   const buffer = await decodeContext.decodeAudioData(audioData);
-  return { midi: getMidiForPianoSample(sample), buffer };
+  if (sample.kind === 'strike') {
+    return {
+      buffer,
+      midi: sample.midi,
+      velocityLayer: sample.velocityLayer,
+    };
+  }
+  return { buffer, midi: sample.midi };
 };
 
 const loadPianoSampleBatch = async (
   samples: Array<PianoSampleDefinition>,
-  loadSample: (sample: PianoSampleDefinition) => Promise<LoadedPianoSample>
-): Promise<Array<LoadedPianoSample>> => {
-  const results: Array<LoadedPianoSample> = [];
+  loadSample: (
+    sample: PianoSampleDefinition
+  ) => Promise<LoadedPianoStrikeSample | LoadedPianoReleaseSample>
+): Promise<Array<LoadedPianoStrikeSample | LoadedPianoReleaseSample>> => {
+  const results: Array<LoadedPianoStrikeSample | LoadedPianoReleaseSample> = [];
 
   for (let index = 0; index < samples.length; index += sampleLoadTuning.concurrency) {
     const batch = samples.slice(index, index + sampleLoadTuning.concurrency);
@@ -247,13 +219,50 @@ const emitPianoSampleProgress = (progress: PianoSampleLoadProgress): void => {
   pianoSampleProgressListeners.forEach((listener) => listener(progress));
 };
 
-const getPianoSamplePath = (sample: PianoSampleDefinition): string =>
-  `./samples/${sample.note}v12.m4a`;
+function getPianoSampleDefinitions(
+  modules: Record<string, string>
+): Array<PianoSampleDefinition> {
+  return Object.entries(modules)
+    .map(([path, url]) => getPianoSampleDefinition(path, url))
+    .sort((a, b) => a.midi - b.midi || getSampleSortValue(a) - getSampleSortValue(b));
+}
 
-const getMidiForPianoSample = (sample: PianoSampleDefinition): number => {
-  const match = /^(?<name>[A-G])(?<accidental>sharp)?(?<octave>\d+)$/.exec(sample.note);
+function getPianoSampleDefinition(path: string, url: string): PianoSampleDefinition {
+  const filename = path.split('/').pop() ?? path;
+  const strikeMatch = /^(?<note>[A-G](?:sharp)?\d+)v(?<velocityLayer>\d+)\.m4a$/.exec(
+    filename
+  );
+  if (strikeMatch?.groups) {
+    return {
+      kind: 'strike',
+      midi: getMidiForPianoSampleNote(strikeMatch.groups.note),
+      path,
+      url,
+      velocityLayer: Number(strikeMatch.groups.velocityLayer),
+    };
+  }
+
+  const releaseMatch = /^rel(?<releaseIndex>\d+)\.m4a$/.exec(filename);
+  if (releaseMatch?.groups) {
+    return {
+      kind: 'release',
+      midi: getMidiForReleaseSample(Number(releaseMatch.groups.releaseIndex)),
+      path,
+      url,
+    };
+  }
+
+  throw new Error(`Invalid piano sample filename ${path}`);
+}
+
+function getSampleSortValue(sample: PianoSampleDefinition): number {
+  return sample.kind === 'strike' ? sample.velocityLayer : Number.MAX_SAFE_INTEGER;
+}
+
+function getMidiForPianoSampleNote(note: string): number {
+  const match = /^(?<name>[A-G])(?<accidental>sharp)?(?<octave>\d+)$/.exec(note);
   if (!match?.groups) {
-    throw new Error(`Invalid piano sample note ${sample.note}`);
+    throw new Error(`Invalid piano sample note ${note}`);
   }
 
   const semitoneByName: Record<string, number> = {
@@ -268,4 +277,25 @@ const getMidiForPianoSample = (sample: PianoSampleDefinition): number => {
   const octave = Number(match.groups.octave);
   const semitone = semitoneByName[match.groups.name] + (match.groups.accidental ? 1 : 0);
   return (octave + 1) * 12 + semitone;
-};
+}
+
+function getMidiForReleaseSample(releaseIndex: number): number {
+  const pianoLowestMidi = 21;
+  return pianoLowestMidi + releaseIndex - 1;
+}
+
+const sortLoadedPianoSamples = (
+  samples: Array<LoadedPianoStrikeSample | LoadedPianoReleaseSample>
+): LoadedPianoSamples => ({
+  releases: samples
+    .filter((sample): sample is LoadedPianoReleaseSample => !('velocityLayer' in sample))
+    .sort((a, b) => a.midi - b.midi),
+  strikes: samples
+    .filter((sample): sample is LoadedPianoStrikeSample => 'velocityLayer' in sample)
+    .sort((a, b) => a.midi - b.midi || a.velocityLayer - b.velocityLayer),
+});
+
+const cloneLoadedPianoSamples = (samples: LoadedPianoSamples): LoadedPianoSamples => ({
+  releases: [...samples.releases],
+  strikes: [...samples.strikes],
+});

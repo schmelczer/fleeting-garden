@@ -133,9 +133,8 @@ html > body > aside.control-dock > .info-page {
     line-height: 1.18;
   }
 
-  .info-page__lede,
-  .info-page__notes,
-  .info-page__meta {
+  .info-page__main,
+  .info-page__notes {
     max-width: 56ch;
     overflow-wrap: break-word;
     color: rgb(25 35 32);
@@ -143,8 +142,7 @@ html > body > aside.control-dock > .info-page {
     line-height: 1.56;
   }
 
-  .info-page__lede,
-  .info-page__meta {
+  .info-page__main {
     margin-bottom: 0;
     hyphens: auto;
   }
@@ -164,19 +162,6 @@ html > body > aside.control-dock > .info-page {
       color: rgb(25 108 82);
       font-size: 0.85em;
     }
-  }
-
-  .info-page__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    align-items: baseline;
-    margin-top: 0.2rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgb(43 66 57 / 16%);
-    color: rgb(67 82 77);
-    font-size: 0.8rem;
-    line-height: 1.45;
   }
 
   a {
@@ -214,15 +199,10 @@ html > body > aside.control-dock > .info-page {
       padding: 14px;
     }
 
-    .info-page__lede,
+    .info-page__main,
     .info-page__notes {
       font-size: 0.95rem;
       line-height: 1.52;
-    }
-
-    .info-page__meta {
-      font-size: 0.875rem;
-      line-height: 1.45;
     }
   }
 }

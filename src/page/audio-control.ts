@@ -1,18 +1,17 @@
-import { DEFAULT_AUDIO_VOLUME } from '../audio/garden-audio-config';
+import { DEFAULT_AUDIO_VOLUME, MAX_AUDIO_VOLUME } from '../audio/garden-audio-config';
 import type GameLoop from '../game-loop/game-loop';
 import { readBrowserStorage, writeBrowserStorage } from '../utils/browser-storage';
 import { queryRequiredElement } from '../utils/dom';
-import { clamp01 } from '../utils/math';
 
 const AUDIO_MUTED_STORAGE_KEY = 'fleeting-garden:audio-muted';
 const AUDIO_VOLUME_STORAGE_KEY = 'fleeting-garden:audio-volume';
 const AUDIO_VOLUME_MIN = 0;
-const AUDIO_VOLUME_MAX = 1;
+const AUDIO_VOLUME_MAX = MAX_AUDIO_VOLUME;
 const AUDIO_VOLUME_STEP = 0.01;
 
 const clampAudioVolume = (value: number): number => {
   const safeValue = Number.isFinite(value) ? value : DEFAULT_AUDIO_VOLUME;
-  return Math.min(AUDIO_VOLUME_MAX, Math.max(AUDIO_VOLUME_MIN, clamp01(safeValue)));
+  return Math.min(AUDIO_VOLUME_MAX, Math.max(AUDIO_VOLUME_MIN, safeValue));
 };
 
 const readInitialAudioVolume = (): number => {
@@ -83,6 +82,7 @@ export class AudioControl {
     this.audioVolume = clampAudioVolume(this.audioVolume);
     const isEffectivelyMuted = this.isMuted;
     const volumePercent = Math.round(this.audioVolume * 100);
+    const volumeProgressPercent = Math.round((this.audioVolume / AUDIO_VOLUME_MAX) * 100);
 
     this.soundButton.classList.toggle('muted', isEffectivelyMuted);
     this.soundButton.setAttribute('aria-pressed', String(isEffectivelyMuted));
@@ -102,7 +102,10 @@ export class AudioControl {
     this.volumeControl.title = isEffectivelyMuted
       ? `Muted, ${volumePercent}% volume`
       : `${volumePercent}% volume`;
-    this.volumeControl.style.setProperty('--volume-progress', `${volumePercent}%`);
+    this.volumeControl.style.setProperty(
+      '--volume-progress',
+      `${volumeProgressPercent}%`
+    );
 
     const game = this.options.getGame();
     game?.setAudioVolume(this.audioVolume);

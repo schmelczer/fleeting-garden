@@ -1,6 +1,7 @@
 import type { PianoNoteRole } from './garden-audio-types';
 
-export const DEFAULT_AUDIO_VOLUME = 0.5;
+export const DEFAULT_AUDIO_VOLUME = 0.65;
+export const MAX_AUDIO_VOLUME = 1.5;
 export const SILENT_AUDIO_GAIN = 0.0001;
 
 type GardenAudioChordQuality = 'major' | 'minor' | 'sus2' | 'sus4';
@@ -58,17 +59,33 @@ export const createGardenAudioConfig = () => ({
     timeRampSeconds: 0.12,
   },
   piano: {
-    maxVoices: 24,
-    gain: 0.48,
+    maxVoices: 48,
+    gain: 0.78,
     sustainSeconds: 0.42,
     sustainLevel: 0.26,
-    releaseSeconds: 0.34,
-    lowpassHz: 7000,
-    gainAttackSeconds: 0.006,
-    lowpassMaxHz: 12000,
-    lowpassMinHz: 1400,
+    releaseSeconds: 0.62,
+    lowpassHz: 9500,
+    gainAttackSeconds: 0.003,
+    lowpassMaxHz: 16000,
+    lowpassMinHz: 900,
     sustainBase: 0.45,
     sustainVelocityRange: 0.55,
+    releaseSampleGain: 0.035,
+    releaseSampleVelocityBase: 0.45,
+    releaseSampleVelocityRange: 0.55,
+    roomSend: 0.18,
+    velocityLayerCurve: 0.72,
+    velocityLayerMax: 0.26,
+    velocityLayerMin: 0.035,
+    voiceDecayEstimateSeconds: 1.9,
+  },
+  room: {
+    decaySeconds: 1.65,
+    highPassHz: 120,
+    lowPassHz: 8200,
+    preDelaySeconds: 0.018,
+    sendGain: 1,
+    wetGain: 0.11,
   },
   rhythm: {
     idleIntensity: defaultGardenAudioVibeSettings.idleIntensity,

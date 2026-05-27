@@ -28,11 +28,11 @@ const graphTuning = {
   latencyHint: 'interactive',
   outputFilterType: 'highpass',
   compressor: {
-    thresholdDb: -22,
-    kneeDb: 12,
-    ratio: 4.5,
-    attackSeconds: 0.006,
-    releaseSeconds: 0.18,
+    thresholdDb: -17,
+    kneeDb: 18,
+    ratio: 2.2,
+    attackSeconds: 0.014,
+    releaseSeconds: 0.28,
   },
 } as const;
 const delayFilterTuning = {
@@ -45,6 +45,7 @@ export class GardenAudioGraph {
   public context: AudioContext | null = null;
   public eventBus: GainNode | null = null;
   public delayInput: GainNode | null = null;
+  public roomInput: GainNode | null = null;
   public noiseBus: GainNode | null = null;
   public noiseBuffer: AudioBuffer | null = null;
 
@@ -112,6 +113,7 @@ export class GardenAudioGraph {
     this.masterGain = masterGain;
     this.noiseBuffer = this.createNoiseBuffer(context);
     this.createDelay(context, outputBus);
+    this.createRoom(context, outputBus);
     this.createBuses(context, outputBus);
 
     return context;
@@ -262,6 +264,33 @@ export class GardenAudioGraph {
     this.delayOutput = delayOutput;
   }
 
+  private createRoom(context: AudioContext, outputBus: GainNode): void {
+    const roomInput = context.createGain();
+    const preDelay = context.createDelay(0.08);
+    const convolver = context.createConvolver();
+    const highPass = context.createBiquadFilter();
+    const lowPass = context.createBiquadFilter();
+    const roomOutput = context.createGain();
+
+    roomInput.gain.value = this.config.room.sendGain;
+    preDelay.delayTime.value = this.config.room.preDelaySeconds;
+    convolver.buffer = this.createRoomImpulse(context);
+    highPass.type = 'highpass';
+    highPass.frequency.value = this.config.room.highPassHz;
+    lowPass.type = 'lowpass';
+    lowPass.frequency.value = this.config.room.lowPassHz;
+    roomOutput.gain.value = this.config.room.wetGain;
+
+    roomInput.connect(preDelay);
+    preDelay.connect(convolver);
+    convolver.connect(highPass);
+    highPass.connect(lowPass);
+    lowPass.connect(roomOutput);
+    roomOutput.connect(outputBus);
+
+    this.roomInput = roomInput;
+  }
+
   private createBuses(context: AudioContext, outputBus: GainNode): void {
     const eventBus = context.createGain();
     eventBus.gain.value = graphTuning.eventBusGain;
@@ -332,10 +361,34 @@ export class GardenAudioGraph {
     return buffer;
   }
 
+  private createRoomImpulse(context: AudioContext): AudioBuffer {
+    const sampleCount = Math.max(
+      1,
+      Math.floor(context.sampleRate * this.config.room.decaySeconds)
+    );
+    const impulse = context.createBuffer(2, sampleCount, context.sampleRate);
+
+    for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+      const data = impulse.getChannelData(channel);
+      for (let index = 0; index < sampleCount; index += 1) {
+        const position = index / sampleCount;
+        const decay = Math.pow(1 - position, 2.35);
+        const earlyReflection =
+          index % Math.max(1, Math.floor(context.sampleRate * 0.011)) === 0
+            ? 0.18 * (1 - position)
+            : 0;
+        data[index] = (Math.random() * 2 - 1 + earlyReflection) * decay;
+      }
+    }
+
+    return impulse;
+  }
+
   private clearNodes(): void {
     this.context = null;
     this.eventBus = null;
     this.delayInput = null;
+    this.roomInput = null;
     this.noiseBus = null;
     this.noiseBuffer = null;
     this.masterGain = null;

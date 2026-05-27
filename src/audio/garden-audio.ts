@@ -1,7 +1,8 @@
 import { ErrorHandler, Severity } from '../utils/error-handler';
-import { clamp01 } from '../utils/math';
+import { clamp } from '../utils/math';
 import type { VibeId, VibePreset } from '../vibes';
 import {
+  MAX_AUDIO_VOLUME,
   SILENT_AUDIO_GAIN,
   type GardenAudioConfig,
   type GardenAudioVibeProfile,
@@ -49,7 +50,7 @@ export class GardenAudio {
   private hasLoadedPiano = false;
 
   public constructor(private readonly config: GardenAudioConfig) {
-    this.masterVolume = clamp01(config.masterVolume);
+    this.masterVolume = clamp(config.masterVolume, 0, MAX_AUDIO_VOLUME);
     this.graph = new GardenAudioGraph(config);
     this.piano = new PianoSampler(config, this.graph);
     this.noise = new NoiseBurstPlayer(this.graph);
@@ -228,7 +229,7 @@ export class GardenAudio {
   }
 
   public setMasterVolume(masterVolume: number): void {
-    this.masterVolume = clamp01(masterVolume);
+    this.masterVolume = clamp(masterVolume, 0, MAX_AUDIO_VOLUME);
     if (!this.isMuted) {
       this.graph.setMasterGain(this.masterVolume, this.config.updateRampSeconds);
     }
@@ -396,7 +397,7 @@ export class GardenAudio {
       return;
     }
 
-    const distanceActivity = clamp01(activity);
+    const distanceActivity = clamp(activity, 0, 1);
     if (distanceActivity <= 0) {
       return;
     }

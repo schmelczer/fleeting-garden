@@ -14,9 +14,20 @@ export interface GardenAudioStroke {
   elapsedSeconds: number;
 }
 
-export interface LoadedPianoSample {
+export interface LoadedPianoStrikeSample {
+  midi: number;
+  velocityLayer: number;
+  buffer: AudioBuffer;
+}
+
+export interface LoadedPianoReleaseSample {
   midi: number;
   buffer: AudioBuffer;
+}
+
+export interface LoadedPianoSamples {
+  releases: Array<LoadedPianoReleaseSample>;
+  strikes: Array<LoadedPianoStrikeSample>;
 }
 
 export interface PianoNote {

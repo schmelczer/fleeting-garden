@@ -57,6 +57,7 @@ jobs:
 
       - name: Copy build to host pages mount
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          apt update && apt install -y rsync
-          rsync -a --delete dist/ /pages/fleeting
+        uses: http://forgejo:3000/andras/ci-actions/deploy-pages@main
+        with:
+          source: dist
+          target: fleeting

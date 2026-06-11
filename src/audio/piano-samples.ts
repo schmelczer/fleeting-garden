@@ -1,3 +1,4 @@
+import { ErrorHandler, Severity } from '../utils/error-handler';
 import type {
   LoadedPianoReleaseSample,
   LoadedPianoSamples,
@@ -21,6 +22,8 @@ interface PianoReleaseSampleDefinition {
 
 type PianoSampleDefinition = PianoStrikeSampleDefinition | PianoReleaseSampleDefinition;
 
+type LoadedPianoSample = LoadedPianoStrikeSample | LoadedPianoReleaseSample;
+
 export interface PianoSampleLoadProgress {
   failedCount: number;
   loadedCount: number;
@@ -35,8 +38,24 @@ const pianoSampleModules = import.meta.glob('./samples/*.m4a', {
 }) as Record<string, string>;
 const pianoSampleDefinitions = getPianoSampleDefinitions(pianoSampleModules);
 
-let loadedPianoSamples: LoadedPianoSamples | null = null;
-let pianoSampleLoadPromise: Promise<LoadedPianoSamples> | null = null;
+// The sampler degrades gracefully on a partial set: it picks the nearest
+// available strike per note, blends whatever velocity layers exist, and
+// treats release samples as optional. The core velocity layer is therefore
+// enough to start playing; the remaining layers and the release samples
+// stream in afterwards, published per completed layer so nearest-sample
+// lookups never see a half-loaded layer.
+const coreVelocityLayer = 8;
+const corePianoSampleDefinitions = pianoSampleDefinitions.filter(
+  (definition) =>
+    definition.kind === 'strike' && definition.velocityLayer === coreVelocityLayer
+);
+const backgroundPianoSamplePhases = getBackgroundPianoSamplePhases();
+
+const loadedSamplesByPath = new Map<string, LoadedPianoSample>();
+let publishedSamples: LoadedPianoSamples | null = null;
+let coreSampleLoadPromise: Promise<void> | null = null;
+let isLoadingBackgroundSamples = false;
+const sampleSubscribers = new Set<(samples: LoadedPianoSamples) => void>();
 let lastPianoSampleProgress: PianoSampleLoadProgress | null = null;
 const pianoSampleProgressListeners = new Set<
   (progress: PianoSampleLoadProgress) => void
@@ -49,7 +68,7 @@ const sampleLoadTuning = {
 
 export const preloadPianoSamples = (
   onProgress?: (progress: PianoSampleLoadProgress) => void
-): Promise<LoadedPianoSamples> => {
+): Promise<void> => {
   const OfflineAudioContextConstructor = globalThis.OfflineAudioContext;
 
   if (!OfflineAudioContextConstructor) {
@@ -60,87 +79,133 @@ export const preloadPianoSamples = (
 
   // Decoding ignores these, but the constructor demands real numbers.
   const decodeContext = new OfflineAudioContextConstructor(1, 1, 48_000);
-  return loadPianoSamples(decodeContext, onProgress);
+  return ensurePianoSamplesLoading(decodeContext, onProgress);
 };
 
-export const loadPianoSamples = (
+/**
+ * Starts loading samples if needed and resolves once the core velocity layer
+ * is playable. Failed samples are retried on the next call; background layers
+ * keep streaming in after resolution.
+ */
+export const ensurePianoSamplesLoading = (
   decodeContext: BaseAudioContext,
   onProgress?: (progress: PianoSampleLoadProgress) => void
-): Promise<LoadedPianoSamples> => {
+): Promise<void> => {
   const unsubscribeProgress = subscribeToPianoSampleProgress(onProgress);
 
-  if (loadedPianoSamples) {
-    emitPianoSampleProgress({
-      failedCount: 0,
-      loadedCount: loadedPianoSamples.strikes.length + loadedPianoSamples.releases.length,
-      settledCount:
-        loadedPianoSamples.strikes.length + loadedPianoSamples.releases.length,
-      totalCount: pianoSampleDefinitions.length,
-    });
-    unsubscribeProgress();
-    return Promise.resolve(cloneLoadedPianoSamples(loadedPianoSamples));
-  }
+  coreSampleLoadPromise ??= loadCoreSamples(decodeContext).catch((error: unknown) => {
+    coreSampleLoadPromise = null;
+    throw error;
+  });
+  coreSampleLoadPromise.then(
+    () => {
+      startBackgroundLoading(decodeContext);
+    },
+    () => undefined
+  );
 
-  if (pianoSampleLoadPromise) {
-    return pianoSampleLoadPromise.finally(unsubscribeProgress);
-  }
-
-  let loadedCount = 0;
-  let failedCount = 0;
-  let settledCount = 0;
-  const totalCount = pianoSampleDefinitions.length;
-  emitPianoSampleProgress({ failedCount, loadedCount, settledCount, totalCount });
-
-  pianoSampleLoadPromise = loadPianoSampleBatch(
-    pianoSampleDefinitions,
-    async (sample) => {
-      try {
-        const loadedSample = await withTimeout(
-          (signal) => loadPianoSample(decodeContext, sample, signal),
-          sampleLoadTuning.sampleTimeoutMs
-        );
-        loadedCount += 1;
-        return loadedSample;
-      } catch (error) {
-        failedCount += 1;
-        throw error;
-      } finally {
-        settledCount += 1;
-        emitPianoSampleProgress({ failedCount, loadedCount, settledCount, totalCount });
-      }
-    }
-  )
-    .then(
-      (samples) => {
-        loadedPianoSamples = sortLoadedPianoSamples(samples);
-        const loadedCount =
-          loadedPianoSamples.strikes.length + loadedPianoSamples.releases.length;
-        if (loadedCount !== pianoSampleDefinitions.length) {
-          throw new Error(
-            `Loaded ${loadedCount}/${pianoSampleDefinitions.length} piano samples.`
-          );
-        }
-        return cloneLoadedPianoSamples(loadedPianoSamples);
-      },
-      (error: unknown) => {
-        pianoSampleLoadPromise = null;
-        pianoSampleProgressListeners.clear();
-        throw error;
-      }
-    )
-    .finally(unsubscribeProgress);
-
-  return pianoSampleLoadPromise;
+  return coreSampleLoadPromise.finally(unsubscribeProgress);
 };
 
-export const getLoadedPianoSamples = (): LoadedPianoSamples | null =>
-  loadedPianoSamples ? cloneLoadedPianoSamples(loadedPianoSamples) : null;
+/**
+ * Calls the listener with the currently published samples (if any) and again
+ * whenever another batch finishes loading. Returns an unsubscribe function.
+ */
+export const subscribeToPianoSamples = (
+  listener: (samples: LoadedPianoSamples) => void
+): (() => void) => {
+  sampleSubscribers.add(listener);
+  if (publishedSamples) {
+    listener(cloneLoadedPianoSamples(publishedSamples));
+  }
+  return () => {
+    sampleSubscribers.delete(listener);
+  };
+};
+
+const loadCoreSamples = async (decodeContext: BaseAudioContext): Promise<void> => {
+  const pending = corePianoSampleDefinitions.filter(
+    (definition) => !loadedSamplesByPath.has(definition.path)
+  );
+  const totalCount = corePianoSampleDefinitions.length;
+  let loadedCount = totalCount - pending.length;
+  let settledCount = loadedCount;
+  let failedCount = 0;
+  emitPianoSampleProgress({ failedCount, loadedCount, settledCount, totalCount });
+
+  await loadSamplesWithConcurrency(pending, async (definition) => {
+    try {
+      await loadPianoSample(decodeContext, definition);
+      loadedCount += 1;
+    } catch (error) {
+      failedCount += 1;
+      throw error;
+    } finally {
+      settledCount += 1;
+      emitPianoSampleProgress({ failedCount, loadedCount, settledCount, totalCount });
+    }
+  });
+
+  publishLoadedSamples();
+};
+
+const startBackgroundLoading = (decodeContext: BaseAudioContext): void => {
+  if (
+    isLoadingBackgroundSamples ||
+    loadedSamplesByPath.size === pianoSampleDefinitions.length
+  ) {
+    return;
+  }
+
+  isLoadingBackgroundSamples = true;
+  loadBackgroundSamples(decodeContext).then(
+    () => {
+      isLoadingBackgroundSamples = false;
+    },
+    (error: unknown) => {
+      // The piano stays playable on the samples loaded so far; the next
+      // ensurePianoSamplesLoading call retries whatever is still missing.
+      isLoadingBackgroundSamples = false;
+      ErrorHandler.addException(error, {
+        fallbackMessage: 'Could not load all piano samples.',
+        severity: Severity.WARNING,
+      });
+    }
+  );
+};
+
+const loadBackgroundSamples = async (decodeContext: BaseAudioContext): Promise<void> => {
+  for (const phaseDefinitions of backgroundPianoSamplePhases) {
+    const pending = phaseDefinitions.filter(
+      (definition) => !loadedSamplesByPath.has(definition.path)
+    );
+    if (pending.length === 0) {
+      continue;
+    }
+
+    await loadSamplesWithConcurrency(pending, (definition) =>
+      loadPianoSample(decodeContext, definition)
+    );
+    publishLoadedSamples();
+  }
+};
 
 const loadPianoSample = async (
   decodeContext: BaseAudioContext,
+  sample: PianoSampleDefinition
+): Promise<void> => {
+  const loadedSample = await withTimeout(
+    (signal) => fetchAndDecodePianoSample(decodeContext, sample, signal),
+    sampleLoadTuning.sampleTimeoutMs
+  );
+  loadedSamplesByPath.set(sample.path, loadedSample);
+};
+
+const fetchAndDecodePianoSample = async (
+  decodeContext: BaseAudioContext,
   sample: PianoSampleDefinition,
   signal: AbortSignal
-): Promise<LoadedPianoStrikeSample | LoadedPianoReleaseSample> => {
+): Promise<LoadedPianoSample> => {
   const response = await fetch(sample.url, { signal });
   if (!response.ok) {
     throw new Error(`Unable to load piano sample ${sample.path}`);
@@ -158,21 +223,34 @@ const loadPianoSample = async (
   return { buffer, midi: sample.midi };
 };
 
-const loadPianoSampleBatch = async (
+/**
+ * Runs the loads through a sliding window of workers so one slow sample only
+ * occupies a single slot instead of stalling a whole batch.
+ */
+const loadSamplesWithConcurrency = async (
   samples: Array<PianoSampleDefinition>,
-  loadSample: (
-    sample: PianoSampleDefinition
-  ) => Promise<LoadedPianoStrikeSample | LoadedPianoReleaseSample>
-): Promise<Array<LoadedPianoStrikeSample | LoadedPianoReleaseSample>> => {
-  const results: Array<LoadedPianoStrikeSample | LoadedPianoReleaseSample> = [];
+  loadSample: (sample: PianoSampleDefinition) => Promise<void>
+): Promise<void> => {
+  let nextIndex = 0;
+  const workerCount = Math.min(sampleLoadTuning.concurrency, samples.length);
 
-  for (let index = 0; index < samples.length; index += sampleLoadTuning.concurrency) {
-    const batch = samples.slice(index, index + sampleLoadTuning.concurrency);
-    const batchResults = await Promise.all(batch.map((sample) => loadSample(sample)));
-    results.push(...batchResults);
-  }
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < samples.length) {
+        const sample = samples[nextIndex];
+        nextIndex += 1;
+        await loadSample(sample);
+      }
+    })
+  );
+};
 
-  return results;
+const publishLoadedSamples = (): void => {
+  const samples = sortLoadedPianoSamples([...loadedSamplesByPath.values()]);
+  publishedSamples = samples;
+  sampleSubscribers.forEach((listener) => {
+    listener(cloneLoadedPianoSamples(samples));
+  });
 };
 
 const withTimeout = <T>(
@@ -218,6 +296,29 @@ const emitPianoSampleProgress = (progress: PianoSampleLoadProgress): void => {
   lastPianoSampleProgress = progress;
   pianoSampleProgressListeners.forEach((listener) => listener(progress));
 };
+
+function getBackgroundPianoSamplePhases(): Array<Array<PianoSampleDefinition>> {
+  const strikes = pianoSampleDefinitions.filter(
+    (definition) => definition.kind === 'strike'
+  );
+  const releases = pianoSampleDefinitions.filter(
+    (definition) => definition.kind === 'release'
+  );
+  // Layers closest to the core layer first: they are blended in soonest by
+  // getVelocityLayerPair; ties resolve to the louder layer.
+  const remainingLayers = [...new Set(strikes.map((strike) => strike.velocityLayer))]
+    .filter((layer) => layer !== coreVelocityLayer)
+    .sort(
+      (a, b) => Math.abs(a - coreVelocityLayer) - Math.abs(b - coreVelocityLayer) || b - a
+    );
+
+  return [
+    releases,
+    ...remainingLayers.map((layer) =>
+      strikes.filter((strike) => strike.velocityLayer === layer)
+    ),
+  ];
+}
 
 function getPianoSampleDefinitions(
   modules: Record<string, string>
@@ -285,7 +386,7 @@ function getMidiForReleaseSample(releaseIndex: number): number {
 }
 
 const sortLoadedPianoSamples = (
-  samples: Array<LoadedPianoStrikeSample | LoadedPianoReleaseSample>
+  samples: Array<LoadedPianoSample>
 ): LoadedPianoSamples => ({
   releases: samples
     .filter((sample): sample is LoadedPianoReleaseSample => !('velocityLayer' in sample))

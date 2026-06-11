@@ -156,8 +156,10 @@ const main = async () => {
       }
     });
 
-    // Samples load before Start is enabled so the first audible piano note
-    // always uses the sampler. The Start tap still unlocks the AudioContext.
+    // Only the core velocity layer loads before Start is enabled so the first
+    // audible piano note always uses the sampler; the remaining layers and
+    // release samples stream in the background. The Start tap still unlocks
+    // the AudioContext.
     splash.showLoadingBar();
     const fontsReady = document.fonts.ready.catch((error) => {
       ErrorHandler.addException(error, {

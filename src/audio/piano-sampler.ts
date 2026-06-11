@@ -8,7 +8,7 @@ import type {
   LoadedPianoStrikeSample,
   PianoNote,
 } from './garden-audio-types';
-import { getLoadedPianoSamples, loadPianoSamples } from './piano-samples';
+import { ensurePianoSamplesLoading, subscribeToPianoSamples } from './piano-samples';
 
 export const PIANO_SCHEDULE_AHEAD_SECONDS = 0.002;
 
@@ -52,6 +52,7 @@ export class PianoSampler {
   private releaseSamples: Array<LoadedPianoReleaseSample> = [];
   private strikeSamples: Array<LoadedPianoStrikeSample> = [];
   private velocityLayers: Array<number> = [];
+  private unsubscribeFromSampleUpdates: (() => void) | null = null;
 
   public constructor(
     private readonly config: GardenAudioConfig,
@@ -59,19 +60,17 @@ export class PianoSampler {
   ) {}
 
   public load(context: BaseAudioContext): Promise<void> {
+    // The subscription applies further velocity layers and release samples
+    // as they finish loading in the background.
+    this.unsubscribeFromSampleUpdates ??= subscribeToPianoSamples((samples) => {
+      this.setSamples(samples);
+    });
+
     if (this.strikeSamples.length > 0) {
       return Promise.resolve();
     }
 
-    const loadedSamples = getLoadedPianoSamples();
-    if (loadedSamples) {
-      this.setSamples(loadedSamples);
-      return Promise.resolve();
-    }
-
-    return loadPianoSamples(context).then((samples) => {
-      this.setSamples(samples);
-    });
+    return ensurePianoSamplesLoading(context);
   }
 
   public play({
@@ -161,6 +160,8 @@ export class PianoSampler {
   }
 
   public reset(): void {
+    this.unsubscribeFromSampleUpdates?.();
+    this.unsubscribeFromSampleUpdates = null;
     this.releaseSamples = [];
     this.strikeSamples = [];
     this.velocityLayers = [];

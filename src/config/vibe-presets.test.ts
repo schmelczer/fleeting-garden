@@ -4,8 +4,8 @@ import { runtimeControls } from './runtime-controls';
 import { vibePresets } from './vibe-presets';
 
 const FINAL_VIBE_NAMES = [
-  'Aurora Mycelium Copy',
-  'Velvet Observatory Copy',
+  'Aurora Mycelium',
+  'Velvet Observatory',
   'Lichen Signal',
   'Tidepool Lantern',
   'Paper Lantern Fog',

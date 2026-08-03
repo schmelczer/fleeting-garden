@@ -18,7 +18,6 @@ import shader from './brush.wgsl?raw';
 
 export interface BrushSettings {
   brushSize: number;
-  brushAlpha: number;
   brushDiscardThreshold: number;
   brushGrainNoiseScale: number;
   brushGrainNoiseOffsetX: number;
@@ -45,7 +44,6 @@ const setBrushUniformValues = (
   target: Float32Array,
   {
     brushSize,
-    brushAlpha,
     brushDiscardThreshold,
     brushGrainNoiseScale,
     brushGrainNoiseOffsetX,
@@ -65,17 +63,16 @@ const setBrushUniformValues = (
 
   target[0] = brushRadius;
   target[1] = brushRadius * brushRadius;
-  // target[2], target[3] are WGSL alignment padding for brushValue:vec4 — never read by the shader.
+  // target[2], target[3] are WGSL alignment padding for brushColor:vec3 — never read by the shader.
   target[4] = selectedColorIndex === 0 ? 1 : 0;
   target[5] = selectedColorIndex === 1 ? 1 : 0;
   target[6] = selectedColorIndex === 2 ? 1 : 0;
-  target[7] = brushAlpha;
-  target[8] = 1 / Math.max(Number.EPSILON, brushGrainNoiseScale * safePixelRatio);
-  target[9] = brushGrainNoiseOffsetX;
-  target[10] = brushGrainNoiseOffsetY;
-  target[11] = brushDiscardThreshold;
-  target[12] = brushGrainMinStrength;
-  target[13] = brushGrainMaxStrength;
+  target[7] = 1 / Math.max(Number.EPSILON, brushGrainNoiseScale * safePixelRatio);
+  target[8] = brushGrainNoiseOffsetX;
+  target[9] = brushGrainNoiseOffsetY;
+  target[10] = brushDiscardThreshold;
+  target[11] = brushGrainMinStrength;
+  target[12] = brushGrainMaxStrength;
 };
 
 export class BrushPipeline {

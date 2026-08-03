@@ -163,7 +163,7 @@ export class GameLoopResources {
       eraserClearRed: runtimeSettings.eraserClearRed,
       eraserClearGreen: runtimeSettings.eraserClearGreen,
       eraserClearBlue: runtimeSettings.eraserClearBlue,
-      eraserClearAlpha: runtimeSettings.eraserClearAlpha,
+      eraserMaskErasedValue: runtimeSettings.eraserMaskErasedValue,
     });
   }
 

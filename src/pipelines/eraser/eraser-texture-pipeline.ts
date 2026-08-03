@@ -24,7 +24,7 @@ interface EraserTextureParameters {
   eraserClearRed: number;
   eraserClearGreen: number;
   eraserClearBlue: number;
-  eraserClearAlpha: number;
+  eraserMaskErasedValue: number;
 }
 
 const UNIFORM_COUNT = 8;
@@ -110,7 +110,7 @@ export class EraserTexturePipeline {
     eraserClearRed,
     eraserClearGreen,
     eraserClearBlue,
-    eraserClearAlpha,
+    eraserMaskErasedValue,
   }: EraserTextureParameters): void {
     const eraserRadius = eraserSize / 2;
 
@@ -119,7 +119,7 @@ export class EraserTexturePipeline {
     this.uniformValues[2] = eraserClearRed;
     this.uniformValues[3] = eraserClearGreen;
     this.uniformValues[4] = eraserClearBlue;
-    this.uniformValues[5] = eraserClearAlpha;
+    this.uniformValues[5] = eraserMaskErasedValue;
     this.uniformValues[6] = eraserRadius;
     writeBufferIfChanged(
       this.device,

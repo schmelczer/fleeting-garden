@@ -28,12 +28,12 @@ export type GardenRuntimeSettings = {
   brushCurveSegmentBrushRadiusRatio: number;
   brushEffectDuration: number;
   brushSmoothingMinSampleDistance: number;
-  eraserClearAlpha: number;
   eraserClearBlue: number;
   eraserClearGreen: number;
   eraserClearRed: number;
   eraserLineDistanceEpsilon: number;
   eraserMaskAlphaThreshold: number;
+  eraserMaskErasedValue: number;
   eraserSize: number;
   internalRenderAreaMegapixels: number;
   mirrorSegmentCount: number;

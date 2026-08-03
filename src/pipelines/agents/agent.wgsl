@@ -215,7 +215,8 @@ fn agent_finalize(
   // Writes only this agent's last-writer-wins deposit into a per-frame-cleared
   // depositMap. Storage textures do not blend concurrent compute writes, so
   // overlapping agents intentionally collapse to whichever write wins. The
-  // diffusion pass then sums trailMap + depositMap at tile-load time.
+  // diffusion pass then sums trailMap + depositMap at tile-load time. The
+  // rgba8unorm alpha lane is unused, so deposits leave it at zero.
   textureStore(
     trailMapOut,
     vec2<i32>(nextPosition),

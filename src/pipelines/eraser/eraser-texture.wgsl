@@ -4,7 +4,7 @@ struct Settings {
   clearRed: f32,
   clearGreen: f32,
   clearBlue: f32,
-  clearAlpha: f32,
+  erasedMaskValue: f32,
   eraserRadius: f32,
 };
 
@@ -66,14 +66,16 @@ fn fragmentCombined(
 }
 
 fn getEraserMaskValue() -> vec4<f32> {
-  return vec4<f32>(settings.clearAlpha, 0.0, 0.0, 1.0);
+  return vec4<f32>(settings.erasedMaskValue, 0.0, 0.0, 1.0);
 }
 
 fn getEraserClearValue() -> vec4<f32> {
+  // The rgba8unorm trail and source maps need a vec4; their alpha lane is
+  // unused, so erased texels keep it at zero.
   return vec4<f32>(
     settings.clearRed,
     settings.clearGreen,
     settings.clearBlue,
-    settings.clearAlpha
+    0.0
   );
 }

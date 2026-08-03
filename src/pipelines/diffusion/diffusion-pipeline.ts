@@ -12,21 +12,9 @@ import shader from './diffuse.wgsl?raw';
 export interface DiffusionSettings {
   diffusionRateTrails: number;
   decayRateTrails: number;
-  decayRateBrush: number;
   diffusionDecayRateDivisor: number;
   diffusionNeighborDivisor: number;
-  brushDecayAlphaOffset: number;
 }
-
-type DiffusionUniformSettings = Pick<
-  DiffusionSettings,
-  | 'diffusionRateTrails'
-  | 'decayRateTrails'
-  | 'decayRateBrush'
-  | 'diffusionDecayRateDivisor'
-  | 'diffusionNeighborDivisor'
-  | 'brushDecayAlphaOffset'
->;
 
 const MIN_DIFFUSION_RATE = 0.000001;
 
@@ -41,30 +29,23 @@ const setDiffusionUniformValues = (
   {
     diffusionRateTrails,
     decayRateTrails,
-    decayRateBrush,
     diffusionDecayRateDivisor,
     diffusionNeighborDivisor,
-    brushDecayAlphaOffset,
-  }: DiffusionUniformSettings
+  }: DiffusionSettings
 ): void => {
   const decayDivisor = Math.max(Number.EPSILON, diffusionDecayRateDivisor);
-  const brushDecayRate = decayRateBrush / decayDivisor;
   const neighborDivisor = Number.isFinite(diffusionNeighborDivisor)
     ? Math.max(1, diffusionNeighborDivisor)
     : 1;
   target[0] = getSafeInverseDiffusionRate(diffusionRateTrails);
   target[1] = decayRateTrails / decayDivisor;
   target[2] = 1 / neighborDivisor;
-  target[3] = 1 + brushDecayRate;
-  target[4] = brushDecayAlphaOffset * brushDecayRate;
-  target[5] = 0;
-  target[6] = 0;
-  target[7] = 0;
+  // target[3] is WGSL 16-byte alignment padding — never read by the shader.
 };
 
 export class DiffusionPipeline {
   private static readonly WORKGROUP_SIZE = 16;
-  private static readonly UNIFORM_COUNT = 8;
+  private static readonly UNIFORM_COUNT = 4;
 
   private readonly bindGroupLayout: GPUBindGroupLayout;
   private readonly pipeline: GPUComputePipeline;
@@ -136,18 +117,14 @@ export class DiffusionPipeline {
   public setParameters({
     diffusionRateTrails,
     decayRateTrails,
-    decayRateBrush,
     diffusionDecayRateDivisor,
     diffusionNeighborDivisor,
-    brushDecayAlphaOffset,
   }: DiffusionSettings) {
     setDiffusionUniformValues(this.uniformValues, {
       diffusionRateTrails,
       decayRateTrails,
-      decayRateBrush,
       diffusionDecayRateDivisor,
       diffusionNeighborDivisor,
-      brushDecayAlphaOffset,
     });
     writeBufferIfChanged(
       this.device,

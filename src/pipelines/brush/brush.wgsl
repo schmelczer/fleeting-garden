@@ -3,10 +3,10 @@ const SEGMENT_LENGTH_EPSILON: f32 = 0.0001;
 struct Settings {
   brushRadius: f32,
   brushRadiusSquared: f32,
-  // padding to 16-byte alignment for the following vec4
+  // padding to 16-byte alignment for the following vec3
   _pad0: f32,
   _pad1: f32,
-  brushValue: vec4<f32>,
+  brushColor: vec3<f32>,
   brushGrainNoiseScale: f32,
   brushGrainNoiseOffsetX: f32,
   brushGrainNoiseOffsetY: f32,
@@ -115,5 +115,7 @@ fn brushStrength(
 }
 
 fn brushOutput(strength: f32) -> vec4<f32> {
-  return vec4(settings.brushValue.rgb * strength, settings.brushValue.a * strength);
+  // The rgba8unorm source map needs a vec4; its alpha lane is unused, so the
+  // brush leaves it at zero.
+  return vec4(settings.brushColor * strength, 0.0);
 }

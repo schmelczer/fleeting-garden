@@ -2,11 +2,7 @@ struct Settings {
   inverseDiffusionRateTrails: f32,
   decayRateTrails: f32,
   diffusionNeighborScale: f32,
-  brushDecayAlphaMultiplier: f32,
-  brushDecayAlphaSubtract: f32,
   padding0: f32,
-  padding1: f32,
-  padding2: f32,
 };
 
 const WORKGROUP_SIZE_X = __WORKGROUP_SIZE__u;
@@ -32,7 +28,9 @@ const HASH_TO_UNIT_FLOAT: f32 = 2.3283064365386963e-10;
 // in the same frame.
 @group(0) @binding(3) var depositMap: texture_2d<f32>;
 
-var<workgroup> tile: array<vec4<f32>, TILE_TEXEL_COUNT>;
+// Only the color channels take part in the simulation; the alpha lane of the
+// rgba8unorm trail and source maps is unused and always stored as zero.
+var<workgroup> tile: array<vec3<f32>, TILE_TEXEL_COUNT>;
 var<workgroup> tileTrailStrength: array<f32, TILE_TEXEL_COUNT>;
 
 @compute @workgroup_size(__WORKGROUP_SIZE__, __WORKGROUP_SIZE__)
@@ -53,10 +51,10 @@ fn main(
       vec2<i32>(0, 0),
       textureBound
     );
-    let texel = textureLoad(trailMap, sourcePixel, 0)
-      + textureLoad(depositMap, sourcePixel, 0);
+    let texel = textureLoad(trailMap, sourcePixel, 0).rgb
+      + textureLoad(depositMap, sourcePixel, 0).rgb;
     tile[tileIndex] = texel;
-    tileTrailStrength[tileIndex] = length(texel.rgb);
+    tileTrailStrength[tileIndex] = length(texel);
   }
 
   workgroupBarrier();
@@ -106,25 +104,23 @@ fn main(
     + propagate_value(nBR, sBR, current, trailWeight);
 
   let updated = current + propagated * settings.diffusionNeighborScale;
-  let decayed = clamp(vec4(
-    updated.rgb * settings.decayRateTrails - vec3(TRAIL_RGB_DECAY_SUBTRACT),
-    updated.a * settings.brushDecayAlphaMultiplier - settings.brushDecayAlphaSubtract
-  ), vec4(0), vec4(1));
+  let decayed = clamp(
+    updated * settings.decayRateTrails - vec3(TRAIL_RGB_DECAY_SUBTRACT),
+    vec3(0),
+    vec3(1)
+  );
 
-  textureStore(trailMapOut, pixel, decayed);
+  textureStore(trailMapOut, pixel, vec4(decayed, 0.0));
 }
 
 fn propagate_value(
-  neighbour: vec4<f32>,
+  neighbour: vec3<f32>,
   neighbourStrength: f32,
-  current: vec4<f32>,
+  current: vec3<f32>,
   trailWeight: f32
-) -> vec4<f32> {
-  let difference = clamp(neighbour - current, vec4(0), vec4(1));
-  return vec4(
-    vec3(neighbourStrength * trailWeight),
-    neighbour.a * trailWeight
-  ) * difference;
+) -> vec3<f32> {
+  let difference = clamp(neighbour - current, vec3(0), vec3(1));
+  return vec3(neighbourStrength * trailWeight) * difference;
 }
 
 fn random_from_pixel(pixel: vec2<i32>) -> f32 {

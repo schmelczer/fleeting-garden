@@ -35,10 +35,8 @@ export const defaultSettings: GardenDefaultSettings = {
   randomTimeScale: 0.34816,
 
   diffusionRateTrails: 0.22,
-  decayRateBrush: 18,
   diffusionDecayRateDivisor: 1000,
   diffusionNeighborDivisor: 8,
-  brushDecayAlphaOffset: 1.001,
   brushEffectDuration: 8,
 
   brushCurveResolution: 12,
@@ -48,7 +46,6 @@ export const defaultSettings: GardenDefaultSettings = {
   brushCurveSegmentBrushRadiusRatio: 0.65,
   brushSmoothingMinSampleDistance: 0.5,
 
-  brushAlpha: 1,
   brushDiscardThreshold: 0.02,
   brushGrainNoiseScale: 22,
   brushGrainNoiseOffsetX: 0.31,
@@ -56,12 +53,12 @@ export const defaultSettings: GardenDefaultSettings = {
   brushGrainMinStrength: 0.45,
   brushGrainMaxStrength: 1,
 
-  eraserClearAlpha: 0,
   eraserClearBlue: 0,
   eraserClearGreen: 0,
   eraserClearRed: 0,
   eraserLineDistanceEpsilon: 0.0001,
   eraserMaskAlphaThreshold: 0.5,
+  eraserMaskErasedValue: 0,
 
   adaptiveCapInitial: 1_000_000,
   adaptiveCapMin: 50_000,

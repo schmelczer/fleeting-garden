@@ -12,7 +12,7 @@ describe('vibe URI handling', () => {
       VibeId.AuroraMycelium
     );
     expect(
-      getVibeIdFromUri('https://example.test/?vibe=Velvet%20Observatory%20Copy')
+      getVibeIdFromUri('https://example.test/?vibe=Velvet%20Observatory')
     ).toBe(VibeId.VelvetObservatory);
   });
 

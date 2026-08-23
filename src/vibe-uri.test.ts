@@ -11,9 +11,9 @@ describe('vibe URI handling', () => {
     expect(getVibeIdFromUri('https://example.test/?vibe=Aurora%20Mycelium')).toBe(
       VibeId.AuroraMycelium
     );
-    expect(
-      getVibeIdFromUri('https://example.test/?vibe=Velvet%20Observatory')
-    ).toBe(VibeId.VelvetObservatory);
+    expect(getVibeIdFromUri('https://example.test/?vibe=Velvet%20Observatory')).toBe(
+      VibeId.VelvetObservatory
+    );
   });
 
   it('uses query values before path or hash fallbacks', () => {

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 4173;
-const baseURL = `https://127.0.0.1:${port}`;
+const baseURL = `http://127.0.0.1:${port}`;
 const isCi = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -13,12 +13,10 @@ export default defineConfig({
   reporter: isCi ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL,
-    ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
   },
   webServer: {
     command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
-    ignoreHTTPSErrors: true,
     reuseExistingServer: false,
     timeout: 120_000,
     url: baseURL,

@@ -8,8 +8,8 @@ import { defineConfig } from 'vitest/config';
 const cssTargets = browserslistToTargets(browserslist());
 const esbuildTargets = browserslistToEsbuild();
 
-export default defineConfig(({ command }) => ({
-  plugins: [viteSingleFile(), ...(command === 'serve' ? [basicSsl()] : [])],
+export default defineConfig(({ command, isPreview }) => ({
+  plugins: [viteSingleFile(), ...(command === 'serve' && !isPreview ? [basicSsl()] : [])],
   css: {
     transformer: 'lightningcss',
     lightningcss: {

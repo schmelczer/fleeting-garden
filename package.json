@@ -67,7 +67,7 @@
     "typescript-eslint": "^8.59.1",
     "vite": "^8.0.10",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^4.1.5"
+    "vitest": "^5.0.0"
   },
   "dependencies": {
     "@plausible-analytics/tracker": "^0.4.5",
